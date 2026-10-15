@@ -1,4 +1,4 @@
-const relevantKeys = new Set(['w','a','s','d','e','f','r','m','p','t','c','n','g','escape',' ','shift','control','arrowup','arrowdown','arrowleft','arrowright']);
+const relevantKeys = new Set(['w','a','s','d','e','f','r','m','p','t','c','n','g','v','escape',' ','shift','control','arrowup','arrowdown','arrowleft','arrowright']);
 export const normalized = key => key === ' ' ? 'space' : key.toLowerCase() === 'control' ? 'ctrl' : key.toLowerCase();
 export class Input {
   constructor() {

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {Dragon} from '../entities/Dragon.js';
+import {wingPose} from '../entities/wingPose.js';
 import {SPECIES} from '../systems/Progression.js';
 
 /** Prévia real dos mesmos modelos procedurais usados no voo, não uma imagem estática. */
@@ -49,8 +50,11 @@ export class StablePreview {
     this.elapsed+=Math.min(dt,.05);
     if(!this.dragging)this.rotation+=Math.min(dt,.05)*.13;
     this.dragon.group.rotation.y=this.rotation;
-    const flap=Math.sin(this.elapsed*2.15)*.11;
-    for(const {wing,tip,side} of this.dragon.wings){wing.rotation.z=side*(.1+flap);tip.rotation.z=side*.22;}
+    for(const {wing,elbow,tip,side} of this.dragon.wings){
+      const pose=wingPose({time:this.elapsed,side,phase:'cruise',speed:18,wingLift:1,bank:0,climbing:0});
+      wing.rotation.z=pose.shoulder;elbow.rotation.z=pose.elbow;tip.rotation.z=pose.wrist;
+      wing.rotation.x=pose.twist;
+    }
     this.dragon.headPivot.rotation.y=Math.sin(this.elapsed*.85)*.085;
     this.dragon.visual.position.y=Math.sin(this.elapsed*1.65)*.14;
     this.renderer.render(this.scene,this.camera);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Input } from './Input.js';
+import {CameraOrbit,cameraOffset} from './CameraOrbit.js';
 import { World } from '../world/World.js';
 import { Dragon } from '../entities/Dragon.js';
 import { EnemySquad } from '../entities/EnemyDragon.js';
@@ -39,6 +40,7 @@ export class Game {
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x9bdbef);this.scene.fog=new THREE.FogExp2(0xa3e2ed,.00165);
     this.camera=new THREE.PerspectiveCamera(67,innerWidth/innerHeight,.15,1050);
     this.input=new Input();this.audio=new AudioSystem();this.ui=new UI();
+    this.cameraOrbit=new CameraOrbit();this.bindOrbitControls();
     this.graphics=new GraphicsQuality(this.renderer,window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches,navigator.deviceMemory??0);
     this.updateGraphicsLabel();
     this.saveSystem=new SaveSystem();this.savedData=this.saveSystem.read();
@@ -83,6 +85,28 @@ export class Game {
     document.getElementById('start-btn').addEventListener('click',()=>this.start());
     this.ui.updateQuest(this.missions);
     this.renderer.setAnimationLoop(()=>this.frame());
+  }
+  bindOrbitControls(){
+    // Orbit only on the canvas: HUD buttons and the stable panel remain clickable.
+    const canvas=this.renderer.domElement;
+    let pointerId=null,lastX=0,lastY=0;
+    canvas.style.touchAction='none';
+    canvas.addEventListener('pointerdown',event=>{
+      if(!this.started||event.button!==0||!this.ui.stable.classList.contains('hidden'))return;
+      pointerId=event.pointerId;lastX=event.clientX;lastY=event.clientY;
+      canvas.setPointerCapture(event.pointerId);
+    });
+    canvas.addEventListener('pointermove',event=>{
+      if(pointerId!==event.pointerId||!this.started)return;
+      this.cameraOrbit.drag(event.clientX-lastX,event.clientY-lastY);
+      lastX=event.clientX;lastY=event.clientY;
+    });
+    const release=event=>{if(pointerId===event.pointerId)pointerId=null;};
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,release);
+    canvas.addEventListener('wheel',event=>{
+      if(!this.started)return;
+      event.preventDefault();this.cameraOrbit.zoomBy(event.deltaY);
+    },{passive:false});
   }
   start(){
     this.started=true;document.getElementById('start-screen').classList.add('hidden');
@@ -347,8 +371,9 @@ export class Game {
     const riding=this.dragon.riding;
     const focus=riding?this.dragon.group.position:this.hero.group.position;
     const forward=riding?this.dragon.forward():new THREE.Vector3(0,0,-1);
-    const back=riding?16+this.dragon.speed*.095:12;
-    const camPos=new THREE.Vector3(focus.x-forward.x*back+(riding?0:2.8),focus.y+(riding?7.6:7.1),focus.z-forward.z*back);
+    const back=(riding?16+this.dragon.speed*.095:12)*this.cameraOrbit.zoom;
+    const offset=cameraOffset({forwardX:forward.x,forwardZ:forward.z,distance:back,yaw:this.cameraOrbit.yaw,pitch:this.cameraOrbit.pitch});
+    const camPos=new THREE.Vector3(focus.x+offset.x,focus.y+(riding?7.6:7.1)+offset.y,focus.z+offset.z);
     camPos.y=Math.max(camPos.y,this.world.heightAt(camPos.x,camPos.z)+3.5);
     this.camera.position.lerp(camPos,smoothFollow(riding?3.1:5,dt));
     const lookAt=new THREE.Vector3(focus.x+forward.x*(riding?9:0),focus.y+(riding?2.3:2),focus.z+forward.z*(riding?9:0));
@@ -382,6 +407,7 @@ export class Game {
       if(this.input.consume('p'))this.saveGame(true);
       if(this.input.consume('c')){this.weather.cycle();this.saveGame();this.ui.toast(`Clima: ${this.weather.mode.label}`,3);}
       if(this.input.consume('g'))this.cycleGraphics();
+      if(this.input.consume('v')){this.cameraOrbit.reset();this.ui.toast('Câmera centralizada.');}
       if(this.input.consume('n')){this.dayNight.jumpHours(3);this.saveGame();this.ui.toast(`Hora do mundo: ${this.dayNight.clock}`,3);}
       if(!this.ui.stable.classList.contains('hidden')){
         this.input.clearActions();this.input.down.clear();

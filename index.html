@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#071a25">
   <meta name="description" content="Asas de Brumária: explore ilhas, monte em seu dragão e complete missões.">
-  <title>Asas de Brumária v1.0.0 — Aventura de Dragões</title>
+  <title>Asas de Brumária v1.1.0 — Aventura de Dragões</title>
   <link rel="stylesheet" href="./src/ui/style.css">
-  <script type="importmap">
-    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}
-  </script>
 </head>
 <body>
   <div id="game" aria-label="Mundo do jogo em 3D"></div>
@@ -27,7 +24,7 @@
     <div id="training-status" class="training-status hidden" aria-live="polite"></div>
     <div id="interaction" class="hidden">E · MONTAR NO DRAGÃO</div>
     <div id="target-lock" class="target-lock hidden">◆ SENTINELA NA MIRA</div><div class="crosshair">+</div><div id="hurt-overlay" class="hurt-overlay"></div>
-    <div class="bottom-hud"><div class="status-card"><div class="stat-head"><span>ENERGIA DO DRAGÃO</span><span id="energy-number">100%</span></div><div class="energy-track"><div id="energy-bar"></div></div><div class="stat-head health-head"><span id="health-label">RESISTÊNCIA DE NIMBO</span><span id="health-number">100%</span></div><div class="energy-track health-track"><div id="health-bar"></div></div><div class="stat-row"><span id="speed-text">NO SOLO</span><span id="altitude-text">ALT 0 m</span></div></div><div id="keyboard-help"><b>W A S D</b> MOVER / GUIAR <span>•</span> <b>ESPAÇO</b> SUBIR <span>•</span> <b>CTRL</b> DESCER <span>•</span> <b>E</b> INTERAGIR <span>•</span> <b>F</b> FOGO <span>•</span> <b>SHIFT</b> TURBO / ANDAR DEVAGAR <span>•</span> <b>T</b> ESTÁBULO <span>•</span> <b>P</b> SALVAR <span>•</span> <b>C</b> CLIMA <span>•</span> <b>N</b> HORÁRIO <span>•</span> <b>G</b> GRÁFICOS</div></div>
+    <div class="bottom-hud"><div class="status-card"><div class="stat-head"><span>ENERGIA DO DRAGÃO</span><span id="energy-number">100%</span></div><div class="energy-track"><div id="energy-bar"></div></div><div class="stat-head health-head"><span id="health-label">RESISTÊNCIA DE NIMBO</span><span id="health-number">100%</span></div><div class="energy-track health-track"><div id="health-bar"></div></div><div class="stat-row"><span id="speed-text">NO SOLO</span><span id="altitude-text">ALT 0 m</span></div></div><div id="keyboard-help"><b>W A S D</b> MOVER / GUIAR <span>•</span> <b>ESPAÇO</b> SUBIR <span>•</span> <b>CTRL</b> DESCER <span>•</span> <b>E</b> INTERAGIR <span>•</span> <b>F</b> FOGO <span>•</span> <b>SHIFT</b> TURBO / ANDAR DEVAGAR <span>•</span> <b>T</b> ESTÁBULO <span>•</span> <b>P</b> SALVAR <span>•</span> <b>C</b> CLIMA <span>•</span> <b>N</b> HORÁRIO <span>•</span> <b>G</b> GRÁFICOS <span>•</span> <b>V</b> CÂMERA · ARRASTE / RODA</div></div>
     <div class="mobile-controls" id="mobile-controls">
       <div class="touch-dpad"><button data-hold="w" class="pad-up" aria-label="Avançar">▲</button><button data-hold="a" class="pad-left" aria-label="Virar à esquerda">◀</button><button data-hold="s" class="pad-down" aria-label="Recuar">▼</button><button data-hold="d" class="pad-right" aria-label="Virar à direita">▶</button></div>
       <div class="touch-actions"><button class="touch-action small" data-hold="ctrl">DESCER</button><button class="touch-action small" data-hold="shift">TURBO</button><button class="touch-action fire" data-tap="f">FOGO</button><button class="touch-action climb" data-hold="space">SUBIR</button><button class="touch-action mount" data-tap="e">MONTAR</button></div>

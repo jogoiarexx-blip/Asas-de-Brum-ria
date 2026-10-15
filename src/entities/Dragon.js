@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { approach, clamp, forwardFromYaw, seededRandom } from '../utils/math.js';
 import {moveWithCollisions, obstacleBlocks} from '../utils/collision.js';
 import {flightPhase, liftBlend} from './flightMath.js';
+import {wingPose} from './wingPose.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
 import {steeringRate,bankTarget,flightPitch,tailYaw,landingDescent,smoothedTurn} from './flightHandling.js';
 const scaleMesh = (geometry,material,x,y,z,sx=1,sy=1,sz=1) => {
@@ -37,7 +38,7 @@ export class Dragon {
     this.group=new THREE.Group();this.visual=new THREE.Group();this.group.add(this.visual);scene.add(this.group);
     this.group.position.set(8,world.heightAt(8,7)+2.55,7);
     this.yaw=-.5;this.speed=0;this.airborne=false;this.riding=false;this.energy=100;this.fireCooldown=0;
-    this.wings=[];this.tail=[];this.legs=[];this.windStrength=0;this.windDrift=0;this.speciesId='nimbo';this.stats=null;
+    this.wings=[];this.tail=[];this.legs=[];this.forelegs=[];this.windStrength=0;this.windDrift=0;this.speciesId='nimbo';this.stats=null;
     this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.createModel();
   }
   createModel() {
@@ -90,9 +91,16 @@ export class Dragon {
       const ear=scaleMesh(new THREE.ConeGeometry(.32,1.2,5),dark,side*.68,1.3,-2.26);ear.position.y-=.73;ear.position.z+=2.77;ear.rotation.z=-side*.5;this.headPivot.add(ear);
       const antler=scaleMesh(new THREE.ConeGeometry(.17,.75,6),horn,side*.44,1.44,-2.05);antler.position.y-=.73;antler.position.z+=2.77;antler.rotation.z=-side*.25;this.headPivot.add(antler);
       const nostril=scaleMesh(new THREE.SphereGeometry(1,6,6),dark,side*.4,.61,-4.02,.1,.075,.07);nostril.position.y-=.73;nostril.position.z+=2.77;this.headPivot.add(nostril);
-      const arm=scaleMesh(new THREE.CylinderGeometry(.26,.35,1.4,7),bodyMat,side*.89,-.62,-1.0);
-      arm.rotation.z=side*.3;this.visual.add(arm);
-      const claw=scaleMesh(new THREE.ConeGeometry(.2,.6,5),horn,side*1.12,-1.35,-1.22);claw.rotation.x=Math.PI;this.visual.add(claw);
+      // Quatro patas articuladas: as dianteiras dobram o punho durante o voo.
+      const shoulder=new THREE.Group();shoulder.position.set(side*.89,-.31,-1.0);
+      shoulder.add(scaleMesh(new THREE.SphereGeometry(1,10,8),bodyMat,0,-.34,0,.31,.58,.35));
+      const wrist=new THREE.Group();wrist.position.set(side*.1,-.83,-.18);shoulder.add(wrist);
+      wrist.add(scaleMesh(new THREE.SphereGeometry(1,10,8),dark,0,-.1,-.09,.26,.25,.32));
+      for(let k=-1;k<=1;k++){
+        const claw=scaleMesh(new THREE.ConeGeometry(.07,.33,5),horn,k*.18,-.28,-.29);
+        claw.rotation.x=Math.PI/2;wrist.add(claw);
+      }
+      this.visual.add(shoulder);this.forelegs.push({shoulder,wrist,side});
       const hind=new THREE.Group();hind.position.set(side*.77,-.35,1.18);
       hind.add(scaleMesh(new THREE.SphereGeometry(1,10,8),bodyMat,0,-.17,0,.48,.69,.68));
       const paw=scaleMesh(new THREE.SphereGeometry(1,8,7),dark,0,-.85,-.25,.38,.22,.52);hind.add(paw);
@@ -188,44 +196,48 @@ export class Dragon {
     const light=new THREE.PointLight(0x69eee5,8,15,2);light.position.set(0,.65,-3.1);this.visual.add(light);
   }
   addWing(side,wingMat,membrane) {
+    // Three lightweight articulated joints instead of a single rigid triangular wing.
+    // Every membrane panel shares its parent's pivot so the elbow really folds.
     const wing=new THREE.Group();wing.position.set(side*1.0,.44,.06);
-    const coords=[[0,0,0],[1.2,.14,-.6],[4.8,.12,-1.2],[4.15,-.09,.05],[3.35,-.14,1.05],[2.5,-.17,.44],[1.9,-.13,1.55],[.9,-.05,.95]];
-    const positions=[];
-    for(const [x,y,z] of coords)positions.push(side*x,y,z);
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-    const shades=[];
-    for(const [x,y,z] of coords) {
-      const brightness=.76+.20*(1-Math.min(1,x/5))+.06*Math.max(-1,Math.min(1,z/2));
-      shades.push(brightness,brightness,brightness);
-    }
-    g.setAttribute('color',new THREE.Float32BufferAttribute(shades,3));
-    const uvs=coords.flatMap(([x,y,z])=>[x/5,(z+1.4)/3.2]);
-    g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-    membrane.vertexColors=true;membrane.needsUpdate=true;
-    g.setIndex([0,1,7,1,2,3,1,3,4,1,4,5,1,5,6,1,6,7]);g.computeVertexNormals();
-    const surface=new THREE.Mesh(g,membrane);surface.castShadow=true;wing.add(surface);
-    for(const [a,b] of [[0,1],[1,2],[1,4],[1,6]]) {
-      const p1=new THREE.Vector3(...coords[a]),p2=new THREE.Vector3(...coords[b]);p1.x*=side;p2.x*=side;
-      const diff=new THREE.Vector3().subVectors(p2,p1);
-      const tube=new THREE.Mesh(new THREE.CylinderGeometry(.08,.14,diff.length(),6),wingMat);
-      tube.position.copy(p1).add(p2).multiplyScalar(.5);tube.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),diff.normalize());wing.add(tube);
-    }
-    // Os punhos das asas dobram independentemente da membrana principal.
-    const tip=new THREE.Group();tip.position.set(side*3.6,.08,-.56);wing.add(tip);
-    const tipGeo=new THREE.BufferGeometry();tipGeo.setAttribute('position',new THREE.Float32BufferAttribute([
-      0,0,0,side*1.52,-.05,-.58,side*1.22,0,.65,side*.58,-.07,1.03
-    ],3));
-    tipGeo.setAttribute('uv',new THREE.Float32BufferAttribute([0,.2,1,0,.88,1,.33,.83],2));
-    tipGeo.setAttribute('color',new THREE.Float32BufferAttribute([.95,.95,.95,.76,.76,.76,.91,.91,.91,.88,.88,.88],3));
-    tipGeo.setIndex([0,1,2,0,2,3]);tipGeo.computeVertexNormals();
-    const tipSail=new THREE.Mesh(tipGeo,membrane);tipSail.castShadow=true;tip.add(tipSail);
-    // Garra na ponta da asa: reforça a silhueta em decolagem e curvas fechadas.
-    const wingClaw=scaleMesh(new THREE.ConeGeometry(.12,.6,5),this.colorMaterials?.horn??wingMat,side*4.87,.03,-1.02);
-    wingClaw.rotation.x=-Math.PI/2;wing.add(wingClaw);
-    const tipBone=new THREE.Mesh(new THREE.CylinderGeometry(.035,.07,1.65,5),wingMat);
-    tipBone.position.set(side*.75,0,-.26);tipBone.rotation.z=-side*Math.PI/2.15;tip.add(tipBone);
-    this.visual.add(wing);this.wings.push({wing,side,tip});
+    const sail=(points,indices,parent)=>{
+      const geo=new THREE.BufferGeometry();
+      geo.setAttribute('position',new THREE.Float32BufferAttribute(points.flatMap(p=>[side*p[0],p[1],p[2]]),3));
+      geo.setAttribute('uv',new THREE.Float32BufferAttribute(points.flatMap(p=>[p[0]/5,(p[2]+1.6)/3.4]),2));
+      geo.setAttribute('color',new THREE.Float32BufferAttribute(points.flatMap(p=>{const shade=.76+.2*(1-Math.min(1,p[0]/5));return [shade,shade,shade];}),3));
+      geo.setIndex(indices);geo.computeVertexNormals();
+      membrane.vertexColors=true;membrane.needsUpdate=true;
+      const panel=new THREE.Mesh(geo,membrane);panel.castShadow=true;parent.add(panel);
+      return panel;
+    };
+    const bone=(parent,a,b,r=.09)=>{
+      const from=new THREE.Vector3(side*a[0],a[1],a[2]);
+      const to=new THREE.Vector3(side*b[0],b[1],b[2]);
+      const direction=to.clone().sub(from);
+      const part=new THREE.Mesh(new THREE.CylinderGeometry(r*.72,r,direction.length(),6),wingMat);
+      part.position.copy(from).add(to).multiplyScalar(.5);
+      part.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.normalize());
+      part.castShadow=true;parent.add(part);
+    };
+    const rootPoints=[[0,0,0],[1.2,.14,-.60],[2.10,.11,-.25],[2.05,-.10,.65],[1.55,-.13,1.25],[.85,-.05,1.0]];
+    sail(rootPoints,[0,1,5,1,2,3,1,3,4,1,4,5],wing);
+    bone(wing,rootPoints[0],rootPoints[1],.13);
+    bone(wing,rootPoints[1],rootPoints[2],.09);
+    bone(wing,rootPoints[0],rootPoints[5],.07);
+    const elbow=new THREE.Group();elbow.position.set(side*2.07,.10,-.22);wing.add(elbow);
+    const outerPoints=[[0,0,0],[1.1,.03,-.34],[2.56,.02,-1.0],[2.35,-.10,-.05],[1.98,-.16,.67],[1.55,-.15,.94],[1.18,-.20,1.33],[.62,-.18,1.03]];
+    const outerPanel=sail(outerPoints,[0,1,7,1,2,3,1,3,4,1,4,5,1,5,6,1,6,7],elbow);
+    bone(elbow,outerPoints[0],outerPoints[1],.10);
+    bone(elbow,outerPoints[1],outerPoints[2],.07);
+    bone(elbow,outerPoints[0],outerPoints[6],.06);
+    const tip=new THREE.Group();tip.position.set(side*1.76,-.04,-.36);elbow.add(tip);
+    const tipPoints=[[0,0,0],[1.21,-.04,-.51],[1.04,-.10,.62],[.5,-.12,1.05]];
+    sail(tipPoints,[0,1,2,0,2,3],tip);
+    bone(tip,tipPoints[0],tipPoints[1],.045);
+    const wingClaw=scaleMesh(new THREE.ConeGeometry(.11,.53,5),this.colorMaterials?.horn??wingMat,side*1.1,.04,-.48);
+    wingClaw.rotation.x=-Math.PI/2;tip.add(wingClaw);
+    this.visual.add(wing);this.wings.push({wing,side,elbow,tip,outerPanel});
   }
+
   triggerAttack(){this.attackTime=.35;}
   triggerHurt(){this.hurtTime=.45;}
   setSpecies(id,preset){
@@ -308,21 +320,22 @@ export class Dragon {
     const floorNow=Math.max(2.7,this.world.heightAt(this.group.position.x,this.group.position.z)+2.58);
     this.pose=flightPhase(this.airborne,this.takeoffTime,this.group.position.y-floorNow,this.verticalVelocity<-.8,this.landingTimer);
     const wingLift=liftBlend(this.airborne,this.takeoffTime,this.landingTimer);
-    const flapSpeed=this.pose==='takeoff'?9:this.airborne?6+this.speed*.075:2.1;
-    const glide=this.pose==='cruise'&&this.speed>25&&!input.isDown('space')&&!input.isDown('ctrl');
-    const amplitude=this.pose==='takeoff'?.48:this.airborne?(glide?.11:.32):.065;
-    for(const {wing,side,tip} of this.wings){
-      const flap=Math.sin(time*flapSpeed);
-      const spread=.31-wingLift*.22;
-      const desired=side*(spread+flap*amplitude);
-      wing.rotation.z=THREE.MathUtils.damp(wing.rotation.z,desired,7,dt);
-      wing.rotation.x=THREE.MathUtils.damp(wing.rotation.x,this.airborne?(glide?-.15:.055):.25,5,dt);
-      tip.rotation.z=THREE.MathUtils.damp(tip.rotation.z,side*(.16+flap*(glide?.09:.33)*wingLift)+this.bank*.23,7,dt);
-      tip.rotation.x=THREE.MathUtils.damp(tip.rotation.x,glide?-.14:.025,6,dt);
+    for(const {wing,elbow,tip,side} of this.wings){
+      const pose=wingPose({time,side,phase:this.pose,speed:this.speed,bank:this.bank,wingLift,climbing:this.verticalVelocity});
+      wing.rotation.z=THREE.MathUtils.damp(wing.rotation.z,pose.shoulder,7,dt);
+      wing.rotation.x=THREE.MathUtils.damp(wing.rotation.x,pose.twist,5,dt);
+      elbow.rotation.z=THREE.MathUtils.damp(elbow.rotation.z,pose.elbow,7,dt);
+      tip.rotation.z=THREE.MathUtils.damp(tip.rotation.z,pose.wrist,8,dt);
+      tip.rotation.x=THREE.MathUtils.damp(tip.rotation.x,pose.glide?-.17:.01,6,dt);
     }
     for(let i=0;i<this.tail.length;i++){
       this.tail[i].rotation.y=THREE.MathUtils.damp(this.tail[i].rotation.y,tailYaw(this.steerInput,i,time),6,dt);
       this.tail[i].rotation.x=THREE.MathUtils.damp(this.tail[i].rotation.x,flightPitch(this.verticalVelocity,this.airborne)*(.28+i*.07),4,dt);
+    }
+    for(const {shoulder,wrist,side} of this.forelegs){
+      const step=this.riding&&!this.airborne?Math.sin(time*8+side*Math.PI)*Math.min(.21,this.speed*.02):0;
+      shoulder.rotation.x=THREE.MathUtils.damp(shoulder.rotation.x,this.airborne?.47:this.pose==='takeoff'?.25:step,5.8,dt);
+      wrist.rotation.x=THREE.MathUtils.damp(wrist.rotation.x,this.airborne?-.65:.02,7,dt);
     }
     this.neckCrest.rotation.z=THREE.MathUtils.damp(this.neckCrest.rotation.z,this.bank*.28,4,dt);
     for(const {leg,side} of this.legs)leg.rotation.x=THREE.MathUtils.damp(leg.rotation.x,this.pose==='takeoff'?.38:this.airborne?.27:this.pose==='landing'?-.13:(this.riding?Math.sin(time*9+side*2)*Math.min(.27,this.speed*.022):0),6,dt);
