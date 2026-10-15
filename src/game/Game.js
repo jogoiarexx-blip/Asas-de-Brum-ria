@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input } from './Input.js';
 import {CameraOrbit,cameraOffset} from './CameraOrbit.js';
 import {safeDismountSpot} from '../utils/surfaces.js';
+import {recoverFreePosition,obstacleBlocks} from '../utils/collision.js';
 import { World } from '../world/World.js';
 import { Dragon } from '../entities/Dragon.js';
 import { EnemySquad } from '../entities/EnemyDragon.js';
@@ -171,10 +172,20 @@ export class Game {
     this.missions.restore(data.mission);
     this.contracts.restore(data.contracts);this.villagers.refresh(this.contracts);
     const p=data.player;
-    this.dragon.group.position.set(p.x,Math.max(p.y,this.world.groundHeightAt(p.x,p.z)+2.58),p.z);
+    const dragonY=Math.max(p.y,this.world.groundHeightAt(p.x,p.z,1.65)+2.58);
+    const dragonSpot=recoverFreePosition({x:p.x,z:p.z},1.65,this.world.obstacles,
+      (x,z)=>p.airborne||this.world.walkable(x,z),
+      o=>obstacleBlocks(o,dragonY,1.65),
+      {groundAt:(x,z)=>this.world.groundHeightAt(x,z,1.65),maxHeightDelta:p.airborne?Infinity:2.2});
+    const dragonX=dragonSpot?.x??p.x,dragonZ=dragonSpot?.z??p.z;
+    this.dragon.group.position.set(dragonX,Math.max(p.y,this.world.groundHeightAt(dragonX,dragonZ,1.65)+2.58),dragonZ);
     this.dragon.yaw=p.yaw;this.dragon.group.rotation.y=p.yaw;
     this.dragon.airborne=p.mounted&&p.airborne;this.dragon.energy=Math.min(this.progression.stats.maxEnergy,p.energy);
-    this.hero.group.position.set(p.heroX,this.world.groundHeightAt(p.heroX,p.heroZ,.52),p.heroZ);
+    const safeHero=recoverFreePosition({x:p.heroX,z:p.heroZ},.52,this.world.obstacles,
+      (x,z)=>this.world.walkable(x,z),()=>true,
+      {groundAt:(x,z)=>this.world.groundHeightAt(x,z,.52)});
+    const heroX=safeHero?.x??p.heroX,heroZ=safeHero?.z??p.heroZ;
+    this.hero.group.position.set(heroX,this.world.groundHeightAt(heroX,heroZ,.52),heroZ);
     if(p.mounted){this.dragon.mount();this.hero.setMounted(true);}
     this.health=p.health;
   }

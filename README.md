@@ -1,3 +1,10 @@
+## v1.2.2 — Colisão nos monumentos
+
+- Cinco monumentos (inclusive o grande obelisco mostrado na captura) agora registram dois volumes sólidos com altura: pedestal e coluna.
+- Passagem de personagens através da pedra bloqueada, preservando o deslize ao contornar a base e o voo por cima das partes baixas.
+- Ao retomar saves antigos, personagens e dragões dentro de volumes físicos são reposicionados para o ponto seguro mais próximo.
+- Testes específicos para corrida, voo, deslizamento, restauração de saves e ausência de colisores faltantes.
+
 ## Atualização v1.2.1
 
 Corrige o personagem entrando na plataforma do estábulo: o chão sob a estrutura foi nivelado, o corpo continua apoiado nas bordas e o visual da plataforma foi alinhado com o piso de colisão. Os saves continuam compatíveis. Rode `npm run check` para os testes automatizados.

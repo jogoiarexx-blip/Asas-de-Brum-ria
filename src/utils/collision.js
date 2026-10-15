@@ -49,3 +49,37 @@ export function moveWithCollisions(start,delta,radius,obstacles,canOccupy=()=>tr
   }
   return {x,z,blocked,...(groundAt?{groundY:groundAt(x,z)}:{})};
 }
+
+
+/** Cylinders drawn by Landmarks: broad base and a narrower high column.
+ * Use vertical slices so flying above the pedestal remains possible.
+ */
+export function landmarkCollisionVolumes(x,z,groundY) {
+  return [
+    {x,z,radius:4.3,bottom:groundY,top:groundY+1.5,type:'landmark-base'},
+    {x,z,radius:2.1,bottom:groundY+1.25,top:groundY+9.55,type:'landmark-pillar'},
+  ];
+}
+
+/** Recover a player from overlapping props in an older save.
+ * Only invoked on restore; choose the nearest valid point on the ground,
+ * without moving characters that already occupy a legal position.
+ */
+export function recoverFreePosition(start,radius,obstacles,canOccupy=()=>true,blocks=()=>true,options={}) {
+  const pad=options.padding??.08;
+  const valid=(x,z)=>canOccupy(x,z) && !obstacles.some(o=>blocks(o)&&overlapsCircle(x,z,radius+pad,o));
+  if(valid(start.x,start.z))return {x:start.x,z:start.z,recovered:false};
+  const groundAt=options.groundAt;
+  const originalY=groundAt?.(start.x,start.z);
+  const maxHeightDelta=options.maxHeightDelta??2.2;
+  const step=.3, maxRadius=options.maxRadius??18, angles=32;
+  for(let distance=step;distance<=maxRadius;distance+=step){
+    for(let k=0;k<angles;k++) {
+      const angle=k/angles*Math.PI*2;
+      const x=start.x+Math.cos(angle)*distance, z=start.z+Math.sin(angle)*distance;
+      if(groundAt && Math.abs(groundAt(x,z)-originalY)>maxHeightDelta)continue;
+      if(valid(x,z))return {x,z,recovered:true};
+    }
+  }
+  return null;
+}

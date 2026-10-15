@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {LANDMARKS} from '../systems/Discovery.js';
+import {landmarkCollisionVolumes} from '../utils/collision.js';
 /** Marcos exploráveis com desenho procedural e halo: a conquista é feita em Discovery. */
 export class Landmarks {
   constructor(scene,world){
@@ -17,6 +18,10 @@ export class Landmarks {
       const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(1.65),rune);crystal.position.y=10.65;g.add(crystal);
       const ring=new THREE.Mesh(new THREE.TorusGeometry(4.2,.12,6,36),new THREE.MeshBasicMaterial({color:0xe3d8a3,transparent:true,opacity:.45}));
       ring.rotation.x=Math.PI/2;ring.position.y=1.8;g.add(ring);
+      // Match the visible 7-sided pedestal and column with separate height-aware colliders.
+      for(const collider of landmarkCollisionVolumes(def.x,def.z,g.position.y)){
+        world.addObstacle(collider.x,collider.bottom,collider.z,collider.radius,collider.top-collider.bottom,collider.type);
+      }
       scene.add(g);return {g,crystal,ring,rune};
     });
   }

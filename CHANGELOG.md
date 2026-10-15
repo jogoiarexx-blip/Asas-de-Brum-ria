@@ -1,3 +1,10 @@
+## v1.2.2 — Colisão nos monumentos
+
+- Cinco monumentos (inclusive o grande obelisco mostrado na captura) agora registram dois volumes sólidos com altura: pedestal e coluna.
+- Passagem de personagens através da pedra bloqueada, preservando o deslize ao contornar a base e o voo por cima das partes baixas.
+- Ao retomar saves antigos, personagens e dragões dentro de volumes físicos são reposicionados para o ponto seguro mais próximo.
+- Testes específicos para corrida, voo, deslizamento, restauração de saves e ausência de colisores faltantes.
+
 # v1.2.1 — Correção da plataforma central
 
 - Terreno da vila nivelado sob toda a plataforma, com transição suave ao relevo natural.
