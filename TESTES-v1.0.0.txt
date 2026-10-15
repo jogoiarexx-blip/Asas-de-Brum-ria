@@ -1,0 +1,586 @@
+
+> asas-de-brumaria@1.0.0 check
+> node tests/check-project.mjs && node --test tests/*.test.js
+
+Verificação de estrutura: 34 módulos locais, 61 imports relativos válidos.
+HUD: 19 elementos verificados; sintaxe JS: 34 módulos OK.
+TAP version 13
+# Subtest: ciclo dura 12 minutos sem acumular erro no retorno ao ponto inicial
+ok 1 - ciclo dura 12 minutos sem acumular erro no retorno ao ponto inicial
+  ---
+  duration_ms: 1.346011
+  type: 'test'
+  ...
+# Subtest: ciclo atravessa meia-noite e preserva minutos excedentes
+ok 2 - ciclo atravessa meia-noite e preserva minutos excedentes
+  ---
+  duration_ms: 0.15929
+  type: 'test'
+  ...
+# Subtest: ciclo ignora valores inválidos ou negativos para preservar saves
+ok 3 - ciclo ignora valores inválidos ou negativos para preservar saves
+  ---
+  duration_ms: 0.663311
+  type: 'test'
+  ...
+# Subtest: altitude do sol muda entre manhã, tarde e noite
+ok 4 - altitude do sol muda entre manhã, tarde e noite
+  ---
+  duration_ms: 0.197619
+  type: 'test'
+  ...
+# Subtest: mistura de cores é estável e limitada aos extremos
+ok 5 - mistura de cores é estável e limitada aos extremos
+  ---
+  duration_ms: 0.176076
+  type: 'test'
+  ...
+# Subtest: cada clima é escurecido à noite mas conserva luz mínima sem negatividade
+ok 6 - cada clima é escurecido à noite mas conserva luz mínima sem negatividade
+  ---
+  duration_ms: 0.339232
+  type: 'test'
+  ...
+# Subtest: vento tem deslocamento nulo no chão, sem chuva e sem tempo decorrido
+ok 7 - vento tem deslocamento nulo no chão, sem chuva e sem tempo decorrido
+  ---
+  duration_ms: 0.232051
+  type: 'test'
+  ...
+# Subtest: vento tem velocidade horizontal limitada a 3,8 metros por segundo
+ok 8 - vento tem velocidade horizontal limitada a 3,8 metros por segundo
+  ---
+  duration_ms: 0.142886
+  type: 'test'
+  ...
+# Subtest: vento fraco desloca menos que tempestade nas mesmas condições
+ok 9 - vento fraco desloca menos que tempestade nas mesmas condições
+  ---
+  duration_ms: 0.329017
+  type: 'test'
+  ...
+# Subtest: jogador antigo conserva missões e recebe relógio inicial sem perder progressão
+ok 10 - jogador antigo conserva missões e recebe relógio inicial sem perder progressão
+  ---
+  duration_ms: 0.915742
+  type: 'test'
+  ...
+# Subtest: horário salva e recupera a mesma chave da versão anterior
+ok 11 - horário salva e recupera a mesma chave da versão anterior
+  ---
+  duration_ms: 0.528127
+  type: 'test'
+  ...
+# Subtest: prévia 3D usa exatamente o mesmo Dragon e cada espécie sem compra automática
+ok 12 - prévia 3D usa exatamente o mesmo Dragon e cada espécie sem compra automática
+  ---
+  duration_ms: 0.540346
+  type: 'test'
+  ...
+# Subtest: mundo e jogo sincronizam sol, lua, estrelas, clima e física de vento
+ok 13 - mundo e jogo sincronizam sol, lua, estrelas, clima e física de vento
+  ---
+  duration_ms: 0.492643
+  type: 'test'
+  ...
+# Subtest: HUD contém relógio, atalhos e modelo 3D rotativo
+ok 14 - HUD contém relógio, atalhos e modelo 3D rotativo
+  ---
+  duration_ms: 0.209446
+  type: 'test'
+  ...
+# Subtest: voo: a taxa de curva diminui com a velocidade e continua controlável
+ok 15 - voo: a taxa de curva diminui com a velocidade e continua controlável
+  ---
+  duration_ms: 1.204297
+  type: 'test'
+  ...
+# Subtest: voo: curva mais rápida não provoca tombamento além do limite
+ok 16 - voo: curva mais rápida não provoca tombamento além do limite
+  ---
+  duration_ms: 0.224149
+  type: 'test'
+  ...
+# Subtest: voo: inclinação acompanha a velocidade de subida/descida
+ok 17 - voo: inclinação acompanha a velocidade de subida/descida
+  ---
+  duration_ms: 0.187934
+  type: 'test'
+  ...
+# Subtest: voo: cauda articula em sentidos opostos ao virar
+ok 18 - voo: cauda articula em sentidos opostos ao virar
+  ---
+  duration_ms: 0.297018
+  type: 'test'
+  ...
+# Subtest: gráficos: perfis limitam densidade de pixels e nunca a ampliam além do dispositivo
+ok 19 - gráficos: perfis limitam densidade de pixels e nunca a ampliam além do dispositivo
+  ---
+  duration_ms: 0.201023
+  type: 'test'
+  ...
+# Subtest: gráficos: aparelho touch/baixa memória começa equilibrado
+ok 20 - gráficos: aparelho touch/baixa memória começa equilibrado
+  ---
+  duration_ms: 0.142575
+  type: 'test'
+  ...
+# Subtest: gráficos: histerese exige 3 segundos ruins antes de cair de nível
+ok 21 - gráficos: histerese exige 3 segundos ruins antes de cair de nível
+  ---
+  duration_ms: 0.214033
+  type: 'test'
+  ...
+# Subtest: gráficos: recuperação requer 10 segundos bons
+ok 22 - gráficos: recuperação requer 10 segundos bons
+  ---
+  duration_ms: 0.095464
+  type: 'test'
+  ...
+# Subtest: gráficos: modo automático baixa resolução e desabilita sombras quando necessário
+ok 23 - gráficos: modo automático baixa resolução e desabilita sombras quando necessário
+  ---
+  duration_ms: 0.625314
+  type: 'test'
+  ...
+# Subtest: gráficos: preferência manual fica estável independentemente dos frames
+ok 24 - gráficos: preferência manual fica estável independentemente dos frames
+  ---
+  duration_ms: 0.522538
+  type: 'test'
+  ...
+# Subtest: gráficos: tecla G percorre quatro modos sem alterar a partida
+ok 25 - gráficos: tecla G percorre quatro modos sem alterar a partida
+  ---
+  duration_ms: 0.227754
+  type: 'test'
+  ...
+# Subtest: gráficos: redimensionar aplica densidade nova do dispositivo
+ok 26 - gráficos: redimensionar aplica densidade nova do dispositivo
+  ---
+  duration_ms: 0.439354
+  type: 'test'
+  ...
+# Subtest: integração: floresta usa instanciamento, preservando colisores antigos
+ok 27 - integração: floresta usa instanciamento, preservando colisores antigos
+  ---
+  duration_ms: 1.512132
+  type: 'test'
+  ...
+# Subtest: teclas Ctrl, Shift, setas e espaço são normalizadas para comandos do jogo
+ok 28 - teclas Ctrl, Shift, setas e espaço são normalizadas para comandos do jogo
+  ---
+  duration_ms: 1.363328
+  type: 'test'
+  ...
+# Subtest: energia e velocidade respeitam limites
+ok 29 - energia e velocidade respeitam limites
+  ---
+  duration_ms: 1.144408
+  type: 'test'
+  ...
+# Subtest: curva de câmera está dentro do intervalo
+ok 30 - curva de câmera está dentro do intervalo
+  ---
+  duration_ms: 0.293503
+  type: 'test'
+  ...
+# Subtest: frente do dragão com yaw zero aponta para -Z
+ok 31 - frente do dragão com yaw zero aponta para -Z
+  ---
+  duration_ms: 0.243989
+  type: 'test'
+  ...
+# Subtest: gerador de ilhas possui semente reproduzível
+ok 32 - gerador de ilhas possui semente reproduzível
+  ---
+  duration_ms: 0.213863
+  type: 'test'
+  ...
+# Subtest: sete missões com objetivos dimensionados corretamente
+ok 33 - sete missões com objetivos dimensionados corretamente
+  ---
+  duration_ms: 0.948141
+  type: 'test'
+  ...
+# Subtest: objetivos se distribuem em alturas e locais válidos
+ok 34 - objetivos se distribuem em alturas e locais válidos
+  ---
+  duration_ms: 0.196526
+  type: 'test'
+  ...
+# Subtest: normalização de ângulos não causa giro completo na fronteira ±π
+ok 35 - normalização de ângulos não causa giro completo na fronteira ±π
+  ---
+  duration_ms: 0.282306
+  type: 'test'
+  ...
+# Subtest: colisão contínua detecta projétil atravessando esfera em um frame
+ok 36 - colisão contínua detecta projétil atravessando esfera em um frame
+  ---
+  duration_ms: 0.250629
+  type: 'test'
+  ...
+# Subtest: colisão contínua trata segmento estacionário sem dividir por zero
+ok 37 - colisão contínua trata segmento estacionário sem dividir por zero
+  ---
+  duration_ms: 0.419323
+  type: 'test'
+  ...
+# Subtest: três espécies, três habilidades e sete recompensas de missão
+ok 38 - três espécies, três habilidades e sete recompensas de missão
+  ---
+  duration_ms: 1.74209
+  type: 'test'
+  ...
+# Subtest: progressão protege gastos, upgrades e limite de nível
+ok 39 - progressão protege gastos, upgrades e limite de nível
+  ---
+  duration_ms: 0.590812
+  type: 'test'
+  ...
+# Subtest: dano e gasto de fogo evoluem com upgrades
+ok 40 - dano e gasto de fogo evoluem com upgrades
+  ---
+  duration_ms: 0.270559
+  type: 'test'
+  ...
+# Subtest: restauração de evolução ignora espécies ilegais, moedas negativas e atributos fora do limite
+ok 41 - restauração de evolução ignora espécies ilegais, moedas negativas e atributos fora do limite
+  ---
+  duration_ms: 0.440234
+  type: 'test'
+  ...
+# Subtest: save normaliza dados malformados sem posições infinitas
+ok 42 - save normaliza dados malformados sem posições infinitas
+  ---
+  duration_ms: 0.90768
+  type: 'test'
+  ...
+# Subtest: save em armazenamento simulado restaura progresso e admite limpeza
+ok 43 - save em armazenamento simulado restaura progresso e admite limpeza
+  ---
+  duration_ms: 0.550691
+  type: 'test'
+  ...
+# Subtest: armazenamento bloqueado não quebra jogo
+ok 44 - armazenamento bloqueado não quebra jogo
+  ---
+  duration_ms: 0.365191
+  type: 'test'
+  ...
+# Subtest: temperamentos exigem aproximações diferentes e calma progressiva
+ok 45 - temperamentos exigem aproximações diferentes e calma progressiva
+  ---
+  duration_ms: 1.250257
+  type: 'test'
+  ...
+# Subtest: Neblina assusta com corrida mas aceita aproximação lenta usando Shift
+ok 46 - Neblina assusta com corrida mas aceita aproximação lenta usando Shift
+  ---
+  duration_ms: 0.219561
+  type: 'test'
+  ...
+# Subtest: distância e montaria impedem domesticar mesmo com calma acumulada
+ok 47 - distância e montaria impedem domesticar mesmo com calma acumulada
+  ---
+  duration_ms: 0.339382
+  type: 'test'
+  ...
+# Subtest: carinho reduz calma para exigir novo contato sem zerar a amizade salva
+ok 48 - carinho reduz calma para exigir novo contato sem zerar a amizade salva
+  ---
+  duration_ms: 0.249507
+  type: 'test'
+  ...
+# Subtest: pouso assistido só desce em voo lento próximo do terreno e sem comando vertical
+ok 49 - pouso assistido só desce em voo lento próximo do terreno e sem comando vertical
+  ---
+  duration_ms: 0.141544
+  type: 'test'
+  ...
+# Subtest: curvas usam suavização independente de FPS e sem ultrapassar entrada
+ok 50 - curvas usam suavização independente de FPS e sem ultrapassar entrada
+  ---
+  duration_ms: 0.129566
+  type: 'test'
+  ...
+# Subtest: movimento lento é possível a pé sem comprometer o turbo montado
+ok 51 - movimento lento é possível a pé sem comprometer o turbo montado
+  ---
+  duration_ms: 0.92776
+  type: 'test'
+  ...
+# Subtest: calma é calculada com velocidade real do jogador antes da interação
+ok 52 - calma é calculada com velocidade real do jogador antes da interação
+  ---
+  duration_ms: 0.412162
+  type: 'test'
+  ...
+# Subtest: melhorias de manobra e pouso ligadas ao modelo sem trocar controles
+ok 53 - melhorias de manobra e pouso ligadas ao modelo sem trocar controles
+  ---
+  duration_ms: 0.308195
+  type: 'test'
+  ...
+# Subtest: cuidado com dragão selvagem não produz pontos em dobro depois de salvar
+ok 54 - cuidado com dragão selvagem não produz pontos em dobro depois de salvar
+  ---
+  duration_ms: 0.738956
+  type: 'test'
+  ...
+# Subtest: save anterior restaura missões e amansamento sem depender de estado transitório
+ok 55 - save anterior restaura missões e amansamento sem depender de estado transitório
+  ---
+  duration_ms: 0.646195
+  type: 'test'
+  ...
+# Subtest: sinais visuais comunicam confiança, receio e dicas para celular
+ok 56 - sinais visuais comunicam confiança, receio e dicas para celular
+  ---
+  duration_ms: 0.992387
+  type: 'test'
+  ...
+# Subtest: contratos oferecem duas atividades distintas com três objetivos e recompensa válida
+ok 57 - contratos oferecem duas atividades distintas com três objetivos e recompensa válida
+  ---
+  duration_ms: 1.600395
+  type: 'test'
+  ...
+# Subtest: correio requer montaria e entrega final ao NPC
+ok 58 - correio requer montaria e entrega final ao NPC
+  ---
+  duration_ms: 0.343108
+  type: 'test'
+  ...
+# Subtest: ervas são coletadas exclusivamente a pé e salvamento retoma tarefas parcialmente concluídas
+ok 59 - ervas são coletadas exclusivamente a pé e salvamento retoma tarefas parcialmente concluídas
+  ---
+  duration_ms: 0.36383
+  type: 'test'
+  ...
+# Subtest: estado de contratos inválido não concede prêmio nem desbloqueia missão
+ok 60 - estado de contratos inválido não concede prêmio nem desbloqueia missão
+  ---
+  duration_ms: 0.15241
+  type: 'test'
+  ...
+# Subtest: circuito avançado tem mais obstáculos, menos tempo, velocidade e pontos maiores
+ok 61 - circuito avançado tem mais obstáculos, menos tempo, velocidade e pontos maiores
+  ---
+  duration_ms: 0.290238
+  type: 'test'
+  ...
+# Subtest: saves antigos continuam compatíveis e preservam os novos contratos
+ok 62 - saves antigos continuam compatíveis e preservam os novos contratos
+  ---
+  duration_ms: 0.696812
+  type: 'test'
+  ...
+# Subtest: volume horizontal soma raio da entidade e do obstáculo
+ok 63 - volume horizontal soma raio da entidade e do obstáculo
+  ---
+  duration_ms: 0.959598
+  type: 'test'
+  ...
+# Subtest: arvore deixa de bloquear quando dragão voa acima do topo
+ok 64 - arvore deixa de bloquear quando dragão voa acima do topo
+  ---
+  duration_ms: 0.117928
+  type: 'test'
+  ...
+# Subtest: movimento longo não atravessa casa ou árvore em um único frame
+ok 65 - movimento longo não atravessa casa ou árvore em um único frame
+  ---
+  duration_ms: 0.481366
+  type: 'test'
+  ...
+# Subtest: colisão diagonal permite deslizar sem atravessar obstáculos
+ok 66 - colisão diagonal permite deslizar sem atravessar obstáculos
+  ---
+  duration_ms: 0.138939
+  type: 'test'
+  ...
+# Subtest: jogador respeita a margem de costa mesmo sem obstáculo
+ok 67 - jogador respeita a margem de costa mesmo sem obstáculo
+  ---
+  duration_ms: 0.14547
+  type: 'test'
+  ...
+# Subtest: save anterior dentro de obstáculo permite escapar, mas não aprofundar
+ok 68 - save anterior dentro de obstáculo permite escapar, mas não aprofundar
+  ---
+  duration_ms: 0.134223
+  type: 'test'
+  ...
+# Subtest: cobertura vertical escolhe o obstáculo mais alto sob as asas
+ok 69 - cobertura vertical escolhe o obstáculo mais alto sob as asas
+  ---
+  duration_ms: 0.157197
+  type: 'test'
+  ...
+# Subtest: fases do voo são determinísticas entre decolagem, cruzeiro e pouso
+ok 70 - fases do voo são determinísticas entre decolagem, cruzeiro e pouso
+  ---
+  duration_ms: 0.551112
+  type: 'test'
+  ...
+# Subtest: abertura progressiva das asas fica entre zero e um
+ok 71 - abertura progressiva das asas fica entre zero e um
+  ---
+  duration_ms: 0.361997
+  type: 'test'
+  ...
+# Subtest: mundo registra obstáculos sólidos, vegetação instanciada e espuma sem download de assets
+ok 72 - mundo registra obstáculos sólidos, vegetação instanciada e espuma sem download de assets
+  ---
+  duration_ms: 0.653616
+  type: 'test'
+  ...
+# Subtest: dragão usa textura procedural com UVs, juntas das asas e animação da mandíbula
+ok 73 - dragão usa textura procedural com UVs, juntas das asas e animação da mandíbula
+  ---
+  duration_ms: 1.3116
+  type: 'test'
+  ...
+# Subtest: clima possui quatro estados distintos com parâmetros de luz e precipitação
+ok 74 - clima possui quatro estados distintos com parâmetros de luz e precipitação
+  ---
+  duration_ms: 1.406953
+  type: 'test'
+  ...
+# Subtest: ciclo manual retorna ao céu aberto após a tempestade
+ok 75 - ciclo manual retorna ao céu aberto após a tempestade
+  ---
+  duration_ms: 0.149886
+  type: 'test'
+  ...
+# Subtest: tempo atravessa mudanças de clima sem perder excedente
+ok 76 - tempo atravessa mudanças de clima sem perder excedente
+  ---
+  duration_ms: 0.215846
+  type: 'test'
+  ...
+# Subtest: save climático inválido é sanitizado e estado válido preservado
+ok 77 - save climático inválido é sanitizado e estado válido preservado
+  ---
+  duration_ms: 0.183878
+  type: 'test'
+  ...
+# Subtest: cinco marcos de exploração têm coordenadas, ids e nomes únicos
+ok 78 - cinco marcos de exploração têm coordenadas, ids e nomes únicos
+  ---
+  duration_ms: 0.277098
+  type: 'test'
+  ...
+# Subtest: descobertas concedem uma única conclusão e rejeitam índices inválidos
+ok 79 - descobertas concedem uma única conclusão e rejeitam índices inválidos
+  ---
+  duration_ms: 0.158149
+  type: 'test'
+  ...
+# Subtest: marcos persistem no save e dados adulterados não desbloqueiam itens desconhecidos
+ok 80 - marcos persistem no save e dados adulterados não desbloqueiam itens desconhecidos
+  ---
+  duration_ms: 0.758004
+  type: 'test'
+  ...
+# Subtest: partida da versão anterior inicia com clima padrão e nenhuma descoberta
+ok 81 - partida da versão anterior inicia com clima padrão e nenhuma descoberta
+  ---
+  duration_ms: 0.198449
+  type: 'test'
+  ...
+# Subtest: gravação e leitura restituem pontos, marcos e clima na mesma chave de save
+ok 82 - gravação e leitura restituem pontos, marcos e clima na mesma chave de save
+  ---
+  duration_ms: 0.633867
+  type: 'test'
+  ...
+# Subtest: integração liga clima, marcos, ataque e dano aos eventos do jogo
+ok 83 - integração liga clima, marcos, ataque e dano aos eventos do jogo
+  ---
+  duration_ms: 0.92085
+  type: 'test'
+  ...
+# Subtest: três dragões selvagens com ilhas, personalidades e espécies conhecidas
+ok 84 - três dragões selvagens com ilhas, personalidades e espécies conhecidas
+  ---
+  duration_ms: 1.765906
+  type: 'test'
+  ...
+# Subtest: primeiro vínculo e repetição curta não multiplicam carinho
+ok 85 - primeiro vínculo e repetição curta não multiplicam carinho
+  ---
+  duration_ms: 0.416519
+  type: 'test'
+  ...
+# Subtest: domesticação acontece uma vez e não gera recompensas duplicadas
+ok 86 - domesticação acontece uma vez e não gera recompensas duplicadas
+  ---
+  duration_ms: 0.197548
+  type: 'test'
+  ...
+# Subtest: montado, espécie inválida e tempo inválido não avançam vínculo
+ok 87 - montado, espécie inválida e tempo inválido não avançam vínculo
+  ---
+  duration_ms: 0.21216
+  type: 'test'
+  ...
+# Subtest: restaura e limita progresso vindo de arquivo corrompido
+ok 88 - restaura e limita progresso vindo de arquivo corrompido
+  ---
+  duration_ms: 0.294585
+  type: 'test'
+  ...
+# Subtest: vínculo parcial salvo continua sem travar pela recarga anterior
+ok 89 - vínculo parcial salvo continua sem travar pela recarga anterior
+  ---
+  duration_ms: 0.15865
+  type: 'test'
+  ...
+# Subtest: salvamento v1 antigo recebe vínculos vazios e o novo preserva conclusão
+ok 90 - salvamento v1 antigo recebe vínculos vazios e o novo preserva conclusão
+  ---
+  duration_ms: 0.823724
+  type: 'test'
+  ...
+# Subtest: espécies amansadas são desbloqueadas sem cobrar pontos uma segunda vez
+ok 91 - espécies amansadas são desbloqueadas sem cobrar pontos uma segunda vez
+  ---
+  duration_ms: 0.26467
+  type: 'test'
+  ...
+# Subtest: jogo atualiza os selvagens, controla interação, recompensa e salva uma única vez
+ok 92 - jogo atualiza os selvagens, controla interação, recompensa e salva uma única vez
+  ---
+  duration_ms: 1.381716
+  type: 'test'
+  ...
+# Subtest: UI informa o progresso dos vínculos, interação para celular e pins do mapa
+ok 93 - UI informa o progresso dos vínculos, interação para celular e pins do mapa
+  ---
+  duration_ms: 1.749941
+  type: 'test'
+  ...
+# Subtest: porta de hospedagem é configurável para Replit sem abrir navegador remoto
+ok 94 - porta de hospedagem é configurável para Replit sem abrir navegador remoto
+  ---
+  duration_ms: 0.280643
+  type: 'test'
+  ...
+# Subtest: estábulo apresenta localização e progresso individual de cada dragão selvagem
+ok 95 - estábulo apresenta localização e progresso individual de cada dragão selvagem
+  ---
+  duration_ms: 0.413854
+  type: 'test'
+  ...
+1..95
+# tests 95
+# suites 0
+# pass 95
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 311.842026

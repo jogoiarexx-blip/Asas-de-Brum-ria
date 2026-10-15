@@ -1,0 +1,129 @@
+import * as THREE from 'three';
+import {WILD_DRAGON_DEFS} from '../systems/WildBonds.js';
+import {WildApproach} from '../systems/WildApproach.js';
+import {SPECIES} from '../systems/Progression.js';
+const shape=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{
+  const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;return m;
+};
+function buildCreature(spec){
+  const bodyColor=SPECIES[spec.species].colors;
+  const skin=new THREE.MeshStandardMaterial({color:bodyColor[1],roughness:.76,flatShading:true});
+  const face=new THREE.MeshStandardMaterial({color:bodyColor[0],roughness:.67,flatShading:true});
+  const wingMat=new THREE.MeshStandardMaterial({color:bodyColor[4],side:THREE.DoubleSide,flatShading:true,roughness:.73});
+  const spikeMat=new THREE.MeshStandardMaterial({color:bodyColor[5],roughness:.54,metalness:.08});
+  const iris=new THREE.MeshBasicMaterial({color:0xffeac5});
+  const pupil=new THREE.MeshBasicMaterial({color:0x102332});
+  const group=new THREE.Group();
+  const torso=shape(new THREE.SphereGeometry(1,16,12),skin,0,1.9,.35,1,.69,1.55);group.add(torso);
+  // Placas vertebrais, pequenas barbatanas e escamas: preserva a silhueta leve.
+  for(let i=0;i<8;i++){
+    const ridge=shape(new THREE.ConeGeometry(.13+(i%3)*.03,.44,5),spikeMat,0,2.53,-.65+i*.31);
+    ridge.rotation.x=-.18;group.add(ridge);
+  }
+  group.add(shape(new THREE.SphereGeometry(1,12,9),skin,0,2.12,-.95,.48,.61,.92));
+  const head=new THREE.Group();head.position.set(0,2.53,-1.45);group.add(head);
+  const lowerJaw=shape(new THREE.SphereGeometry(.65,12,9),skin,0,-.28,-.52,.88,.21,.87);head.add(lowerJaw);
+  head.add(shape(new THREE.SphereGeometry(1,12,10),face,0,0,0,.73,.59,.75));
+  head.add(shape(new THREE.SphereGeometry(1,10,9),skin,0,-.22,-.56,.59,.28,.65));
+  for(const side of [-1,1]){
+    head.add(shape(new THREE.SphereGeometry(.17,10,8),iris,side*.55,.13,-.42,.9,1.1,.7));
+    head.add(shape(new THREE.SphereGeometry(.092,9,7),pupil,side*.57,.12,-.54,.87,1.1,.7));
+    const horn=shape(new THREE.ConeGeometry(.20,.72,6),spikeMat,side*.51,.70,.12);
+    horn.rotation.z=-side*.35;head.add(horn);
+    const leg=shape(new THREE.CylinderGeometry(.22,.27,1.0,7),skin,side*.7,.78,.94);
+    leg.rotation.x=.15;group.add(leg);
+    group.add(shape(new THREE.SphereGeometry(.26,8,6),face,side*.72,.27,.73,1.5,.55,1.7));
+  }
+  const wings=[];
+  for(const side of [-1,1]){
+    const joint=new THREE.Group();joint.position.set(side*.69,2.48,-.1);group.add(joint);
+    const membrane=shape(new THREE.ConeGeometry(1.38,3.35,3),wingMat,side*1.48,0,.37);
+    membrane.rotation.z=side*Math.PI*.50;membrane.rotation.x=.2;joint.add(membrane);
+    const bone=shape(new THREE.CylinderGeometry(.09,.13,2.9,6),spikeMat,side*1.4,.04,.04);
+    bone.rotation.z=side*Math.PI*.5;joint.add(bone);
+    wings.push({joint,side});
+  }
+  const tail=new THREE.Group();tail.position.set(0,1.95,1.5);group.add(tail);
+  const tailBody=shape(new THREE.ConeGeometry(.36,3.0,7),skin,0,-.22,1.2);
+  tailBody.rotation.x=Math.PI/2;tail.add(tailBody);
+  tail.add(shape(new THREE.OctahedronGeometry(.48),spikeMat,0,-.15,2.75,1,.5,1.35));
+  for(let i=0;i<4;i++)group.add(shape(new THREE.ConeGeometry(.17,.45,5),spikeMat,0,2.62,-.62+i*.61));
+  if(spec.species==='brasa'){
+    for(const side of [-1,1]){
+      const crest=shape(new THREE.ConeGeometry(.26,.85,5),spikeMat,side*.4,.45,.32);
+      crest.rotation.z=-side*.5;head.add(crest);
+    }
+  }else if(spec.species==='raio'){
+    for(const side of [-1,1]){
+      const fin=shape(new THREE.ConeGeometry(.28,.9,3),wingMat,side*.62,2.53,.8);
+      fin.rotation.z=side*1.0;group.add(fin);
+    }
+  }else{
+    for(const side of [-1,1]){
+      const whisker=shape(new THREE.CylinderGeometry(.04,.07,.95,5),spikeMat,side*.62,-.25,-.45);
+      whisker.rotation.z=side*.9;head.add(whisker);
+    }
+  }
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(3.25,.13,6,36),new THREE.MeshBasicMaterial({color:spec.color,transparent:true,opacity:.65}));
+  ring.rotation.x=Math.PI/2;ring.position.y=.25;group.add(ring);
+  const beacon=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshBasicMaterial({color:spec.color,transparent:true,opacity:.76}));
+  beacon.position.set(0,5.2,0);group.add(beacon);
+  return {group,wings,tail,head,ring,beacon,torso,lowerJaw};
+}
+export class WildDragons {
+  constructor(scene,world,bonds){
+    this.world=world;this.bonds=bonds;this.approach=new WildApproach();
+    this.creatures=WILD_DRAGON_DEFS.map((spec,i)=>{
+      // Escolhe deterministamente uma área aberta para evitar nascer dentro de árvores.
+      let x=spec.x,z=spec.z;
+      for(let attempt=0;attempt<28;attempt++){
+        const radius=attempt===0?0:2+(attempt%7)*2;
+        const angle=attempt*2.39996;
+        const px=spec.x+Math.cos(angle)*radius,pz=spec.z+Math.sin(angle)*radius;
+        if(world.walkable(px,pz)&&world.clearanceAt(px,pz,2.4)<world.heightAt(px,pz)+.5){x=px;z=pz;break;}
+      }
+      const model=buildCreature(spec);model.group.position.set(x,world.heightAt(x,z),z);scene.add(model.group);
+      return {spec,...model,anchor:new THREE.Vector2(x,z),phase:i*2.1};
+    });
+  }
+  get remaining(){return this.creatures.filter(c=>this.bonds.progress(c.spec.id)<3);}
+  nearby(position,limit=8){
+    let nearest=null,smallest=limit*limit;
+    for(const creature of this.remaining){
+      const dx=creature.group.position.x-position.x,dz=creature.group.position.z-position.z;
+      const dist=dx*dx+dz*dz;if(dist<smallest){nearest=creature;smallest=dist;}
+    }
+    return nearest;
+  }
+  update(dt,time,position,riding,heroSpeed=0){
+    for(const creature of this.creatures){
+      const {group,anchor,phase,spec}=creature;
+      const distance=position.distanceTo(group.position);
+      const mood=this.approach.update(spec.id,dt,time,{distance,speed:heroSpeed,riding});
+      const near=!riding&&distance<22;
+      const tamed=this.bonds.progress(spec.id)>=3;
+      const temperament=spec.temperament;
+      const orbit=tamed?.3:mood.mood==='assustado'?2.4:near?.27:temperament==='tímido'?1.9:1.15;
+      const x=anchor.x+Math.sin(time*.48+phase)*orbit;
+      const z=anchor.y+Math.cos(time*.36+phase)*orbit;
+      const safe=this.world.walkable(x,z)&&this.world.clearanceAt(x,z,1.3)<this.world.heightAt(x,z)+.5;
+      const gx=safe?x:anchor.x, gz=safe?z:anchor.y;
+      group.position.set(gx,this.world.heightAt(gx,gz)+Math.sin(time*1.6+phase)*.045,gz);
+      creature.torso.scale.y=.69*(1+Math.sin(time*2.0+phase)*.018);
+      const lookAngle=near?Math.atan2(-(position.x-gx),-(position.z-gz)):.7+Math.sin(time*.3+phase)*.45;
+      group.rotation.y=THREE.MathUtils.damp(group.rotation.y,lookAngle,1.55,dt);
+      for(const {joint,side} of creature.wings){
+        const flap=Math.sin(time*(mood.mood==='assustado'?7:near?4.6:2.4)+phase)*(mood.mood==='assustado'?.38:.22);
+        joint.rotation.z=side*(.15+flap+(tamed?.14:0));
+        joint.rotation.x=side*Math.sin(time*.95+phase)*.08;
+      }
+      creature.head.rotation.x=Math.sin(time*2.2+phase)*.055+(mood.mood==='assustado'?.22:near?-.08:0);
+      creature.lowerJaw.rotation.x=THREE.MathUtils.damp(creature.lowerJaw.rotation.x,mood.mood==='tranquilo'?-.17:0,5,dt);
+      creature.tail.rotation.y=Math.sin(time*1.45+phase)*.18;
+      creature.ring.material.opacity=tamed?.19:mood.mood==='tranquilo'?.95:mood.mood==='assustado'?.18:near?.7:.48;
+      creature.ring.rotation.z+=dt*.42;
+      creature.beacon.position.y=5.2+Math.sin(time*2.4+phase)*.35;
+      creature.beacon.visible=!tamed;
+    }
+  }
+}

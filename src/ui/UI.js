@@ -1,0 +1,183 @@
+import { ISLANDS, QUEST_DEFS } from '../world/config.js';
+import {SPECIES,SKILLS} from '../systems/Progression.js';
+import {CONTRACTS} from '../systems/VillageContracts.js';
+import {CIRCUITS} from '../systems/Training.js';
+import {LANDMARKS} from '../systems/Discovery.js';
+import {WILD_DRAGON_DEFS} from '../systems/WildBonds.js';
+export class UI {
+  constructor(){
+    this.mode=document.getElementById('mode-pill');this.fps=document.getElementById('fps-pill');
+    this.questIndex=document.getElementById('quest-index');this.questTitle=document.getElementById('quest-title');
+    this.questDesc=document.getElementById('quest-desc');this.questProgress=document.getElementById('quest-progress');
+    this.energyNumber=document.getElementById('energy-number');this.energyBar=document.getElementById('energy-bar');
+    this.speed=document.getElementById('speed-text');this.altitude=document.getElementById('altitude-text');
+    this.healthNumber=document.getElementById('health-number');this.healthBar=document.getElementById('health-bar');
+    this.healthLabel=document.getElementById('health-label');
+    this.hitOverlay=document.getElementById('hurt-overlay');this.targetLock=document.getElementById('target-lock');
+    this.waypoint=document.getElementById('waypoint');this.toastElement=document.getElementById('toast');
+    this.interaction=document.getElementById('interaction');this.mini=document.getElementById('mini-map');this.ctx=this.mini.getContext('2d');
+    this.lastStage=-1;this.lastProgress=-1;this.toastTimer=null;this.uiClock=0;
+    this.stable=document.getElementById('stable');this.trainingStatus=document.getElementById('training-status');
+    this.contractStatus=document.getElementById('contract-status');
+    this.weatherPill=document.getElementById('weather-pill');this.clockPill=document.getElementById('clock-pill');this.expeditionStatus=document.getElementById('expedition-status');
+    this.dialogue=document.getElementById('npc-dialogue');this.dialogueOpen=false;
+    document.getElementById('npc-close').addEventListener('click',()=>this.hideDialogue());
+  }
+  connectStable(game){
+    document.getElementById('stable-toggle').addEventListener('click',()=>game.toggleStable());
+    document.getElementById('stable-close').addEventListener('click',()=>game.toggleStable());
+    document.getElementById('train-start').addEventListener('click',()=>game.startTraining());
+    document.getElementById('train-advanced').addEventListener('click',()=>game.startTraining('advanced'));
+    document.getElementById('species-list').addEventListener('click',event=>{
+      const preview=event.target.closest('[data-preview]');
+      if(preview){game.stablePreview?.showSpecies(preview.dataset.preview);return;}
+      const btn=event.target.closest('[data-species]');if(btn)game.chooseSpecies(btn.dataset.species);
+    });
+    document.getElementById('skill-list').addEventListener('click',event=>{
+      const btn=event.target.closest('[data-skill]');if(btn)game.buySkill(btn.dataset.skill);
+    });
+  }
+  renderStable(game){
+    const p=game.progression,atVillage=game.nearStable();
+    document.getElementById('train-points').textContent=p.points;
+    document.getElementById('discovery-list').textContent=`Marcos encontrados: ${game.discovery.total}/5 · Dragões selvagens: ${game.wildBonds.total}/3. Cada amizade rende +1 ponto.`;
+    document.getElementById('train-circuits').textContent=p.circuits+' circuitos';
+    const wildList=document.getElementById('wild-list');wildList.replaceChildren();
+    for(const creature of WILD_DRAGON_DEFS){
+      const level=game.wildBonds.progress(creature.id);
+      const line=document.createElement('div');line.className='wild-entry';
+      const label=document.createElement('strong');label.textContent=`✦ ${creature.name} · ${creature.island}`;
+      const status=document.createElement('small');
+      status.textContent=level===3?'AMIZADE CONQUISTADA':`Confiança ${level}/3 · ${creature.temperament} · pouse, aproxime-se e espere ele relaxar${creature.id==='nimbo'?' (SHIFT para andar devagar)':''}`;
+      line.append(label,status);wildList.append(line);
+    }
+    const note=document.getElementById('stable-village-note');
+    note.textContent=atVillage?'Você está na vila. Treinamento disponível.':'Fora da vila: viaje ao Refúgio, pouse e aproxime-se do estábulo para treinar ou trocar de dragão.';
+    note.classList.toggle('warning',!atVillage);
+    const species=document.getElementById('species-list');species.replaceChildren();
+    for(const [id,spec] of Object.entries(SPECIES)){
+      const unlocked=p.unlocked.includes(id),active=p.species===id;
+      const card=document.createElement('div');card.className='species-card'+(active?' selected':'');
+      const swatch=document.createElement('div');swatch.className='species-swatch';swatch.style.background=`linear-gradient(130deg,#${spec.colors[1].toString(16).padStart(6,'0')},#${spec.colors[4].toString(16).padStart(6,'0')})`;
+      const info=document.createElement('div');info.className='species-info';
+      const title=document.createElement('strong');title.textContent=spec.name+' · '+spec.kind;
+      const desc=document.createElement('small');desc.textContent=spec.description;
+      info.append(title,desc);
+      const btn=document.createElement('button');btn.type='button';btn.dataset.species=id;
+      btn.textContent=active?'ATUAL':unlocked?'ESCOLHER':`LIBERAR · ${spec.price} PT`;
+      btn.disabled=active||!atVillage||( !unlocked&&p.points<spec.price);
+      const inspect=document.createElement('button');inspect.type='button';inspect.className='preview-button';inspect.dataset.preview=id;inspect.textContent='VER EM 3D';
+      card.append(swatch,info,inspect,btn);species.append(card);
+    }
+    const skills=document.getElementById('skill-list');skills.replaceChildren();
+    for(const [id,skill] of Object.entries(SKILLS)){
+      const level=p.skills[id],row=document.createElement('div');row.className='skill-row';
+      const name=document.createElement('strong');name.textContent=skill.name;
+      const lvl=document.createElement('span');lvl.className='skill-level';lvl.textContent=`NÍVEL ${level}/${skill.max}`;
+      const btn=document.createElement('button');btn.type='button';btn.dataset.skill=id;btn.textContent=level>=skill.max?'MÁXIMO':`EVOLUIR · ${level+1} PT`;
+      btn.disabled=!atVillage||level>=skill.max||p.points<level+1;
+      row.append(name,lvl,btn);skills.append(row);
+    }
+    const start=document.getElementById('train-start');start.disabled=!atVillage||game.training.active||game.training.cooldown>0;
+    start.textContent=game.training.cooldown>0?`RECARGA ${Math.ceil(game.training.cooldown)}s`:'INICIAR CIRCUITO';
+    const advanced=document.getElementById('train-advanced');
+    advanced.disabled=!atVillage||game.training.active||game.training.cooldown>0||p.circuits<1;
+    advanced.textContent=p.circuits<1?'DESBLOQUEIA APÓS 1 TREINO':game.training.cooldown>0?`RECARGA ${Math.ceil(game.training.cooldown)}s`:'CIRCUITO AVANÇADO';
+  }
+  showDialogue(name,role,text){
+    document.getElementById('npc-name').textContent=name;
+    document.getElementById('npc-role').textContent=role;
+    document.getElementById('npc-text').textContent=text;
+    this.dialogue.classList.remove('hidden');this.dialogueOpen=true;
+  }
+  hideDialogue(){this.dialogue.classList.add('hidden');this.dialogueOpen=false;}
+  toast(text,secs=3){this.toastElement.textContent=text;this.toastElement.classList.add('visible');clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>this.toastElement.classList.remove('visible'),secs*1000);}
+  updateQuest(missions){
+    if(this.lastStage===missions.stage && this.lastProgress===missions.progress)return;
+    this.lastStage=missions.stage;this.lastProgress=missions.progress;
+    const q=missions.quest;
+    this.questIndex.textContent=missions.complete?'✓ COMPLETA':`${String(missions.stage+1).padStart(2,'0')} / ${String(QUEST_DEFS.length).padStart(2,'0')}`;
+    this.questTitle.textContent=q?.title??'GUARDIÃO DOS CÉUS';
+    this.questDesc.textContent=q?.desc??'Todas as missões concluídas. Continue explorando Brumária!';
+    this.questProgress.replaceChildren();
+    const total=q?.total??1,progress=missions.complete?total:missions.progress;
+    for(let i=0;i<total;i++){const el=document.createElement('div');el.className='quest-tick'+(i<progress?' done':'');this.questProgress.append(el);}
+  }
+  update(dt,game){
+    this.uiClock+=dt;if(this.uiClock<.11)return;this.uiClock=0;
+    const {dragon,hero,missions,world}=game;
+    this.updateQuest(missions);
+    this.weatherPill.textContent=game.weather.mode.label+(dragon.riding&&dragon.airborne&&dragon.windDrift>.1?` · RAJADAS ${dragon.windDrift.toFixed(1)}m/s`:``);
+    this.clockPill.textContent=game.dayNight.clock;
+    this.expeditionStatus.textContent=`MARCOS ${game.discovery.total}/5 · AMIZADES ${game.wildBonds.total}/3`;
+    const phase=dragon.pose==='takeoff'?'DECOLAGEM':dragon.pose==='landing'?'POUSO':dragon.airborne?'VOO LIVRE':'MONTADO';
+    this.mode.textContent=dragon.riding?`${phase} · ${SPECIES[game.progression.species].name.toUpperCase()}`:'EXPLORAÇÃO';
+    const energyPct=100*dragon.energy/(game.progression.stats.maxEnergy);
+    this.energyNumber.textContent=`${Math.ceil(dragon.energy)} / ${game.progression.stats.maxEnergy}`;this.energyBar.style.width=energyPct+'%';
+    this.healthLabel.textContent='RESISTÊNCIA DE '+SPECIES[game.progression.species].name.toUpperCase();
+    this.healthNumber.textContent=Math.ceil(game.health)+'%';this.healthBar.style.width=game.health+'%';
+    this.hitOverlay.style.opacity=String(Math.min(.66,game.hitFlash*1.25));
+    this.speed.textContent=dragon.riding?`VELOCIDADE ${Math.round(dragon.speed*3.6)} km/h`:game.input.isDown('shift')?'A PÉ · PASSOS LEVES':'A PÉ';
+    const ground=Math.max(-.9,world.heightAt(dragon.group.position.x,dragon.group.position.z));
+    this.altitude.textContent=`ALT ${Math.max(0,Math.round(dragon.group.position.y-ground))} m`;
+    const position=dragon.riding?dragon.group.position:hero.group.position;
+    const activeContract=game.contracts.active[0];
+    const contractKey=activeContract?.[0];
+    const contract=contractKey?CONTRACTS[contractKey]:null;
+    const state=activeContract?.[1];
+    const marker=contractKey&&state.status==='active'?game.villagers.markers.find(m=>m.id===contractKey&&!state.collected[m.index]):null;
+    const npcReturn=contractKey&&state.status==='ready'?game.villagers.npcs.find(n=>n.spec.id===contract.npc):null;
+    const contractTarget=marker?.group.position??npcReturn?.root.position??null;
+    const target=game.training.waypoint??contractTarget??missions.waypoint(dragon);
+    const dist=target?Math.round(position.distanceTo(target)):0;
+    this.waypoint.textContent=game.training.active?`TREINO: ${dist} m`:contractTarget?`CONTRATO A ${dist} m`:missions.complete?'ARQUIPÉLAGO LIBERADO':missions.stage===6?'VOLTE À VILA · TECLA T':`OBJETIVO A ${dist} m`;
+    this.contractStatus.classList.toggle('hidden',!activeContract);
+    if(activeContract)this.contractStatus.textContent=`${contract.title} · ${state.collected.filter(Boolean).length}/${contract.points.length}${state.status==='ready'?' · VOLTE AO NPC':''}`;
+    this.trainingStatus.classList.toggle('hidden',!game.training.active);
+    if(game.training.active)this.trainingStatus.textContent=`TREINO ${CIRCUITS[game.training.mode].label} · ${game.training.progress}/${game.training.definition.checkpoints.length} · ${Math.ceil(game.training.seconds)}s`;
+    const enemy=missions.stage===4?game.enemies.nearest(dragon.group.position):null;
+    const toEnemy=enemy?enemy.position.clone().sub(dragon.group.position):null;
+    const locked=dragon.riding&&toEnemy&&toEnemy.length()<165&&dragon.forward().dot(toEnemy.normalize())>.78;
+    this.targetLock.classList.toggle('hidden',!locked);
+    if(locked)this.targetLock.textContent=`◆ SENTINELA NA MIRA · ${Math.ceil(enemy.health)}/${enemy.maxHealth}`;
+    const near=hero.group.position.distanceTo(dragon.group.position)<10.5;
+    const nearNpc=!dragon.riding?game.villagers.nearby(hero.group.position,5.5):null;
+    const nearWild=!dragon.riding&&!nearNpc?game.wildDragons.nearby(hero.group.position,8.2):null;
+    const showInteraction=nearNpc||nearWild|| (dragon.riding?(dragon.group.position.y-world.heightAt(dragon.group.position.x,dragon.group.position.z)<4.8 && dragon.speed<11):near);
+    this.interaction.classList.toggle('hidden',!showInteraction);
+    const calm=nearWild?game.wildDragons.approach.get(nearWild.spec.id):null;
+    this.interaction.textContent=nearNpc?`E · CONVERSAR COM ${nearNpc.spec.name}`:nearWild?(calm.mood==='assustado'?`${nearWild.spec.name} ASSUSTADO · PARE E AGUARDE`:calm.mood==='tranquilo'?`E · CARINHO EM ${nearWild.spec.name} (${game.wildBonds.progress(nearWild.spec.id)}/3)`: `GANHANDO CONFIANÇA ${Math.round(calm.calm*100)}% · ${nearWild.spec.id==='nimbo'?'SHIFT = ANDAR DEVAGAR':'FIQUE POR PERTO'}`):dragon.riding?'E · DESMONTAR':`E · MONTAR EM ${SPECIES[game.progression.species].name.toUpperCase()}`;
+    const mobileInteract=document.querySelector('[data-tap="e"]');
+    if(mobileInteract)mobileInteract.textContent=nearNpc?'FALAR':nearWild?(calm.mood==='tranquilo'?'CARINHO':'ESPERAR'):dragon.riding?'DESCER':'MONTAR';
+    const slowButton=document.querySelector('[data-hold="shift"]');
+    if(slowButton)slowButton.textContent=dragon.riding?'TURBO':'DEVAGAR';
+    this.drawMap(position,target,dragon.yaw,missions,game.enemies,game.villagers,game.contracts,game.discovery,game.wildDragons);
+  }
+  drawMap(position,target,yaw,missions,enemies,villagers,contracts,discovery,wildDragons){
+    const ctx=this.ctx,W=this.mini.width,H=this.mini.height,s=0.34;
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0b3645';ctx.fillRect(0,0,W,H);
+    const mx=x=>W/2+(x-position.x)*s, my=z=>H/2+(z-position.z)*s;
+    ctx.fillStyle='#4e8d76';ctx.strokeStyle='#8bc19c';ctx.lineWidth=1;
+    for(const island of ISLANDS){ctx.beginPath();ctx.arc(mx(island.x),my(island.z),island.r*s,0,Math.PI*2);ctx.fill();ctx.stroke();}
+    ctx.strokeStyle='rgba(232,250,255,.13)';ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+    if(missions.stage===4){ctx.fillStyle='#f68bab';for(const e of enemies.alive){ctx.beginPath();ctx.arc(mx(e.position.x),my(e.position.z),3.5,0,Math.PI*2);ctx.fill();}}
+    if(missions.stage===5){ctx.fillStyle='#a0ffd2';for(const baby of missions.hatchlings.filter(b=>!b.userData.rescued)){ctx.beginPath();ctx.arc(mx(baby.position.x),my(baby.position.z),3.1,0,Math.PI*2);ctx.fill();}}
+    for(let i=0;i<LANDMARKS.length;i++){
+      if(discovery.found[i])continue;
+      const lm=LANDMARKS[i];const x=mx(lm.x),y=my(lm.z);
+      ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);ctx.fillStyle='#9df8e3';ctx.fillRect(-2.8,-2.8,5.6,5.6);ctx.restore();
+    }
+    for(const wild of wildDragons.remaining){
+      const x=mx(wild.group.position.x),y=my(wild.group.position.z);
+      ctx.fillStyle='#f4aeff';ctx.strokeStyle='#50235f';ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.stroke();
+    }
+    for(const npc of villagers.npcs){ctx.fillStyle='#ffcf82';ctx.fillRect(mx(npc.root.position.x)-2,my(npc.root.position.z)-2,4,4);}
+    for(const m of villagers.markers){if(!m.group.visible)continue;ctx.fillStyle=m.id==='correio'?'#f3c88a':'#89ffc3';ctx.beginPath();ctx.arc(mx(m.group.position.x),my(m.group.position.z),3,0,Math.PI*2);ctx.fill();}
+    if(target){const tx=mx(target.x),ty=my(target.z);ctx.save();ctx.shadowColor='#ffdb8d';ctx.shadowBlur=14;ctx.fillStyle='#ffe3a0';ctx.beginPath();ctx.arc(tx,ty,5,0,Math.PI*2);ctx.fill();ctx.restore();}
+    ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-yaw);ctx.fillStyle='#f3fff8';ctx.strokeStyle='#133944';ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(-5,7);ctx.lineTo(0,4);ctx.lineTo(5,7);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+    ctx.strokeStyle='rgba(255,255,255,.21)';ctx.strokeRect(.5,.5,W-1,H-1);
+  }
+  setFPS(fps){this.fps.textContent=fps+' FPS';}
+}

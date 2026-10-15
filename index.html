@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#071a25">
+  <meta name="description" content="Asas de Brumária: explore ilhas, monte em seu dragão e complete missões.">
+  <title>Asas de Brumária v1.0.0 — Aventura de Dragões</title>
+  <link rel="stylesheet" href="./src/ui/style.css">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}
+  </script>
+</head>
+<body>
+  <div id="game" aria-label="Mundo do jogo em 3D"></div>
+  <div id="hud">
+    <div class="hud-top">
+      <div class="brand"><span class="brand-icon">◆</span><div><strong>ASAS DE BRUMÁRIA</strong><small>VOE · DESCUBRA · AMANSE DRAGÕES</small></div></div>
+      <div class="top-pills"><span id="mode-pill">EXPLORAÇÃO</span><span id="weather-pill">CÉU ABERTO</span><span id="clock-pill">10:19</span><span id="fps-pill">60 FPS</span><button id="quality-toggle" type="button" title="Alternar qualidade gráfica">GRÁFICOS: AUTO · G</button></div>
+    </div>
+    <div class="mission-card"><div class="eyebrow"><span class="pulse"></span> MISSÃO ATIVA <span id="quest-index">01 / 04</span></div><h2 id="quest-title">A PRIMEIRA CONEXÃO</h2><p id="quest-desc">Aproxime-se do dragão e monte nele.</p><div id="quest-progress"></div></div>
+    <div class="map-panel"><div class="map-head"><span>MAPA DAS ILHAS</span><span class="map-north">N ↑</span></div><canvas id="mini-map" width="160" height="160" aria-label="Minimapa"></canvas><div class="map-footer" id="waypoint">OBJETIVO A 0m</div></div>
+    <div id="toast" aria-live="polite"></div>
+    <button id="stable-toggle" class="stable-toggle" type="button" aria-label="Abrir estábulo de dragões">🐉 ESTÁBULO <span>T</span></button>
+    <div id="expedition-status" class="expedition-status">MARCOS 0/5 · AMIZADES 0/3</div>
+    <div id="contract-status" class="contract-status hidden" aria-live="polite"></div>
+    <div id="training-status" class="training-status hidden" aria-live="polite"></div>
+    <div id="interaction" class="hidden">E · MONTAR NO DRAGÃO</div>
+    <div id="target-lock" class="target-lock hidden">◆ SENTINELA NA MIRA</div><div class="crosshair">+</div><div id="hurt-overlay" class="hurt-overlay"></div>
+    <div class="bottom-hud"><div class="status-card"><div class="stat-head"><span>ENERGIA DO DRAGÃO</span><span id="energy-number">100%</span></div><div class="energy-track"><div id="energy-bar"></div></div><div class="stat-head health-head"><span id="health-label">RESISTÊNCIA DE NIMBO</span><span id="health-number">100%</span></div><div class="energy-track health-track"><div id="health-bar"></div></div><div class="stat-row"><span id="speed-text">NO SOLO</span><span id="altitude-text">ALT 0 m</span></div></div><div id="keyboard-help"><b>W A S D</b> MOVER / GUIAR <span>•</span> <b>ESPAÇO</b> SUBIR <span>•</span> <b>CTRL</b> DESCER <span>•</span> <b>E</b> INTERAGIR <span>•</span> <b>F</b> FOGO <span>•</span> <b>SHIFT</b> TURBO / ANDAR DEVAGAR <span>•</span> <b>T</b> ESTÁBULO <span>•</span> <b>P</b> SALVAR <span>•</span> <b>C</b> CLIMA <span>•</span> <b>N</b> HORÁRIO <span>•</span> <b>G</b> GRÁFICOS</div></div>
+    <div class="mobile-controls" id="mobile-controls">
+      <div class="touch-dpad"><button data-hold="w" class="pad-up" aria-label="Avançar">▲</button><button data-hold="a" class="pad-left" aria-label="Virar à esquerda">◀</button><button data-hold="s" class="pad-down" aria-label="Recuar">▼</button><button data-hold="d" class="pad-right" aria-label="Virar à direita">▶</button></div>
+      <div class="touch-actions"><button class="touch-action small" data-hold="ctrl">DESCER</button><button class="touch-action small" data-hold="shift">TURBO</button><button class="touch-action fire" data-tap="f">FOGO</button><button class="touch-action climb" data-hold="space">SUBIR</button><button class="touch-action mount" data-tap="e">MONTAR</button></div>
+    </div>
+  </div>
+  <div id="npc-dialogue" class="npc-dialogue hidden" role="dialog" aria-label="Conversa com morador" aria-modal="false"><div class="npc-dialogue-heading"><strong id="npc-name">MORADOR</strong><span id="npc-role"></span></div><p id="npc-text"></p><button id="npc-close" type="button">CONTINUAR · E</button></div>
+  <div id="stable" class="stable-screen hidden" role="dialog" aria-label="Estábulo e treinamento" aria-modal="true">
+    <section class="stable-card">
+      <div class="stable-heading"><div><small>VILA DE BRUMÁRIA</small><h2>ESTÁBULO DOS DRAGÕES</h2><p>Treine habilidades, descubra espécies e domine os circuitos aéreos.</p></div><button id="stable-close" class="stable-close" type="button" aria-label="Fechar estábulo">✕</button></div>
+      <div id="stable-village-note" class="stable-note"></div>
+      <div class="stable-balance"><strong id="train-points">0</strong> PONTOS DE TREINAMENTO <span id="train-circuits">0 circuitos</span></div>
+      <div id="discovery-list" class="discovery-list">Marcos encontrados: 0/5</div>
+      <div id="wild-list" class="wild-list" aria-label="Dragões selvagens para amansar"></div>
+      <div class="preview-panel"><canvas id="stable-preview-canvas" aria-label="Modelo 3D giratório do dragão selecionado"></canvas><div class="preview-info"><strong id="stable-preview-name">Nimbo · Asa da Névoa</strong><small id="stable-preview-caption">Arraste para girar · Visualização 3D dos dragões</small></div></div>
+      <h3>SEUS DRAGÕES</h3><div id="species-list" class="species-list"></div>
+      <h3>EVOLUÇÃO DAS HABILIDADES</h3><div id="skill-list" class="skill-list"></div>
+      <div class="training-footer"><div><strong>DESAFIO DOS VENTOS</strong><small>Três aros dourados em 95 segundos. Ganhe +1 ponto ao completar.</small></div><button id="train-start" type="button">INICIAR CIRCUITO</button></div>
+      <div class="training-footer advanced-footer"><div><strong>CIRCUITO DA TEMPESTADE</strong><small>Cinco aros em 80 segundos, velocidade mínima de 18 m/s. Recompensa +2 pontos.</small></div><button id="train-advanced" type="button">CIRCUITO AVANÇADO</button></div>
+      <p class="stable-tip">Complete missões para ganhar pontos. Troque de dragão e melhore atributos somente na vila. O progresso é salvo automaticamente.</p>
+    </section>
+  </div>
+  <div id="start-screen" class="modal-screen"><div class="start-art">✦ <span>✦</span> ✦</div><div class="modal-content"><div class="pretitle">UMA JORNADA ORIGINAL INSPIRADA EM AVENTURAS DE DRAGÕES</div><h1>ASAS DE<br><em>BRUMÁRIA</em></h1><p>Explore ilhas esquecidas, treine seu dragão, enfrente sentinelas inimigas , resgate filhotes perdidos e conquiste a confiança de dragões selvagens.</p><div class="features"><span>◈ Mundo 3D</span><span>◈ Voo livre</span><span>◈ 7 missões + 3 dragões selvagens</span><span>◈ Dia e noite dinâmicos</span></div><button id="start-btn">COMEÇAR A AVENTURA <span>→</span></button><button id="new-game-btn" class="new-game-btn hidden" type="button">CRIAR NOVA PARTIDA (APAGA O SAVE)</button><small>Teclado no computador · Botões de toque no celular · Áudio opcional</small></div></div>
+  <div id="fatal" class="fatal hidden"></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

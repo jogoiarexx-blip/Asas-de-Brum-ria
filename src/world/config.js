@@ -1,0 +1,21 @@
+export const ISLANDS = [
+  { name:'Ilha do Refúgio',x:0,z:0,r:83,h:22,seed:0.5 },
+  { name:'Ilha das Cascatas',x:-183,z:-126,r:55,h:19,seed:2.6 },
+  { name:'Ilha do Farol',x:168,z:106,r:57,h:18,seed:4.1 },
+  { name:'Ilha da Névoa',x:-117,z:153,r:48,h:16,seed:1.9 },
+  { name:'Atol Esquecido',x:195,z:-162,r:42,h:15,seed:3.6 }
+];
+export const QUEST_DEFS = [
+  {id:'bond',title:'A PRIMEIRA CONEXÃO',desc:'Encontre o dragão Nimbo, aproxime-se e pressione E para montar.',total:1},
+  {id:'rings',title:'O BATISMO DO VENTO',desc:'Atravesse os cinco aros luminosos para dominar os céus.',total:5},
+  {id:'crystals',title:'AS RUNAS PERDIDAS',desc:'Recolha três cristais de energia espalhados entre as ilhas.',total:3},
+  {id:'targets',title:'DEFENSORES DE BRUMÁRIA',desc:'Use F para lançar fogo e destruir os três orbes sombrios.',total:3},
+  {id:'battle',title:'SENTINELAS DA TORMENTA',desc:'Enfrente três dragões inimigos. Mire para a frente e lance fogo com F; evite os disparos!',total:3},
+  {id:'rescue',title:'FILHOTES PERDIDOS',desc:'Resgate três filhotes espalhados entre as ilhas. Voe até os sinais verdes.',total:3},
+  {id:'training',title:'PROVA DO DOMADOR',desc:'Retorne à vila, abra o estábulo com T e complete um circuito de treinamento.',total:1}
+];
+export const RING_POSITIONS = [[39,29,-65],[108,32,-17],[85,37,91],[-8,33,112],[-96,29,33]];
+export const CRYSTAL_POSITIONS = [[-155,30,-102],[137,29,107],[-111,29,148]];
+export const TARGET_POSITIONS = [[-72,30,-158],[189,36,9],[-163,36,106]];
+
+export const HATCHLING_POSITIONS = [[-176,32,-127],[176,31,120],[-102,33,170]];
