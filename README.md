@@ -1,3 +1,7 @@
+## Atualização v1.2.1
+
+Corrige o personagem entrando na plataforma do estábulo: o chão sob a estrutura foi nivelado, o corpo continua apoiado nas bordas e o visual da plataforma foi alinhado com o piso de colisão. Os saves continuam compatíveis. Rode `npm run check` para os testes automatizados.
+
 ## Atualização v1.2.0 — Colisões aprimoradas
 
 A plataforma central do estábulo é reconhecida como piso. Caixas, postes, NPCs e fogueira agora bloqueiam o movimento. Subidas muito altas são impedidas sem quebrar o deslizamento; para desmontar, o jogo procura uma área livre e segura. O salvamento mantém o mesmo formato da versão anterior. Confira `CHANGELOG.md` e execute `npm run check` para os testes.

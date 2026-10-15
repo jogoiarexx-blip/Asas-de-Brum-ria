@@ -36,7 +36,7 @@ export class Dragon {
   constructor(scene,world) {
     this.scene=scene;this.world=world;
     this.group=new THREE.Group();this.visual=new THREE.Group();this.group.add(this.visual);scene.add(this.group);
-    this.group.position.set(8,world.groundHeightAt(8,7)+2.55,7);
+    this.group.position.set(8,world.groundHeightAt(8,7,1.65)+2.55,7);
     this.yaw=-.5;this.speed=0;this.airborne=false;this.riding=false;this.energy=100;this.fireCooldown=0;
     this.wings=[];this.tail=[];this.legs=[];this.forelegs=[];this.windStrength=0;this.windDrift=0;this.speciesId='nimbo';this.stats=null;
     this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.createModel();
@@ -281,10 +281,10 @@ export class Dragon {
         this.airborne?1.15:1.65,this.world.obstacles,
         (x,z)=>Math.abs(x)<425&&Math.abs(z)<425,
         o=>obstacleBlocks(o,this.group.position.y,1.65),
-        this.airborne?{}:{groundAt:(x,z)=>this.world.groundHeightAt(x,z),maxStepUp:1.65});
+        this.airborne?{}:{groundAt:(x,z)=>this.world.groundHeightAt(x,z,1.65),maxStepUp:1.65});
       this.group.position.x=move.x;this.group.position.z=move.z;
       if(move.blocked&&!this.airborne)this.speed=Math.min(this.speed,4);
-      const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z)+2.58;
+      const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.65)+2.58;
       const obstruction=this.world.clearanceAt(this.group.position.x,this.group.position.z,1.15);
       const safeFloor=Math.max(floor,2.7,Number.isFinite(obstruction)?obstruction+2.12:-Infinity);
       const up=input.isDown('space'),down=input.isDown('ctrl');
@@ -310,7 +310,7 @@ export class Dragon {
       this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,flightPitch(this.verticalVelocity,this.airborne)+(up?-.075:down?.05:0),3.7,dt);
     } else {
       this.windDrift=0;this.steerInput=0;this.turnAxis=smoothedTurn(this.turnAxis,0,dt);this.bank=THREE.MathUtils.damp(this.bank,0,3,dt);
-      const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z)+2.58;
+      const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.65)+2.58;
       this.group.position.y=THREE.MathUtils.damp(this.group.position.y,Math.max(2.7,floor),3,dt);
       this.energy=Math.min(this.stats?.maxEnergy??100,this.energy+(this.stats?.regen??12)*dt);
       this.landingTimer=Math.max(0,this.landingTimer-dt);
@@ -318,7 +318,7 @@ export class Dragon {
       this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,0,3,dt);
     }
     this.group.rotation.y=this.yaw;
-    const floorNow=Math.max(2.7,this.world.groundHeightAt(this.group.position.x,this.group.position.z)+2.58);
+    const floorNow=Math.max(2.7,this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.65)+2.58);
     this.pose=flightPhase(this.airborne,this.takeoffTime,this.group.position.y-floorNow,this.verticalVelocity<-.8,this.landingTimer);
     const wingLift=liftBlend(this.airborne,this.takeoffTime,this.landingTimer);
     for(const {wing,elbow,tip,side} of this.wings){

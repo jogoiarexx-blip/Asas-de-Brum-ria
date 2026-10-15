@@ -1,3 +1,14 @@
+# v1.2.1 — Correção da plataforma central
+
+- Terreno da vila nivelado sob toda a plataforma, com transição suave ao relevo natural.
+- Plataforma desenhada como cilindro de laterais retas (24 segmentos) para coincidir com seu piso físico.
+- Colisão de apoio inclui o raio dos pés do personagem (0,52 m) e a base do dragão (1,65 m), evitando atravessar as bordas.
+- Alturas renderizadas e calculadas usam a mesma função, inclusive após carregar um save.
+- Acrescentados cinco testes de regressão; 120 testes aprovados.
+- A atualização mantém missões e dados salvos. A execução gráfica WebGL ainda requer validação manual.
+
+---
+
 # Asas de Brumária v1.2.0 — Colisões da Vila e Piso Sólido
 
 - A plataforma do estábulo ganhou altura de apoio real para o herói, o dragão e a câmera, eliminando o piso meramente visual.

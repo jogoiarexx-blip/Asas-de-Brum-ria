@@ -2,10 +2,19 @@ import * as THREE from 'three';
 import { ISLANDS } from './config.js';
 import { seededRandom, clamp } from '../utils/math.js';
 import { obstacleCeiling } from '../utils/collision.js';
-import { surfaceHeightAt } from '../utils/surfaces.js';
+import { surfaceHeightAt,flattenVillageGround } from '../utils/surfaces.js';
 const brown = new THREE.MeshLambertMaterial({color:0x855b37});
 const leafPalette = [0x245d49,0x2b7355,0x398565,0x31735c];
 const rand = seededRandom(18971);
+function naturalIslandHeight(island,x,z){
+  const dx=x-island.x, dz=z-island.z;
+  const d=Math.hypot(dx,dz)/island.r;
+  if(d>=1)return -2;
+  const rough=Math.sin(x*.13+island.seed)*Math.cos(z*.16-island.seed)*.85;
+  const wave=Math.sin(x*.055+island.seed)*Math.cos(z*.07)*1.4;
+  return -1.5+island.h*Math.pow(Math.max(0,1-d*d),1.7)+(rough+wave)*(1-d);
+}
+const VILLAGE_HEIGHT=naturalIslandHeight(ISLANDS[0],8,7);
 
 export class World {
   constructor(scene) {
@@ -19,19 +28,15 @@ export class World {
     this.populate();
   }
   islandHeight(island,x,z) {
-    const dx = x-island.x, dz = z-island.z;
-    const d = Math.hypot(dx,dz)/island.r;
-    if (d>=1) return -2;
-    const rough = Math.sin(x*.13 + island.seed)*Math.cos(z*.16-island.seed)*.85;
-    const wave = Math.sin(x*.055 + island.seed)*Math.cos(z*.07)*1.4;
-    return -1.5 + island.h*Math.pow(Math.max(0,1-d*d),1.7) + (rough+wave)*(1-d);
+    const original=naturalIslandHeight(island,x,z);
+    return island===ISLANDS[0]?flattenVillageGround(original,x,z,VILLAGE_HEIGHT):original;
   }
   heightAt(x,z) {
     let h = -2;
     for (const island of ISLANDS) h=Math.max(h,this.islandHeight(island,x,z));
     return h;
   }
-  groundHeightAt(x,z) { return surfaceHeightAt(this.heightAt(x,z),x,z,this.surfaces); }
+  groundHeightAt(x,z,radius=0) { return surfaceHeightAt(this.heightAt(x,z),x,z,this.surfaces,radius); }
   walkable(x,z) { return ISLANDS.some(i=>Math.hypot(x-i.x,z-i.z) < i.r*.92 && this.islandHeight(i,x,z)>1); }
   clearanceAt(x,z,radius=1) { return obstacleCeiling(x,z,radius,this.obstacles); }
   addObstacle(x,y,z,radius,height,type){
@@ -216,9 +221,9 @@ export class World {
       this.addObstacle(x,y,z,3.65*size,7.6*size,'cabin');
     };
     cabin(-12,-14,1);cabin(-22,9,.8);cabin(21,-23,1.13);cabin(-32,-17,.76);
-    const platform=new THREE.Mesh(new THREE.CylinderGeometry(7.2,7.9,.75,10),new THREE.MeshLambertMaterial({color:0x9d7c5c}));
+    const platform=new THREE.Mesh(new THREE.CylinderGeometry(7.2,7.2,.75,24),new THREE.MeshLambertMaterial({color:0x9d7c5c}));
     platform.position.set(8,this.heightAt(8,7)+.17,7);platform.receiveShadow=true;this.scene.add(platform);
-    this.surfaces.push({x:8,z:7,radius:7.15,top:platform.position.y+.375});
+    this.surfaces.push({x:8,z:7,radius:7.2,top:platform.position.y+.375});
     const fire=new THREE.Group();fire.position.set(-3,this.heightAt(-3,0),0);
     for(let i=0;i<8;i++){
       const a=i*Math.PI/4;const stone=new THREE.Mesh(new THREE.DodecahedronGeometry(.65,0),new THREE.MeshLambertMaterial({color:0x777a6f}));stone.position.set(Math.cos(a)*2.1,.3,Math.sin(a)*2.1);fire.add(stone);

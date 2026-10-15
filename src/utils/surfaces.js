@@ -1,11 +1,26 @@
 import {obstacleBlocks,overlapsCircle} from './collision.js';
 
-/** The floor of a raised platform takes precedence only where the walkable top exists. */
-export function surfaceHeightAt(terrainY,x,z,surfaces=[]) {
+/** Gently flatten village terrain so the platform never buries its own base or floats
+ * several metres above the hillside. The same function is used for terrain vertices
+ * and gameplay height queries, preventing the rendering/collision mismatch.
+ */
+export function flattenVillageGround(rawY,x,z,plateauY,{cx=8,cz=7,flatRadius=9,blendRadius=17}={}) {
+  const d=Math.hypot(x-cx,z-cz);
+  if(d<=flatRadius)return plateauY;
+  if(d>=blendRadius)return rawY;
+  const t=(d-flatRadius)/(blendRadius-flatRadius);
+  const smooth=t*t*(3-2*t);
+  return plateauY*(1-smooth)+rawY*smooth;
+}
+
+/** Support uses the actor's footprint radius, not just its center; otherwise the
+ * body visibly falls into the rim while the feet are still over the platform.
+ */
+export function surfaceHeightAt(terrainY,x,z,surfaces=[],bodyRadius=0) {
   let height=terrainY;
   for(const surface of surfaces){
     const dx=x-surface.x,dz=z-surface.z;
-    if(dx*dx+dz*dz<=surface.radius*surface.radius){
+    if(dx*dx+dz*dz<=(surface.radius+Math.max(0,bodyRadius))**2){
       height=Math.max(height,surface.top);
     }
   }

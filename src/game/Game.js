@@ -174,7 +174,7 @@ export class Game {
     this.dragon.group.position.set(p.x,Math.max(p.y,this.world.groundHeightAt(p.x,p.z)+2.58),p.z);
     this.dragon.yaw=p.yaw;this.dragon.group.rotation.y=p.yaw;
     this.dragon.airborne=p.mounted&&p.airborne;this.dragon.energy=Math.min(this.progression.stats.maxEnergy,p.energy);
-    this.hero.group.position.set(p.heroX,this.world.groundHeightAt(p.heroX,p.heroZ),p.heroZ);
+    this.hero.group.position.set(p.heroX,this.world.groundHeightAt(p.heroX,p.heroZ,.52),p.heroZ);
     if(p.mounted){this.dragon.mount();this.hero.setMounted(true);}
     this.health=p.health;
   }
@@ -259,7 +259,7 @@ export class Game {
     if(this.dragon.airborne || y-h>4.7 || this.dragon.speed>11 || !this.world.walkable(x,z)){
       this.ui.toast('Para desmontar: pouse numa ilha e reduza a velocidade.');this.audio.play('error');return;
     }
-    const spot=safeDismountSpot({x,z},{obstacles:this.world.obstacles,walkable:(a,b)=>this.world.walkable(a,b),groundAt:(a,b)=>this.world.groundHeightAt(a,b)});
+    const spot=safeDismountSpot({x,z},{obstacles:this.world.obstacles,walkable:(a,b)=>this.world.walkable(a,b),groundAt:(a,b)=>this.world.groundHeightAt(a,b,.52)});
     if(!spot){this.ui.toast('Não há espaço livre para desmontar aqui. Mova Nimbo para um local aberto.');this.audio.play('error');return;}
     this.hero.group.position.set(spot.x,spot.y,spot.z);
     this.dragon.dismount();this.hero.setMounted(false);this.ui.toast('Você desmontou do dragão.');this.saveGame();
@@ -386,7 +386,7 @@ export class Game {
   resetPosition(respawn=false){
     const x=8,z=7;this.dragon.group.position.set(x,this.world.groundHeightAt(x,z)+2.58,z);
     this.dragon.yaw=-.5;this.dragon.turnAxis=0;this.dragon.speed=0;this.dragon.airborne=false;this.dragon.energy=Math.max(35,this.dragon.energy);
-    if(!this.dragon.riding)this.hero.group.position.set(2,this.world.groundHeightAt(2,11),11);
+    if(!this.dragon.riding)this.hero.group.position.set(2,this.world.groundHeightAt(2,11,.52),11);
     if(!respawn)this.ui.toast('Posição restaurada ao vilarejo.');
     this.saveGame();
     this.camera.position.set(x+12,this.dragon.group.position.y+12,z+19);
