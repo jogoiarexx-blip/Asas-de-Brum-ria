@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Input } from './Input.js';
 import {CameraOrbit,cameraOffset} from './CameraOrbit.js';
+import {safeDismountSpot} from '../utils/surfaces.js';
 import { World } from '../world/World.js';
 import { Dragon } from '../entities/Dragon.js';
 import { EnemySquad } from '../entities/EnemyDragon.js';
@@ -170,10 +171,10 @@ export class Game {
     this.missions.restore(data.mission);
     this.contracts.restore(data.contracts);this.villagers.refresh(this.contracts);
     const p=data.player;
-    this.dragon.group.position.set(p.x,Math.max(p.y,this.world.heightAt(p.x,p.z)+2.58),p.z);
+    this.dragon.group.position.set(p.x,Math.max(p.y,this.world.groundHeightAt(p.x,p.z)+2.58),p.z);
     this.dragon.yaw=p.yaw;this.dragon.group.rotation.y=p.yaw;
     this.dragon.airborne=p.mounted&&p.airborne;this.dragon.energy=Math.min(this.progression.stats.maxEnergy,p.energy);
-    this.hero.group.position.set(p.heroX,this.world.heightAt(p.heroX,p.heroZ),p.heroZ);
+    this.hero.group.position.set(p.heroX,this.world.groundHeightAt(p.heroX,p.heroZ),p.heroZ);
     if(p.mounted){this.dragon.mount();this.hero.setMounted(true);}
     this.health=p.health;
   }
@@ -254,13 +255,13 @@ export class Game {
       return;
     }
     const {x,z,y}=this.dragon.group.position;
-    const h=this.world.heightAt(x,z);
+    const h=this.world.groundHeightAt(x,z);
     if(this.dragon.airborne || y-h>4.7 || this.dragon.speed>11 || !this.world.walkable(x,z)){
       this.ui.toast('Para desmontar: pouse numa ilha e reduza a velocidade.');this.audio.play('error');return;
     }
-    const spotX=x+2,spotZ=z+2;
-    const sx=this.world.walkable(spotX,spotZ)?spotX:x,sz=this.world.walkable(spotX,spotZ)?spotZ:z;
-    this.hero.group.position.set(sx,this.world.heightAt(sx,sz),sz);
+    const spot=safeDismountSpot({x,z},{obstacles:this.world.obstacles,walkable:(a,b)=>this.world.walkable(a,b),groundAt:(a,b)=>this.world.groundHeightAt(a,b)});
+    if(!spot){this.ui.toast('Não há espaço livre para desmontar aqui. Mova Nimbo para um local aberto.');this.audio.play('error');return;}
+    this.hero.group.position.set(spot.x,spot.y,spot.z);
     this.dragon.dismount();this.hero.setMounted(false);this.ui.toast('Você desmontou do dragão.');this.saveGame();
   }
   spawnProjectile(origin,direction,owner){
@@ -374,7 +375,7 @@ export class Game {
     const back=(riding?16+this.dragon.speed*.095:12)*this.cameraOrbit.zoom;
     const offset=cameraOffset({forwardX:forward.x,forwardZ:forward.z,distance:back,yaw:this.cameraOrbit.yaw,pitch:this.cameraOrbit.pitch});
     const camPos=new THREE.Vector3(focus.x+offset.x,focus.y+(riding?7.6:7.1)+offset.y,focus.z+offset.z);
-    camPos.y=Math.max(camPos.y,this.world.heightAt(camPos.x,camPos.z)+3.5);
+    camPos.y=Math.max(camPos.y,this.world.groundHeightAt(camPos.x,camPos.z)+3.5);
     this.camera.position.lerp(camPos,smoothFollow(riding?3.1:5,dt));
     const lookAt=new THREE.Vector3(focus.x+forward.x*(riding?9:0),focus.y+(riding?2.3:2),focus.z+forward.z*(riding?9:0));
     this._camTarget??=lookAt.clone();this._camTarget.lerp(lookAt,smoothFollow(4,dt));
@@ -383,9 +384,9 @@ export class Game {
     this.camera.fov=THREE.MathUtils.damp(this.camera.fov,fov,3,dt);this.camera.updateProjectionMatrix();
   }
   resetPosition(respawn=false){
-    const x=8,z=7;this.dragon.group.position.set(x,this.world.heightAt(x,z)+2.58,z);
+    const x=8,z=7;this.dragon.group.position.set(x,this.world.groundHeightAt(x,z)+2.58,z);
     this.dragon.yaw=-.5;this.dragon.turnAxis=0;this.dragon.speed=0;this.dragon.airborne=false;this.dragon.energy=Math.max(35,this.dragon.energy);
-    if(!this.dragon.riding)this.hero.group.position.set(2,this.world.heightAt(2,11),11);
+    if(!this.dragon.riding)this.hero.group.position.set(2,this.world.groundHeightAt(2,11),11);
     if(!respawn)this.ui.toast('Posição restaurada ao vilarejo.');
     this.saveGame();
     this.camera.position.set(x+12,this.dragon.group.position.y+12,z+19);

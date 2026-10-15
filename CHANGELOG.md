@@ -1,3 +1,15 @@
+# Asas de Brumária v1.2.0 — Colisões da Vila e Piso Sólido
+
+- A plataforma do estábulo ganhou altura de apoio real para o herói, o dragão e a câmera, eliminando o piso meramente visual.
+- Caixas, postes, fogueira e moradores agora registram volumes sólidos de colisão. Preserva árvores, pedras e casas.
+- Movimento em solo limita a subida máxima por passo e continua deslizando ao longo de paredes; evita escalar desníveis altos instantaneamente.
+- Desmontagem procura local acessível e livre de obstáculos; se não existir, avisa e mantém o herói montado.
+- Carregamento de posição e respawn respeitam o piso elevado, sem alterar o formato de saves anteriores.
+- Testes de regressão em `tests/collisions-v120.test.js` e suíte anterior preservados.
+- Limitação: física aproximada baseada em círculos e alturas; não há colisão exata de malha nem simulação rígida completa.
+
+---
+
 # Changelog — Asas de Brumária
 
 ## v1.0.0 — Vínculos Vivos e Voo Assistido (15/10/2026)

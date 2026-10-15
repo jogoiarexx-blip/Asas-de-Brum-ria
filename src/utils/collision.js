@@ -19,7 +19,7 @@ export function obstacleCeiling(x,z,radius,obstacles) {
  * Moves without tunneling through trees or cabins when boosting at low altitude.
  * Each substep resolves X and Z independently, yielding predictable wall sliding.
  */
-export function moveWithCollisions(start,delta,radius,obstacles,canOccupy=()=>true,blocks=()=>true) {
+export function moveWithCollisions(start,delta,radius,obstacles,canOccupy=()=>true,blocks=()=>true,options={}) {
   const distance=Math.hypot(delta.x,delta.z);
   const stepLength=Math.max(.24,radius*.4);
   const steps=Math.max(1,Math.ceil(distance/stepLength));
@@ -33,7 +33,9 @@ export function moveWithCollisions(start,delta,radius,obstacles,canOccupy=()=>tr
   const candidates=obstacles.filter(o=>
     o.x+o.radius>=lowX&&o.x-o.radius<=highX&&
     o.z+o.radius>=lowZ&&o.z-o.radius<=highZ&&blocks(o));
-  const free=(tx,tz,cx,cz)=>canOccupy(tx,tz)&&!candidates.some(o=>{
+  const groundAt=options.groundAt;
+  const maxStepUp=options.maxStepUp??Infinity;
+  const free=(tx,tz,cx,cz)=>canOccupy(tx,tz)&&(!groundAt||groundAt(tx,tz)<=groundAt(cx,cz)+maxStepUp)&&!candidates.some(o=>{
     if(!overlapsCircle(tx,tz,radius,o))return false;
     if(!overlapsCircle(cx,cz,radius,o))return true;
     // Permit leaving a collision volume already occupied by an older save.
@@ -45,5 +47,5 @@ export function moveWithCollisions(start,delta,radius,obstacles,canOccupy=()=>tr
     if(free(x+dx,z,x,z))x+=dx;else if(Math.abs(dx)>1e-7)blocked=true;
     if(free(x,z+dz,x,z))z+=dz;else if(Math.abs(dz)>1e-7)blocked=true;
   }
-  return {x,z,blocked};
+  return {x,z,blocked,...(groundAt?{groundY:groundAt(x,z)}:{})};
 }

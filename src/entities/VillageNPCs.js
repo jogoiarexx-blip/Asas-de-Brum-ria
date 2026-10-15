@@ -41,6 +41,7 @@ export class VillageNPCs {
       const hat=new THREE.Mesh(new THREE.ConeGeometry(.55,.57,8),cap);hat.position.y=3.32;root.add(hat);
       const halo=new THREE.Mesh(new THREE.TorusGeometry(.95,.065,6,30),new THREE.MeshBasicMaterial({color:0xffdf98}));halo.rotation.x=Math.PI/2;halo.position.y=.12;root.add(halo);
       root.add(labelSprite(spec.name,spec.role));scene.add(root);this.npcs.push({spec,root,halo});
+      world.addObstacle(spec.x,root.position.y,spec.z,.63,3.5,'npc');
     }
     const palette={correio:0xffcb86,ervas:0x89ffc3};
     for(const [id,def] of Object.entries(CONTRACTS)){

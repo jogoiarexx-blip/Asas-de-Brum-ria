@@ -26,7 +26,7 @@ function buildHero() {
 export class Hero {
   constructor(scene,world,dragon) {
     this.world=world;this.dragon=dragon;
-    this.group=buildHero();this.group.position.set(2,world.heightAt(2,11),11);scene.add(this.group);
+    this.group=buildHero();this.group.position.set(2,world.groundHeightAt(2,11),11);scene.add(this.group);
     this.rider=buildHero();this.rider.position.set(0,.75,-.03);this.rider.rotation.y=0;
     this.rider.scale.setScalar(.78);dragon.visual.add(this.rider);this.rider.visible=false;
     this.mounted=false;this.walkTime=0;this.moveSpeed=0;
@@ -45,7 +45,7 @@ export class Hero {
     let moving=!!(dx||dz);
     if(moving){
       const len=Math.hypot(dx,dz),step=(input.isDown('shift')?3.1:9)*dt;const nx=this.group.position.x+dx/len*step,nz=this.group.position.z+dz/len*step;
-      const result=moveWithCollisions(this.group.position,{x:nx-this.group.position.x,z:nz-this.group.position.z},.52,this.world.obstacles,(x,z)=>this.world.walkable(x,z));
+      const result=moveWithCollisions(this.group.position,{x:nx-this.group.position.x,z:nz-this.group.position.z},.52,this.world.obstacles,(x,z)=>this.world.walkable(x,z),()=>true,{groundAt:(x,z)=>this.world.groundHeightAt(x,z),maxStepUp:1.1});
       this.moveSpeed=Math.hypot(result.x-this.group.position.x,result.z-this.group.position.z)/Math.max(dt,.001);
       moving=this.moveSpeed>.0001;
       this.group.position.x=result.x;this.group.position.z=result.z;
@@ -53,7 +53,7 @@ export class Hero {
       this.walkTime+=dt*(input.isDown('shift')?5.2:11);
     }
     if(!moving)this.moveSpeed=0;
-    this.group.position.y=this.world.heightAt(this.group.position.x,this.group.position.z);
+    this.group.position.y=this.world.groundHeightAt(this.group.position.x,this.group.position.z);
     const {legs,arms,cape}=this.group.userData;
     legs.forEach((leg,i)=>leg.rotation.x=THREE.MathUtils.damp(leg.rotation.x,moving?Math.sin(this.walkTime+i*Math.PI)*(input.isDown('shift')?.29:.52):0,10,dt));
     arms.forEach((arm,i)=>arm.rotation.x=THREE.MathUtils.damp(arm.rotation.x,moving?Math.sin(this.walkTime+i*Math.PI)*-.42:0,10,dt));

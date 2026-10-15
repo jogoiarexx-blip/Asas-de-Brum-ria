@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ISLANDS } from './config.js';
 import { seededRandom, clamp } from '../utils/math.js';
 import { obstacleCeiling } from '../utils/collision.js';
+import { surfaceHeightAt } from '../utils/surfaces.js';
 const brown = new THREE.MeshLambertMaterial({color:0x855b37});
 const leafPalette = [0x245d49,0x2b7355,0x398565,0x31735c];
 const rand = seededRandom(18971);
@@ -12,7 +13,7 @@ export class World {
     this.elapsed = 0;
     this.clouds = [];
     this.materials = [];
-    this.obstacles = [];
+    this.obstacles = [];this.surfaces=[];
     this.forestTrees = [];this.forestRocks = [];this.foliageMeshes = [];
     this.cloudWind=1;
     this.populate();
@@ -30,6 +31,7 @@ export class World {
     for (const island of ISLANDS) h=Math.max(h,this.islandHeight(island,x,z));
     return h;
   }
+  groundHeightAt(x,z) { return surfaceHeightAt(this.heightAt(x,z),x,z,this.surfaces); }
   walkable(x,z) { return ISLANDS.some(i=>Math.hypot(x-i.x,z-i.z) < i.r*.92 && this.islandHeight(i,x,z)>1); }
   clearanceAt(x,z,radius=1) { return obstacleCeiling(x,z,radius,this.obstacles); }
   addObstacle(x,y,z,radius,height,type){
@@ -154,6 +156,7 @@ export class World {
       box.position.set(x,y+.65,z);box.rotation.y=x*.1;box.castShadow=true;this.scene.add(box);
       const rim=new THREE.Mesh(new THREE.BoxGeometry(1.41,.15,1.41),gold);
       rim.position.set(x,y+1.25,z);rim.rotation.y=x*.1;this.scene.add(rim);
+      this.addObstacle(x,y,z,1.04,1.35,'crate');
     }
     const guides=[[6,16],[12,17],[18,6],[-2,13]];
     for(const [x,z] of guides) {
@@ -162,6 +165,7 @@ export class World {
       post.position.set(x,y+1.7,z);post.castShadow=true;this.scene.add(post);
       const lamp=new THREE.Mesh(new THREE.OctahedronGeometry(.46),new THREE.MeshStandardMaterial({color:0xffce78,emissive:0xff9e42,emissiveIntensity:.9}));
       lamp.position.set(x,y+3.43,z);this.scene.add(lamp);
+      this.addObstacle(x,y,z,.33,3.55,'post');
     }
   }
   // Batch static vegetation into five draw groups instead of thousands of scene meshes.
@@ -214,12 +218,14 @@ export class World {
     cabin(-12,-14,1);cabin(-22,9,.8);cabin(21,-23,1.13);cabin(-32,-17,.76);
     const platform=new THREE.Mesh(new THREE.CylinderGeometry(7.2,7.9,.75,10),new THREE.MeshLambertMaterial({color:0x9d7c5c}));
     platform.position.set(8,this.heightAt(8,7)+.17,7);platform.receiveShadow=true;this.scene.add(platform);
+    this.surfaces.push({x:8,z:7,radius:7.15,top:platform.position.y+.375});
     const fire=new THREE.Group();fire.position.set(-3,this.heightAt(-3,0),0);
     for(let i=0;i<8;i++){
       const a=i*Math.PI/4;const stone=new THREE.Mesh(new THREE.DodecahedronGeometry(.65,0),new THREE.MeshLambertMaterial({color:0x777a6f}));stone.position.set(Math.cos(a)*2.1,.3,Math.sin(a)*2.1);fire.add(stone);
     }
     const flame=new THREE.Mesh(new THREE.ConeGeometry(.9,2.3,6),new THREE.MeshBasicMaterial({color:0xff9939}));flame.position.y=1.2;fire.add(flame);
     const light=new THREE.PointLight(0xffad60,25,23,2);light.position.y=3;fire.add(light);this.fire=flame;this.scene.add(fire);
+    this.addObstacle(-3,fire.position.y,0,2.2,2.8,'fire');
     const banner=new THREE.Group();banner.position.set(13,this.heightAt(13,-9),-9);
     const pole=new THREE.Mesh(new THREE.CylinderGeometry(.13,.18,9,6),brown);pole.position.y=4.5;banner.add(pole);
     const flag=new THREE.Mesh(new THREE.PlaneGeometry(4,2),new THREE.MeshLambertMaterial({color:0xf0ca79,side:THREE.DoubleSide}));flag.position.set(2,7.4,0);banner.add(flag);this.scene.add(banner);
