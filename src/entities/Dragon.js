@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { approach, clamp, forwardFromYaw, seededRandom } from '../utils/math.js';
 import {moveWithCollisions, obstacleBlocks} from '../utils/collision.js';
+import {moveFlightWithCollisions} from '../utils/spatialSweep.js';
 import {flightPhase, liftBlend} from './flightMath.js';
 import {wingPose} from './wingPose.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
@@ -275,35 +276,44 @@ export class Dragon {
       this.turnAxis=smoothedTurn(this.turnAxis,turn,dt);this.steerInput=this.turnAxis;
       this.yaw+=this.turnAxis*turnSpeed*dt;
       const forward=this.forward();
-      const gust=this.airborne?windDisplacement(this.windStrength,time,dt,this.group.position.y-this.world.heightAt(this.group.position.x,this.group.position.z)): {x:0,z:0};
-      this.windDrift=Math.hypot(gust.x,gust.z)/Math.max(dt,.001);
-      const move=moveWithCollisions(this.group.position,{x:forward.x*this.speed*dt+gust.x,z:forward.z*this.speed*dt+gust.z},
-        this.airborne?1.15:1.65,this.world.obstacles,
-        (x,z)=>Math.abs(x)<425&&Math.abs(z)<425,
-        o=>obstacleBlocks(o,this.group.position.y,1.65),
-        this.airborne?{}:{groundAt:(x,z)=>this.world.groundHeightAt(x,z,1.65),maxStepUp:1.65});
-      this.group.position.x=move.x;this.group.position.z=move.z;
-      if(move.blocked&&!this.airborne)this.speed=Math.min(this.speed,4);
-      const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.65)+2.58;
-      const obstruction=this.world.clearanceAt(this.group.position.x,this.group.position.z,1.15);
-      const safeFloor=Math.max(floor,2.7,Number.isFinite(obstruction)?obstruction+2.12:-Infinity);
       const up=input.isDown('space'),down=input.isDown('ctrl');
       if(up&&!this.airborne){this.airborne=true;this.takeoffTime=0;this.landingTimer=0;}
+      const gust=this.airborne?windDisplacement(this.windStrength,time,dt,this.group.position.y-this.world.heightAt(this.group.position.x,this.group.position.z)): {x:0,z:0};
+      this.windDrift=Math.hypot(gust.x,gust.z)/Math.max(dt,.001);
+      const horizontal={x:forward.x*this.speed*dt+gust.x,z:forward.z*this.speed*dt+gust.z};
       if(this.airborne){
+        // Sweep vertical and horizontal motion together. Testing only the old Y
+        // let a dragon enter the column while climbing or diving in one frame.
         this.takeoffTime+=dt;
-        const desired=landingDescent({airborne:this.airborne,speed:this.speed,height:this.group.position.y-floor,up,down});
+        const floorBefore=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58;
+        const desired=landingDescent({airborne:true,speed:this.speed,height:this.group.position.y-floorBefore,up,down});
         this.verticalVelocity=approach(this.verticalVelocity,desired,dt*(up?69:down?64:48));
-        this.group.position.y+=this.verticalVelocity*dt;
-      }else{this.verticalVelocity=0;this.landingTimer=Math.max(0,this.landingTimer-dt);}
-      if(this.group.position.y<=safeFloor){
-        this.group.position.y=safeFloor;
-        // Obstacle tops are fly-over hazards, not valid landing surfaces.
-        if(!up&&!Number.isFinite(obstruction)){
-          if(this.airborne)this.landingTimer=.52;
-          this.airborne=false;this.takeoffTime=0;this.verticalVelocity=0;
-        }else if(Number.isFinite(obstruction))this.airborne=true;
+        const moved=moveFlightWithCollisions(this.group.position,
+          {x:horizontal.x,y:this.verticalVelocity*dt,z:horizontal.z},1.15,1.65,
+          this.world.obstacles,(x,z)=>this.world.groundHeightAt(x,z,1.15));
+        this.group.position.set(moved.x,moved.y,moved.z);
+        if(moved.blockedVertical)this.verticalVelocity=0;
+        if(moved.blockedHorizontal)this.speed=Math.min(this.speed,8);
+        const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58;
+        if(this.group.position.y<=floor+.015){
+          this.group.position.y=floor;
+          const obstruction=this.world.clearanceAt(this.group.position.x,this.group.position.z,1.15);
+          if(!up&&!Number.isFinite(obstruction)){
+            this.airborne=false;this.takeoffTime=0;this.verticalVelocity=0;this.landingTimer=.52;
+          }
+        }
+      } else {
+        const moved=moveWithCollisions(this.group.position,horizontal,1.65,this.world.obstacles,
+          (x,z)=>Math.abs(x)<425&&Math.abs(z)<425,
+          o=>obstacleBlocks(o,this.group.position.y,1.65),
+          {groundAt:(x,z)=>this.world.groundHeightAt(x,z,1.65),maxStepUp:1.65});
+        this.group.position.x=moved.x;this.group.position.z=moved.z;
+        if(moved.blocked)this.speed=Math.min(this.speed,4);
+        this.group.position.y=Math.max(this.group.position.y,this.world.groundHeightAt(moved.x,moved.z,1.65)+2.58);
+        this.verticalVelocity=0;this.landingTimer=Math.max(0,this.landingTimer-dt);
       }
-      this.group.position.y=clamp(this.group.position.y,safeFloor,110);
+      this.group.position.y=clamp(this.group.position.y,
+        Math.max(2.7,this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58),110);
       if(boost){this.energy=Math.max(0,this.energy-(this.stats?.drain??17)*dt);}else{this.energy=Math.min(this.stats?.maxEnergy??100,this.energy+(this.stats?.regen??12)*dt);}
       this.bank=THREE.MathUtils.damp(this.bank,bankTarget(this.turnAxis,this.speed,this.airborne,gust.x),4.2,dt);
       this.visual.rotation.z=THREE.MathUtils.damp(this.visual.rotation.z,this.bank,5.5,dt);

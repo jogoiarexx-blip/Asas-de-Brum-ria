@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Input } from './Input.js';
 import {CameraOrbit,cameraOffset} from './CameraOrbit.js';
+import {resolveCameraPosition} from '../utils/spatialSweep.js';
 import {safeDismountSpot} from '../utils/surfaces.js';
 import {recoverFreePosition,obstacleBlocks} from '../utils/collision.js';
 import { World } from '../world/World.js';
@@ -387,7 +388,13 @@ export class Game {
     const offset=cameraOffset({forwardX:forward.x,forwardZ:forward.z,distance:back,yaw:this.cameraOrbit.yaw,pitch:this.cameraOrbit.pitch});
     const camPos=new THREE.Vector3(focus.x+offset.x,focus.y+(riding?7.6:7.1)+offset.y,focus.z+offset.z);
     camPos.y=Math.max(camPos.y,this.world.groundHeightAt(camPos.x,camPos.z)+3.5);
-    this.camera.position.lerp(camPos,smoothFollow(riding?3.1:5,dt));
+    // Resolve from the actor toward the smoothed camera: endpoint-only terrain
+    // checks used to let the viewpoint fly through monuments and houses.
+    const followTarget=this.camera.position.clone().lerp(camPos,smoothFollow(riding?3.1:5,dt));
+    const cameraAnchor={x:focus.x,y:focus.y+(riding?3.6:2.7),z:focus.z};
+    const safeCamera=resolveCameraPosition(cameraAnchor,followTarget,this.world.obstacles,
+      (x,z)=>this.world.heightAt(x,z),{radius:.45,groundClearance:1.1});
+    this.camera.position.set(safeCamera.x,safeCamera.y,safeCamera.z);
     const lookAt=new THREE.Vector3(focus.x+forward.x*(riding?9:0),focus.y+(riding?2.3:2),focus.z+forward.z*(riding?9:0));
     this._camTarget??=lookAt.clone();this._camTarget.lerp(lookAt,smoothFollow(4,dt));
     this.camera.lookAt(this._camTarget);

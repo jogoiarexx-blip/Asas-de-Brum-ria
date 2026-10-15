@@ -1,3 +1,7 @@
+## v1.2.3 — Câmera e voo
+
+A câmera recua diante de objetos entre o jogador e o ponto de visão; o voo considera mudanças horizontais e verticais conjuntamente. As missões e os saves anteriores são preservados. Pressione V para recentralizar a câmera e Ctrl para descer.
+
 ## v1.2.2 — Colisão nos monumentos
 
 - Cinco monumentos (inclusive o grande obelisco mostrado na captura) agora registram dois volumes sólidos com altura: pedestal e coluna.

@@ -1,3 +1,14 @@
+# Asas de Brumária v1.2.3 — Colisão de câmera e voo
+
+- Câmera de terceira pessoa verifica todo o segmento entre o personagem e sua posição desejada, evitando atravessar cenário intermediário.
+- Câmera recua antes de construções, monumentos, árvores e terreno.
+- Dragão em voo aplica colisão contínua em X/Y/Z, evitando atravessar paredes durante turbo, descer através de pedras e subir através de tetos.
+- Mantidos o pouso e os controles sem mudar o formato de salvamento ou as missões.
+- Dez novos testes automatizados (total: 138).
+- Os volumes são aproximados; renderização WebGL ainda requer validação manual.
+
+---
+
 ## v1.2.2 — Colisão nos monumentos
 
 - Cinco monumentos (inclusive o grande obelisco mostrado na captura) agora registram dois volumes sólidos com altura: pedestal e coluna.
