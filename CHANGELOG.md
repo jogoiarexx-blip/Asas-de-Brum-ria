@@ -1,3 +1,15 @@
+## v1.2.8 — Confiabilidade, estabilidade e diagnóstico F3
+
+- Corrigida confirmação prematura da gravação de GLB no armazenamento local; o resultado agora depende de transação concluída.
+- Corrigida a substituição do modelo recém-importado por modelo antigo salvo após carregamento assíncrono.
+- Tela de erro recuperável após exceção no quadro, com opção de recarregar, e avisos para perda de contexto WebGL.
+- Diagnóstico F3 de chamadas de desenho, triângulos, uso de GPU, projéteis, partículas e FPS para reproduzir travamentos em PCs fracos.
+- Trabalho gráfico pausado quando a aba estiver oculta, sem acumular tempo de simulação.
+- 206 testes: 196 anteriores + 10 regressões novas. Sem regressões encontradas nos testes automatizados.
+- Chromium no ambiente de teste bloqueou acesso ao servidor local; não há confirmação de ganho FPS real por GPU.
+
+---
+
 ## v1.2.7 — Carregamento de GLB corrigido
 
 - Importação do arquivo GLB diretamente pelo navegador, com feedback detalhado.

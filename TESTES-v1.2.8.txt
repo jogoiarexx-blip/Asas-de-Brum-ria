@@ -1,0 +1,8 @@
+Asas de Brumária v1.2.8 — Testes e limitações
+
+- npm run check: 206/206 passaram (Node.js 22), sintaxe e imports locais válidos.
+- Incluem falha de commit IndexedDB após request bem-sucedido, confirmação apenas em oncomplete, diagnósticos e pausa quando aba oculta.
+- Arquivos entregues em dois ZIPs distintos: FONTE e Windows (jogo web + PowerShell).
+- Browser real: Playwright Chromium bloqueou navegação em localhost com net::ERR_BLOCKED_BY_ADMINISTRATOR; não é possível atestar jogo/WebGL sem o teste do usuário.
+- Dependências Three.js r180 obtidas na primeira execução com internet, depois cache local opcional.
+- Teclas: F3 alterna painel diagnóstico.

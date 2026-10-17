@@ -35,7 +35,6 @@ function checkWebGL(){
   let ctx=null;
   try{ctx=canvas.getContext('webgl2')||canvas.getContext('webgl');}catch{ /* browser disabled GPU */ }
   if(!ctx)throw new Error('WebGL indisponível. No Chrome/Edge, ative a aceleração gráfica e atualize o driver de vídeo.');
-  ctx.getExtension('WEBGL_lose_context')?.loseContext();
 }
 
 (async function boot(){

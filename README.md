@@ -1,3 +1,18 @@
+# Asas de Brumária v1.2.8 — Confiabilidade e diagnósticos
+
+- **GLB persistente:** a gravação no IndexedDB agora só é confirmada depois que a transação termina; falhas de commit exibem aviso, sem falso sucesso.
+- **GLB sem corrida assíncrona:** selecionar um modelo ou restaurar o original impede que uma restauração antiga sobrescreva a nova escolha enquanto carrega.
+- **Recuperação WebGL:** detecta perda/restauração do contexto gráfico e volta ao perfil LEVE para segurança, com aviso na tela.
+- **Erros de jogo visíveis:** falhas inesperadas de quadro exibem uma tela com erro e botão de reinicialização em vez de congelar silenciosamente; salva o progresso quando possível.
+- **F3 — Diagnóstico:** FPS, draw calls, triângulos, geometrias, texturas, tiros e partículas são exibidos uma vez por segundo, facilitando análises futuras.
+- **Segundo plano:** pausa o trabalho pesado e reinicia a medição de FPS quando a aba está oculta.
+- **WebGL:** removida a perda de contexto forçada no teste inicial.
+- **Compatibilidade:** missões, controle, voo, progressão e saves anteriores mantidos. Não foi adicionado nenhum GLB de terceiros.
+
+**Validação:** 206 testes automatizados, incluindo testes comportamentais de falha de transação e de diagnóstico. O navegador Chromium deste ambiente não permitiu acesso ao servidor local; portanto o WebGL visual ainda precisa de validação em um dispositivo com GPU.
+
+---
+
 # Asas de Brumária v1.2.7 — Importação GLB funcional
 
 A versão anterior não possuía nenhum GLB configurado e o importador não estava acessível no jogo. Agora, pressione **T** durante a partida, abra a seção **PERSONAGEM 3D · GLB**, escolha **IMPORTAR GLB** e selecione um arquivo `.glb` do seu computador. Você também pode usar **TESTAR MODELO DEMO** e **VOLTAR AO ORIGINAL**.

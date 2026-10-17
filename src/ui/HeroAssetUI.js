@@ -6,7 +6,7 @@ import {buildDemoGLB} from '../entities/demoGlb.js';
 
 export class HeroAssetUI {
  constructor(hero){
-   this.hero=hero;this.busy=false;
+   this.hero=hero;this.busy=false;this.hasInteracted=false;
    this.status=document.getElementById('hero-glb-status');
    this.input=document.getElementById('hero-glb-file');
    this.buttons=['hero-glb-import','hero-glb-demo','hero-glb-reset'].map(id=>document.getElementById(id));
@@ -24,7 +24,8 @@ export class HeroAssetUI {
    this.status.textContent=message;this.status.dataset.state=mode;
  }
  lock(state){this.busy=state;this.buttons.forEach(btn=>btn.disabled=state);}
- async install(file,{remember=true}={}){
+ async install(file,{remember=true,automatic=false}={}){
+   if(!automatic)this.hasInteracted=true;
    if(this.busy)return false;
    this.lock(true);
    try{
@@ -56,14 +57,16 @@ export class HeroAssetUI {
  async loadSavedHeroGLB(){
    try{
      const record=await loadSavedHeroGLB();
-     if(!record||this.busy)return;
-     await this.install(new File([record.blob],record.name||'personagem.glb',{type:'model/gltf-binary'}),{remember:false});
+     if(this.hasInteracted||this.busy)return;
+     if(!record)return;
+     await this.install(new File([record.blob],record.name||'personagem.glb',{type:'model/gltf-binary'}),{remember:false,automatic:true});
    }catch(error){
      console.warn('GLB anterior não restaurado:',error);
      this.setStatus('Escolha seu arquivo GLB ou teste o modelo de demonstração.','neutral');
    }
  }
  async reset(){
+   this.hasInteracted=true;
    if(this.busy)return;
    this.lock(true);
    try{clearHeroGLB(this.hero);await clearSavedHeroGLB();this.setStatus('Personagem original restaurado. Modelo salvo apagado.','ok');}

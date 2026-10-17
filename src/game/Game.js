@@ -26,6 +26,7 @@ import {Landmarks} from '../world/Landmarks.js';
 import {DayNight} from '../systems/DayNight.js';
 import {StablePreview} from '../ui/StablePreview.js';
 import {GraphicsQuality} from '../systems/GraphicsQuality.js';
+import {performanceSnapshot,shouldSkipRendering} from '../systems/PerformanceDiagnostics.js';
 import {projectileLimit} from '../systems/PerformanceBudget.js';
 import {projectileAdmission} from '../systems/ProjectilePolicy.js';
 import {WildBonds} from '../systems/WildBonds.js';
@@ -45,6 +46,7 @@ export class Game {
     this.renderer.shadowMap.enabled=true;
     this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     this.container.appendChild(this.renderer.domElement);
+    this.webglLost=false;this.frameError=null;this.lastKnownFPS=0;this.diagnosticsVisible=false;
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x9bdbef);this.scene.fog=new THREE.FogExp2(0xa3e2ed,.00165);
     this.camera=new THREE.PerspectiveCamera(67,innerWidth/innerHeight,.15,1050);
     this.input=new Input();this.audio=new AudioSystem();this.ui=new UI();
@@ -94,7 +96,47 @@ export class Game {
     document.addEventListener('visibilitychange',()=>{if(document.hidden)this.saveGame();});
     document.getElementById('start-btn').addEventListener('click',()=>this.start());
     this.ui.updateQuest(this.missions);
-    this.renderer.setAnimationLoop(()=>this.frame());
+    this.renderer.domElement.addEventListener('webglcontextlost',event=>{
+      event.preventDefault();this.webglLost=true;
+      this.ui.toast('GPU reiniciada: aguardando restaurar gráficos…',5);
+    });
+    this.renderer.domElement.addEventListener('webglcontextrestored',()=>{
+      this.webglLost=false;
+      // Reconfigure buffers and shadows after a driver/browser GPU restart.
+      this.graphics.tier='economy';this.graphics.apply();this.applySceneQuality();this.updateGraphicsLabel();
+      this.ui.toast('Gráficos restaurados no modo LEVE. O progresso foi preservado.',6);
+    });
+    this.renderer.setAnimationLoop(()=>{
+      try{if(!this.frameError)this.frame();}
+      catch(error){this.handleFrameFailure(error);}
+    });
+  }
+  handleFrameFailure(error){
+    if(this.frameError)return;
+    this.frameError=error;
+    console.error('Erro na atualização do jogo:',error);
+    try{this.saveGame();}catch{}
+    // Keep the error visible instead of a frozen frame without explanation.
+    const fatal=document.getElementById('fatal');
+    fatal.classList.remove('hidden');
+    fatal.replaceChildren();
+    const title=document.createElement('h2');title.textContent='O jogo encontrou um erro';fatal.append(title);
+    const message=document.createElement('p');message.textContent='Seu progresso foi salvo quando possível. Recarregue a página para tentar continuar.';fatal.append(message);
+    const details=document.createElement('pre');details.textContent=String(error?.stack??error);fatal.append(details);
+    const retry=document.createElement('button');retry.textContent='Recarregar jogo';
+    retry.addEventListener('click',()=>window.location.reload());fatal.append(retry);
+  }
+  toggleDiagnostics(){
+    this.diagnosticsVisible=!this.diagnosticsVisible;
+    document.getElementById('performance-panel')?.classList.toggle('hidden',!this.diagnosticsVisible);
+  }
+  renderDiagnostics(fps){
+    if(!this.diagnosticsVisible)return;
+    let active=0;
+    for(const bucket of Object.values(this.effects.buckets))active+=bucket.particles.length;
+    document.getElementById('performance-panel').textContent=performanceSnapshot({
+      fps,renderer:this.renderer,projectiles:this.projectiles.length,effects:active,
+      tier:this.graphics.tier,mounted:this.dragon.riding});
   }
   bindOrbitControls(){
     // Orbit only on the canvas: HUD buttons and the stable panel remain clickable.
@@ -447,7 +489,11 @@ export class Game {
     buttons[next].focus();
   }
   frame(){
-    const realDt=this.clock.getDelta(),dt=Math.min(realDt,.05);this.elapsed+=dt;
+    const realDt=this.clock.getDelta();
+    if(shouldSkipRendering({hidden:document.hidden,webglLost:this.webglLost})){
+      this.fpsTime=0;this.frames=0;this.input.clearActions();return;
+    }
+    const dt=Math.min(realDt,.05);this.elapsed+=dt;
     this.input.update();
     const controllerConnected=this.input.pad.connected;
     if(controllerConnected!==this.controllerWasConnected){
@@ -476,6 +522,7 @@ export class Game {
       if(this.input.consume('p'))this.saveGame(true);
       if(this.input.consume('c')){this.weather.cycle();this.saveGame();this.ui.toast(`Clima: ${this.weather.mode.label}`,3);}
       if(this.input.consume('g'))this.cycleGraphics();
+      if(this.input.consume('f3'))this.toggleDiagnostics();
       if(this.input.consume('v')){this.cameraOrbit.reset();this.ui.toast('Câmera centralizada.');}
       if(this.input.consume('n')){this.dayNight.jumpHours(3);this.saveGame();this.ui.toast(`Hora do mundo: ${this.dayNight.clock}`,3);}
       if(!this.ui.stable.classList.contains('hidden')){
@@ -518,7 +565,7 @@ export class Game {
     this.updateCamera(dt);
     this.renderer.render(this.scene,this.camera);
     this.fpsTime+=realDt;this.frames++;
-    if(this.fpsTime>=1){const fps=Math.round(this.frames/this.fpsTime);this.ui.setFPS(fps);
+    if(this.fpsTime>=1){const fps=Math.round(this.frames/this.fpsTime);this.lastKnownFPS=fps;this.ui.setFPS(fps);this.renderDiagnostics(fps);
       if(this.started && !document.hidden && this.graphics.sample(fps)){this.applySceneQuality();this.updateGraphicsLabel();this.ui.toast(`Ajuste automático: gráficos ${this.graphics.label}`,3);}
       this.fpsTime=0;this.frames=0;}
   }
