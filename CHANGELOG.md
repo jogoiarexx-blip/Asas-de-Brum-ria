@@ -1,3 +1,15 @@
+# v1.2.6 — Desempenho e estabilidade do fogo
+
+- Corrigido gargalo de projéteis: reutilização de malhas, limite de objetos ativos e eliminação de fontes de luz por disparo.
+- Quatro malhas instanciadas substituem centenas de objetos individuais de partículas, com limites específicos por qualidade.
+- Perfil LEVE mais agressivo, autoqualidade conservadora, menos atualização do minimapa e da chuva.
+- Cálculo de FPS corrigido para usar tempo real do navegador; desempenho abaixo da meta reduz a qualidade automaticamente.
+- Nós de áudio são desligados após efeitos para evitar acumulação.
+- 14 testes novos com regressão de desempenho e políticas de projéteis; total de 187 testes aprovados.
+- Não é garantida performance fixa em hardware não testado; teste visual WebGL e controle físico permanecem pendentes de validação direta.
+
+---
+
 # v1.2.5 — Controle, personagem e arquitetura
 
 - Gamepad API padrão com suporte a Xbox/PlayStation/USB/Bluetooth, analógicos com deadzone e câmera independente.

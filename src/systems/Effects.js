@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-/** Partículas leves e limitadas: sem crescimento infinito de objetos durante o combate. */
+import {effectLimit} from './PerformanceBudget.js';
+/** One instanced draw call per effect type, no temporary meshes or point lights. */
 export class Effects {
   constructor(scene){
-    this.scene=scene;this.particles=[];
+    this.scene=scene;this.limit=effectLimit('balanced');
     this.geometry=new THREE.TetrahedronGeometry(.75,0);
     this.materials={
       fire:new THREE.MeshBasicMaterial({color:0xffa15e}),
@@ -10,23 +11,53 @@ export class Effects {
       rescue:new THREE.MeshBasicMaterial({color:0x9dffde}),
       impact:new THREE.MeshBasicMaterial({color:0xffe4ae})
     };
+    this.buckets={};this.dummy=new THREE.Object3D();
+    const capacity=effectLimit('quality');
+    for(const [type,material] of Object.entries(this.materials)){
+      const mesh=new THREE.InstancedMesh(this.geometry,material,capacity);
+      mesh.count=0;mesh.frustumCulled=false;mesh.castShadow=false;
+      scene.add(mesh);this.buckets[type]={mesh,particles:[]};
+    }
+  }
+  setQuality(tier){
+    this.limit=effectLimit(tier);
+    for(const bucket of Object.values(this.buckets)){
+      if(bucket.particles.length>this.limit)bucket.particles.length=this.limit;
+      bucket.mesh.count=bucket.particles.length;
+    }
   }
   burst(position,type='impact',count=12){
-    for(let i=0;i<count&&this.particles.length<140;i++){
-      const mesh=new THREE.Mesh(this.geometry,this.materials[type]);mesh.position.copy(position);
-      mesh.scale.setScalar(.5+Math.random()*.8);this.scene.add(mesh);
+    const bucket=this.buckets[type]??this.buckets.impact;
+    const remaining=Math.max(0,this.limit-bucket.particles.length);
+    const size=Math.min(remaining,Math.max(0,Math.floor(count)));
+    for(let i=0;i<size;i++){
       const theta=Math.random()*Math.PI*2,vertical=(Math.random()-.38)*2;
-      const velocity=new THREE.Vector3(Math.cos(theta),vertical,Math.sin(theta)).normalize().multiplyScalar(7+Math.random()*13);
-      this.particles.push({mesh,velocity,life:.45+Math.random()*.55,maxLife:1});
+      const speed=7+Math.random()*13;
+      const v=new THREE.Vector3(Math.cos(theta),vertical,Math.sin(theta)).normalize().multiplyScalar(speed);
+      const life=.45+Math.random()*.55;
+      bucket.particles.push({position:position.clone(),velocity:v,life,maxLife:life,scale:.5+Math.random()*.8,rotation:Math.random()*6});
     }
   }
   update(dt){
-    for(let i=this.particles.length-1;i>=0;i--){
-      const p=this.particles[i];p.life-=dt;
-      p.mesh.position.addScaledVector(p.velocity,dt);
-      p.velocity.y-=8*dt;p.mesh.rotation.x+=dt*5;p.mesh.rotation.y+=dt*6;
-      p.mesh.scale.multiplyScalar(Math.max(.001,1-dt*2.1));
-      if(p.life<=0){this.scene.remove(p.mesh);this.particles.splice(i,1);}
+    const d=this.dummy;
+    for(const bucket of Object.values(this.buckets)){
+      const particles=bucket.particles;
+      for(let i=particles.length-1;i>=0;i--){
+        const p=particles[i];p.life-=dt;
+        if(p.life<=0){particles[i]=particles[particles.length-1];particles.pop();continue;}
+        p.position.addScaledVector(p.velocity,dt);p.velocity.y-=8*dt;p.rotation+=dt*6;
+        p.scale*=Math.max(.001,1-dt*2.1);
+      }
+      bucket.mesh.count=particles.length;
+      for(let i=0;i<particles.length;i++){
+        const p=particles[i];d.position.copy(p.position);d.scale.setScalar(Math.max(.005,p.scale));
+        d.rotation.set(p.rotation*.85,p.rotation,0);d.updateMatrix();bucket.mesh.setMatrixAt(i,d.matrix);
+      }
+      if(particles.length)bucket.mesh.instanceMatrix.needsUpdate=true;
     }
+  }
+  dispose(){
+    for(const bucket of Object.values(this.buckets))this.scene.remove(bucket.mesh);
+    this.geometry.dispose();Object.values(this.materials).forEach(m=>m.dispose());
   }
 }

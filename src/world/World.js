@@ -46,7 +46,7 @@ export class World {
     const scene = this.scene;
     const sky = new THREE.HemisphereLight(0xd6f4ff,0x3a6d65,2.25); scene.add(sky);this.sky=sky;
     const sun = new THREE.DirectionalLight(0xffedcb,2.65); sun.position.set(-135,190,-200);
-    sun.castShadow=true; sun.shadow.mapSize.set(1024,1024); sun.shadow.camera.left=-140;sun.shadow.camera.right=140; sun.shadow.camera.top=140; sun.shadow.camera.bottom=-140;
+    sun.castShadow=true; sun.shadow.mapSize.set(512,512); sun.shadow.camera.left=-140;sun.shadow.camera.right=140; sun.shadow.camera.top=140; sun.shadow.camera.bottom=-140;
     sun.shadow.camera.near=1; sun.shadow.camera.far=500; sun.shadow.bias=-.001; scene.add(sun);scene.add(sun.target);this.sun=sun;
     const sunOrb = new THREE.Mesh(new THREE.SphereGeometry(29,20,16),new THREE.MeshBasicMaterial({color:0xffefd0,fog:false}));
     sunOrb.position.set(-400,270,-520); scene.add(sunOrb);this.sunOrb=sunOrb;

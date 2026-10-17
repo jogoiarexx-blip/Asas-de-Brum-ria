@@ -1,14 +1,15 @@
 /** Adaptive resolution/shadows; no mission or save data is modified. */
 export const GRAPHICS_TIERS=Object.freeze(['economy','balanced','quality']);
 export const GRAPHICS_LABELS=Object.freeze({economy:'LEVE',balanced:'EQUILIBRADO',quality:'DETALHADO'});
-export const GRAPHICS_CAPS=Object.freeze({economy:.82,balanced:1.2,quality:1.65});
+export const GRAPHICS_CAPS=Object.freeze({economy:.72,balanced:1,quality:1.5});
 export function pixelRatioFor(tier,deviceRatio=1){
   const ratio=Number.isFinite(deviceRatio)&&deviceRatio>0?deviceRatio:1;
   return Math.min(ratio,GRAPHICS_CAPS[tier]??GRAPHICS_CAPS.balanced);
 }
 export function suggestedTier({coarse=false,deviceMemory=0}={}){
-  if(coarse||deviceMemory>0&&deviceMemory<=4)return 'balanced';
-  return 'quality';
+  if(deviceMemory>0&&deviceMemory<=4)return 'economy';
+  if(coarse||!deviceMemory)return 'balanced';
+  return deviceMemory>=8?'quality':'balanced';
 }
 export function nextAdaptiveTier(tier,fps,slowSamples,fastSamples){
   const idx=Math.max(0,GRAPHICS_TIERS.indexOf(tier));
@@ -47,7 +48,9 @@ export class GraphicsQuality {
     if(fps<29){this.slowSamples++;this.fastSamples=0;}
     else if(fps>56){this.fastSamples++;this.slowSamples=0;}
     else{this.slowSamples=0;this.fastSamples=0;}
-    const tier=nextAdaptiveTier(this.tier,fps,this.slowSamples,this.fastSamples);
+    let tier=nextAdaptiveTier(this.tier,fps,this.slowSamples,this.fastSamples);
+    // Never auto-upgrade low-memory/coarse devices just because a light scene hit 60 FPS.
+    if((this.coarse||this.memory>0&&this.memory<=4)&&tier==='quality')tier='balanced';
     if(tier===this.tier)return false;
     this.tier=tier;this.cooldown=12;this.slowSamples=0;this.fastSamples=0;
     this.apply();return true;

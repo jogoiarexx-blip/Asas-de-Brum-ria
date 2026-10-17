@@ -25,14 +25,18 @@ import {Landmarks} from '../world/Landmarks.js';
 import {DayNight} from '../systems/DayNight.js';
 import {StablePreview} from '../ui/StablePreview.js';
 import {GraphicsQuality} from '../systems/GraphicsQuality.js';
+import {projectileLimit} from '../systems/PerformanceBudget.js';
+import {projectileAdmission} from '../systems/ProjectilePolicy.js';
 import {WildBonds} from '../systems/WildBonds.js';
 import {WildDragons} from '../entities/WildDragons.js';
 
 export class Game {
   constructor() {
     this.container=document.getElementById('game');
-    this.renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches?1.2:1.65));
+    const weakGpu=(navigator.deviceMemory>0&&navigator.deviceMemory<=4)||matchMedia('(pointer:coarse)').matches;
+    this.renderer=new THREE.WebGLRenderer({antialias:!weakGpu,powerPreference:'high-performance'});
+    // GraphicsQuality applies a device-aware resolution cap immediately below.
+    this.renderer.setPixelRatio(1);
     this.renderer.setSize(innerWidth,innerHeight);
     this.renderer.outputColorSpace=THREE.SRGBColorSpace;
     this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -58,6 +62,7 @@ export class Game {
     this.hero=new Hero(this.scene,this.world,this.dragon);
     this.enemies=new EnemySquad(this.scene,this.world);
     this.effects=new Effects(this.scene);
+    this.applySceneQuality();
     this.contracts=new VillageContracts(this.savedData?.contracts);
     this.villagers=new VillageNPCs(this.scene,this.world);
     this.wildDragons=new WildDragons(this.scene,this.world,this.wildBonds);
@@ -75,7 +80,7 @@ export class Game {
     this.stablePreview=null;
     if(this.savedData){document.getElementById('start-btn').firstChild.textContent='CONTINUAR AVENTURA ';document.getElementById('new-game-btn').classList.remove('hidden');}
     document.getElementById('new-game-btn').addEventListener('click',()=>this.newGame());
-    this.projectiles=[];this.clock=new THREE.Clock();this.started=false;this.elapsed=0;this.fpsTime=0;this.frames=0;
+    this.projectiles=[];this.projectilePool=[];this._projectileFrom=new THREE.Vector3();this._projectileTo=new THREE.Vector3();this.clock=new THREE.Clock();this.started=false;this.elapsed=0;this.fpsTime=0;this.frames=0;
     this.health=100;this.maxHealth=100;this.hurtImmunity=0;this.hitFlash=0;this.needsProjectileClear=false;
     if(this.savedData)this.restoreSave(this.savedData);
     this.projectileGeometry=new THREE.IcosahedronGeometry(.9,1);
@@ -191,8 +196,14 @@ export class Game {
     if(p.mounted){this.dragon.mount();this.hero.setMounted(true);}
     this.health=p.health;
   }
+  applySceneQuality(){
+    const tier=this.graphics.tier;
+    this.effects?.setQuality(tier);this.weather?.setQuality(tier);
+    if(this.world?.sun){this.world.sun.castShadow=tier!=='economy';}
+    // Shadows are fully disabled in economy. Never change map size on each shot.
+  }
   updateGraphicsLabel(){document.getElementById('quality-toggle').textContent=`GRÁFICOS: ${this.graphics.label} · G`;}
-  cycleGraphics(){this.graphics.cycle();this.updateGraphicsLabel();this.ui.toast(`Qualidade: ${this.graphics.label}`,3);}
+  cycleGraphics(){this.graphics.cycle();this.applySceneQuality();this.updateGraphicsLabel();this.ui.toast(`Qualidade: ${this.graphics.label}`,3);}
   onResize(){
     this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();this.renderer.setSize(innerWidth,innerHeight);
     this.graphics.onResize(window.devicePixelRatio||1);
@@ -277,16 +288,29 @@ export class Game {
     this.hero.group.position.set(spot.x,spot.y,spot.z);
     this.dragon.dismount();this.hero.setMounted(false);this.ui.toast('Você desmontou do dragão.');this.saveGame();
   }
+  getProjectile(owner){
+    const mesh=this.projectilePool.pop()??new THREE.Mesh(this.projectileGeometry,this.projectileMaterials[owner]);
+    mesh.material=this.projectileMaterials[owner];mesh.visible=true;
+    return mesh;
+  }
+  recycleProjectileAt(index){
+    const bullet=this.projectiles[index];
+    this.scene.remove(bullet.mesh);
+    this.projectilePool.push(bullet.mesh);
+    this.projectiles.splice(index,1);
+  }
   spawnProjectile(origin,direction,owner){
-    const mesh=new THREE.Mesh(this.projectileGeometry,this.projectileMaterials[owner]);
+    const cap=projectileLimit(this.graphics.tier);
+    const admission=projectileAdmission(this.projectiles,owner,cap);
+    if(!admission.allowed)return false;
+    if(admission.evictIndex>=0)this.recycleProjectileAt(admission.evictIndex);
+    const mesh=this.getProjectile(owner);
     mesh.position.copy(origin);mesh.scale.setScalar(owner==='enemy'?1.9:1.5);
-    const color=owner==='enemy'?0xf04eaa:0xff8b36;
-    const light=new THREE.PointLight(color,8,14,2);mesh.add(light);
     this.scene.add(mesh);
     const speed=owner==='enemy'?56:95;
     this.projectiles.push({mesh,velocity:direction.clone().multiplyScalar(speed),life:owner==='enemy'?3.2:2.4,owner});
-    if(owner==='enemy')this.audio.play('enemyFire');
-    else this.audio.play('fire');
+    this.audio.play(owner==='enemy'?'enemyFire':'fire');
+    return true;
   }
   fire(){
     if(!this.dragon.riding){this.ui.toast('Monte no seu dragão primeiro.');return;}
@@ -294,7 +318,7 @@ export class Game {
     if(this.dragon.fireCooldown>0)return;
     const stats=this.progression.stats;
     if(this.dragon.energy<stats.fireCost){this.ui.toast('Energia insuficiente para lançar fogo.');return;}
-    this.dragon.fireCooldown=stats.fireCooldown;this.dragon.energy-=stats.fireCost;
+    // Only spend stamina when an actual projectile can be scheduled.
     this.dragon.triggerAttack();
     this.projectileMaterials.player.color.setHex(this.progression.species==='brasa'?0xff6542:this.progression.species==='raio'?0x9dd8ff:0xffb65a);
     const direction=this.dragon.forward();
@@ -310,8 +334,10 @@ export class Game {
     }
     if(best)direction.lerp(best,.86).normalize();
     const start=this.dragon.group.localToWorld(new THREE.Vector3(0,.48,-4.4));
-    this.spawnProjectile(start,direction,'player');
-    this.effects.burst(start,'fire',7);
+    if(this.spawnProjectile(start,direction,'player')){
+      this.dragon.fireCooldown=stats.fireCooldown;this.dragon.energy-=stats.fireCost;
+      this.effects.burst(start,'fire',7);
+    }
   }
   takeDamage(amount){
     if(!this.dragon.riding||this.hurtImmunity>0)return false;
@@ -328,14 +354,13 @@ export class Game {
     return true;
   }
   clearProjectiles(){
-    for(const bullet of this.projectiles)this.scene.remove(bullet.mesh);
-    this.projectiles.length=0;
+    while(this.projectiles.length)this.recycleProjectileAt(this.projectiles.length-1);
   }
   updateProjectiles(dt){
     for(let i=this.projectiles.length-1;i>=0;i--){
       const bullet=this.projectiles[i];bullet.life-=dt;
-      const from=bullet.mesh.position.clone();
-      const to=from.clone().addScaledVector(bullet.velocity,dt);
+      const from=this._projectileFrom.copy(bullet.mesh.position);
+      const to=this._projectileTo.copy(from).addScaledVector(bullet.velocity,dt);
       bullet.mesh.position.copy(to);bullet.mesh.rotation.x+=dt*7;
       bullet.mesh.scale.setScalar((bullet.owner==='enemy'?1.55:1.25)+Math.sin(bullet.life*26)*.13);
       let hit=false;
@@ -368,7 +393,7 @@ export class Game {
       } else if(this.missions.stage===4&&this.dragon.riding&&segmentSphereHit(from,to,this.dragon.group.position,4.2)){
         this.takeDamage(16);hit=true;
       }
-      if(hit||bullet.life<=0||to.y<-.9){this.scene.remove(bullet.mesh);this.projectiles.splice(i,1);}
+      if(hit||bullet.life<=0||to.y<-.9)this.recycleProjectileAt(i);
     }
     if(this.needsProjectileClear){this.clearProjectiles();this.needsProjectileClear=false;}
   }
@@ -420,7 +445,7 @@ export class Game {
     buttons[next].focus();
   }
   frame(){
-    const dt=Math.min(this.clock.getDelta(),.05);this.elapsed+=dt;
+    const realDt=this.clock.getDelta(),dt=Math.min(realDt,.05);this.elapsed+=dt;
     this.input.update();
     const controllerConnected=this.input.pad.connected;
     if(controllerConnected!==this.controllerWasConnected){
@@ -490,9 +515,9 @@ export class Game {
     }else this.dragon.update(dt,{isDown:()=>false},this.elapsed);
     this.updateCamera(dt);
     this.renderer.render(this.scene,this.camera);
-    this.fpsTime+=dt;this.frames++;
+    this.fpsTime+=realDt;this.frames++;
     if(this.fpsTime>=1){const fps=Math.round(this.frames/this.fpsTime);this.ui.setFPS(fps);
-      if(this.graphics.sample(fps)){this.updateGraphicsLabel();this.ui.toast(`Ajuste automático: gráficos ${this.graphics.label}`,3);}
+      if(this.started && !document.hidden && this.graphics.sample(fps)){this.applySceneQuality();this.updateGraphicsLabel();this.ui.toast(`Ajuste automático: gráficos ${this.graphics.label}`,3);}
       this.fpsTime=0;this.frames=0;}
   }
 }

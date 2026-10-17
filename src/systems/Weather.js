@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {WEATHER_MODES,weatherMode,normalizeWeather,advanceWeather,nextWeather} from './weatherMath.js';
 import {skyLighting} from './dayCycleMath.js';
+import {weatherParticleLimit} from './PerformanceBudget.js';
 
 /** Chuva e relâmpagos exclusivamente locais, sem texturas externas ou partículas infinitas. */
 export class Weather {
@@ -16,7 +17,12 @@ export class Weather {
     this.material=new THREE.PointsMaterial({color:0xb4d9ee,size:.7,transparent:true,opacity:.70,depthWrite:false,fog:true,sizeAttenuation:true});
     this.rain=new THREE.Points(this.geometry,this.material);this.rain.frustumCulled=false;
     this.rain.visible=false;scene.add(this.rain);
+    this.activeCount=this.count;
     this.flash=new THREE.PointLight(0xe7efff,0,600);this.flash.position.set(0,130,0);scene.add(this.flash);
+  }
+  setQuality(tier){
+    this.activeCount=Math.min(this.count,weatherParticleLimit(tier));
+    this.geometry.setDrawRange(0,this.activeCount);
   }
   random(){this.seed=(1664525*this.seed+1013904223)>>>0;return this.seed/4294967296;}
   reseed(){for(let i=0;i<this.count;i++){
@@ -46,7 +52,7 @@ export class Weather {
       // Coordenadas da chuva são relativas ao jogador para evitar renderizar todo o mundo.
       this.rain.position.set(focus.x,focus.y+20,focus.z);
       this.material.opacity=.35+desired.rain*.44;
-      for(let i=0;i<this.count;i++){
+      for(let i=0;i<this.activeCount;i++){
         let y=this.positions[i*3+1]-this.speed[i]*dt*(1+desired.rain*.3);
         if(y<-25){y+=90;this.positions[i*3]=(this.random()-.5)*130;this.positions[i*3+2]=(this.random()-.5)*130;}
         this.positions[i*3+1]=y;

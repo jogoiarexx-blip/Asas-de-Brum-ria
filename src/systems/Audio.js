@@ -17,7 +17,9 @@ export class AudioSystem {
     if (glide) osc.frequency.exponentialRampToValueAtTime(Math.max(50,frequency+glide),t+duration);
     gain.gain.setValueAtTime(.0001,t); gain.gain.exponentialRampToValueAtTime(volume,t+.018);
     gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
-    osc.connect(gain).connect(this.ctx.destination); osc.start(t); osc.stop(t+duration+.01);
+    osc.connect(gain).connect(this.ctx.destination);
+    osc.onended=()=>{osc.disconnect();gain.disconnect();};
+    osc.start(t); osc.stop(t+duration+.01);
   }
   play(name) {
     if (name === 'mount') { this.tone(250,.16,'triangle',.08,270); this.tone(480,.36,'sine',.06,220); }

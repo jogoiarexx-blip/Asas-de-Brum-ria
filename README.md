@@ -1,3 +1,21 @@
+# Asas de Brumária v1.2.6 — Fogo otimizado e modo leve
+
+## O que mudou
+- Explosões agora usam quatro grupos de instâncias 3D (um por tipo), sem criar uma malha por partícula. Limite simultâneo por tipo: 14 em LEVE, 32 em EQUILIBRADO e 60 em DETALHADO.
+- Projéteis são reutilizados (pool), limitados a 12/20/28 conforme o perfil. Fogo inimigo não pode ocupar todos os espaços e impedir permanentemente os disparos do jogador.
+- Removidas luzes dinâmicas individuais dos tiros, reduzindo o custo de iluminação, GPU e descarte de memória durante batalhas.
+- Chuva e HUD usam orçamentos variáveis, evitando trabalho desnecessário nos dispositivos mais modestos.
+- Gráficos automáticos iniciam em LEVE com até 4 GB de memória informada pelo navegador, EQUILIBRADO em aparelhos sem classificação e detalhado em desktops com muita memória. O jogo reduz qualidade ao detectar FPS baixo.
+- Escala de renderização por perfil: LEVE até 0,72, EQUILIBRADO até 1,00 e DETALHADO até 1,50 pixels físicos por CSS pixel, com sombras desabilitadas em LEVE.
+- FPS agora usa tempo real de quadro, não o tempo limitado para física, e não adapta enquanto a tela inicial estiver aberta.
+- Áudio desconecta nós temporários depois de tocar. O mapa e indicadores atualizam menos vezes por segundo no modo LEVE.
+
+**Importante:** não há medição garantida de FPS em PCs de terceiros. A bateria de testes mede consistência da lógica, não reproduz a GPU do jogador. Para forçar desempenho, pressione **G** até ver **GRÁFICOS: LEVE** e reinicie a aba após alterar para liberar outros recursos em cache.
+
+Controles, dragões, missões, salvamentos e compatibilidade de controle USB/Bluetooth foram preservados. Testes: `npm run check`.
+
+---
+
 # Asas de Brumária — v1.2.5: Controles e Personagem Melhorado
 
 Esta atualização acrescenta suporte a gamepads padrão no navegador, personagens procedurais mais detalhados, animação modular, separação da entrada física da lógica e um carregador **opcional** de personagens GLB. Veja `docs/ASSETS-GRATUITOS.md` para fontes CC0.

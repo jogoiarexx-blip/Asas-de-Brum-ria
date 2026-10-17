@@ -30,13 +30,13 @@ test('voo: cauda articula em sentidos opostos ao virar',()=>{
   assert.ok(Math.abs(tailYaw(1,5,1)-tailYaw(-1,5,1))>Math.abs(tailYaw(1,0,1)-tailYaw(-1,0,1)));
 });
 test('gráficos: perfis limitam densidade de pixels e nunca a ampliam além do dispositivo',()=>{
-  near(pixelRatioFor('economy',4),.82);near(pixelRatioFor('balanced',4),1.2);
-  near(pixelRatioFor('quality',4),1.65);near(pixelRatioFor('quality',1),1);
-  near(pixelRatioFor('economy',NaN),.82);
+  near(pixelRatioFor('economy',4),.72);near(pixelRatioFor('balanced',4),1);
+  near(pixelRatioFor('quality',4),1.5);near(pixelRatioFor('quality',1),1);
+  near(pixelRatioFor('economy',NaN),.72);
 });
 test('gráficos: aparelho touch/baixa memória começa equilibrado',()=>{
   assert.equal(suggestedTier({coarse:true}),'balanced');
-  assert.equal(suggestedTier({deviceMemory:2}),'balanced');
+  assert.equal(suggestedTier({deviceMemory:2}),'economy');
   assert.equal(suggestedTier({coarse:false,deviceMemory:16}),'quality');
 });
 test('gráficos: histerese exige 3 segundos ruins antes de cair de nível',()=>{
@@ -56,7 +56,7 @@ test('gráficos: modo automático baixa resolução e desabilita sombras quando 
   assert.equal(quality.sample(20),true);assert.equal(quality.tier,'balanced');
   for(let i=0;i<12;i++)assert.equal(quality.sample(20),false);
   for(let i=0;i<3;i++)quality.sample(20);
-  assert.equal(quality.tier,'economy');assert.equal(renderer.shadowMap.enabled,false);near(renderer.ratio,.82);
+  assert.equal(quality.tier,'economy');assert.equal(renderer.shadowMap.enabled,false);near(renderer.ratio,.72);
 });
 test('gráficos: preferência manual fica estável independentemente dos frames',()=>{
   const renderer=fakeRenderer(),quality=new GraphicsQuality(renderer,2,false,8,fakeStore('economy'));
@@ -71,7 +71,7 @@ test('gráficos: tecla G percorre quatro modos sem alterar a partida',()=>{
 });
 test('gráficos: redimensionar aplica densidade nova do dispositivo',()=>{
   const renderer=fakeRenderer(),quality=new GraphicsQuality(renderer,3,false,8,fakeStore('balanced'));
-  near(renderer.ratio,1.2);quality.onResize(.9);near(renderer.ratio,.9);
+  near(renderer.ratio,1);quality.onResize(.9);near(renderer.ratio,.9);
 });
 test('integração: floresta usa instanciamento, preservando colisores antigos',()=>{
   const base=resolve(dirname(fileURLToPath(import.meta.url)),'..');

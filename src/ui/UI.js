@@ -1,4 +1,5 @@
 import { ISLANDS, QUEST_DEFS } from '../world/config.js';
+import {shouldThrottleHUD} from '../systems/PerformanceBudget.js';
 import {SPECIES,SKILLS} from '../systems/Progression.js';
 import {CONTRACTS} from '../systems/VillageContracts.js';
 import {CIRCUITS} from '../systems/Training.js';
@@ -104,7 +105,7 @@ export class UI {
     for(let i=0;i<total;i++){const el=document.createElement('div');el.className='quest-tick'+(i<progress?' done':'');this.questProgress.append(el);}
   }
   update(dt,game){
-    this.uiClock+=dt;if(this.uiClock<.11)return;this.uiClock=0;
+    this.uiClock+=dt;if(shouldThrottleHUD(this.uiClock,game.graphics?.tier??'balanced'))return;this.uiClock=0;
     const {dragon,hero,missions,world}=game;
     this.updateQuest(missions);
     this.weatherPill.textContent=game.weather.mode.label+(dragon.riding&&dragon.airborne&&dragon.windDrift>.1?` · RAJADAS ${dragon.windDrift.toFixed(1)}m/s`:``);
