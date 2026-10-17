@@ -183,7 +183,7 @@ export class Game {
     this.dragon.yaw=p.yaw;this.dragon.group.rotation.y=p.yaw;
     this.dragon.airborne=p.mounted&&p.airborne;this.dragon.energy=Math.min(this.progression.stats.maxEnergy,p.energy);
     const safeHero=recoverFreePosition({x:p.heroX,z:p.heroZ},.52,this.world.obstacles,
-      (x,z)=>this.world.walkable(x,z),()=>true,
+      (x,z)=>this.world.walkable(x,z),o=>obstacleBlocks(o,this.world.groundHeightAt(p.heroX,p.heroZ,.52)+1.1,1.1),
       {groundAt:(x,z)=>this.world.groundHeightAt(x,z,.52)});
     const heroX=safeHero?.x??p.heroX,heroZ=safeHero?.z??p.heroZ;
     this.hero.group.position.set(heroX,this.world.groundHeightAt(heroX,heroZ,.52),heroZ);

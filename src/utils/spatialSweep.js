@@ -1,9 +1,9 @@
+import {overlapsObstacle3D} from './collision.js';
+
 /** Height-aware camera and flying-body collision sweeps (no WebGL dependency).
  * All positions use world X/Y/Z coordinates and scenery cylinder colliders.
  */
-const dist=(x,z,o)=>Math.hypot(x-o.x,z-o.z);
-const inObstacle=(x,y,z,r,h,o)=>
-  y+h>o.bottom && y-h<o.top && dist(x,z,o)<r+o.radius;
+const inObstacle=overlapsObstacle3D;
 
 /** Pull a third-person camera toward the focus before it hits terrain or a prop.
  * Sampling the segment, not just the endpoint, catches intervening walls.

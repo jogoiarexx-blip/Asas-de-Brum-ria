@@ -1,3 +1,13 @@
+# Asas de Brumária v1.2.4 — Colisões por geometria
+
+**Melhoria principal:** cabanas usam limites de caixas alinhadas às paredes, caixotes usam caixas rotacionadas e monumentos utilizam polígonos de 7 e 5 lados, com a coluna afunilada em altura. Árvores, pedras e postes permanecem com volumes circulares por desempenho.
+
+Os mesmos testes de geometria são usados para caminhar, deslizar, voar, aproximar a câmera, desmontar e recuperar posições salvas. O telhado fica acima do personagem que anda a pé, não bloqueando deslocamentos abaixo dele. A geometria é aproximada (volumes simplificados), não colisão de triângulos completos. Missões e saves anteriores continuam compatíveis.
+
+**Testes:** `npm run check` (151 verificações automatizadas). Para Windows: extraia `Brumaria-v1.2.4-Windows.zip` e execute `JOGAR-WINDOWS.bat` com PowerShell habilitado. É necessária conexão no primeiro uso para buscar o Three.js.
+
+---
+
 ## v1.2.3 — Câmera e voo
 
 A câmera recua diante de objetos entre o jogador e o ponto de visão; o voo considera mudanças horizontais e verticais conjuntamente. As missões e os saves anteriores são preservados. Pressione V para recentralizar a câmera e Ctrl para descer.

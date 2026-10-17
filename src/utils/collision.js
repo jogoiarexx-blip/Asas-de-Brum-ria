@@ -2,10 +2,55 @@
  * Obstacle coordinates describe an X/Z footprint and Y extent.
  * Pure math so collision behavior can be regression-tested without WebGL.
  */
-export function overlapsCircle(x,z,radius,obstacle) {
+/** Collision footprint adapters: circles for foliage, oriented rectangles for props,
+ * convex regular polygons for the seven/five-sided monuments.
+ * radius is retained as a BROAD-PHASE circumscribing radius for every shape.
+ */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const EPS=1e-10;
+function polygonContacts(x,z,radius,obstacle,polyRadius){
+  const sides=obstacle.sides;
+  if(!Number.isInteger(sides)||sides<3)return false;
+  const phase=obstacle.phase??0;
+  const px=x-obstacle.x,pz=z-obstacle.z;
+  let inside=true,minSq=Infinity;
+  // Three.CylinderGeometry begins at +Z. Clockwise order in the XZ plane.
+  for(let j=0;j<sides;j++){
+    const a=phase+2*Math.PI*j/sides,b=phase+2*Math.PI*(j+1)/sides;
+    const ax=Math.sin(a)*polyRadius,az=Math.cos(a)*polyRadius;
+    const bx=Math.sin(b)*polyRadius,bz=Math.cos(b)*polyRadius;
+    const ex=bx-ax,ez=bz-az,vx=px-ax,vz=pz-az;
+    if(ex*vz-ez*vx>EPS)inside=false;
+    const t=clamp((vx*ex+vz*ez)/(ex*ex+ez*ez),0,1);
+    const dx=vx-ex*t,dz=vz-ez*t;
+    minSq=Math.min(minSq,dx*dx+dz*dz);
+  }
+  return inside||minSq<radius*radius;
+}
+export function overlapsCircle(x,z,radius,obstacle,effectiveRadius=obstacle.radius){
   const dx=x-obstacle.x,dz=z-obstacle.z;
-  const sum=radius+obstacle.radius;
-  return dx*dx+dz*dz < sum*sum;
+  const sum=radius+effectiveRadius;
+  if(dx*dx+dz*dz>=sum*sum)return false;
+  if(obstacle.shape==='box'){
+    const cos=Math.cos(obstacle.angle??0),sin=Math.sin(obstacle.angle??0);
+    const lx=cos*dx-sin*dz,lz=sin*dx+cos*dz;
+    const ex=Math.max(Math.abs(lx)-obstacle.halfWidth,0);
+    const ez=Math.max(Math.abs(lz)-obstacle.halfDepth,0);
+    return ex*ex+ez*ez<radius*radius || (radius===0 && ex===0&&ez===0);
+  }
+  if(obstacle.shape==='polygon')return polygonContacts(x,z,radius,obstacle,effectiveRadius);
+  return true;
+}
+/** Test a 3D actor capsule approximation against a height-aware obstacle. */
+export function overlapsObstacle3D(x,y,z,radius,halfHeight,obstacle){
+  if(!obstacleBlocks(obstacle,y,halfHeight))return false;
+  let footprint=obstacle.radius;
+  if(obstacle.shape==='polygon' && obstacle.radiusTop!==undefined){
+    const bottom=Math.max(obstacle.bottom,y-halfHeight);
+    const relative=clamp((bottom-obstacle.bottom)/(obstacle.top-obstacle.bottom),0,1);
+    footprint=obstacle.radius+(obstacle.radiusTop-obstacle.radius)*relative;
+  }
+  return overlapsCircle(x,z,radius,obstacle,footprint);
 }
 export function obstacleBlocks(obstacle, centerY, halfHeight=1) {
   return centerY+halfHeight>obstacle.bottom && centerY-halfHeight<obstacle.top;
@@ -56,8 +101,8 @@ export function moveWithCollisions(start,delta,radius,obstacles,canOccupy=()=>tr
  */
 export function landmarkCollisionVolumes(x,z,groundY) {
   return [
-    {x,z,radius:4.3,bottom:groundY,top:groundY+1.5,type:'landmark-base'},
-    {x,z,radius:2.1,bottom:groundY+1.25,top:groundY+9.55,type:'landmark-pillar'},
+    {x,z,radius:4.3,radiusTop:3.4,sides:7,shape:'polygon',bottom:groundY,top:groundY+1.5,type:'landmark-base'},
+    {x,z,radius:2.1,radiusTop:1.2,sides:5,shape:'polygon',bottom:groundY+1.25,top:groundY+9.55,type:'landmark-pillar'},
   ];
 }
 

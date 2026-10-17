@@ -1,3 +1,16 @@
+# v1.2.4 — Contatos mais precisos com o cenário
+
+- Casas: corpo com caixa 6×5 (ajustada pelo tamanho de cada construção), telhado poligonal separado e afunilado em altura, em vez de um único cilindro largo.
+- Caixotes: caixa orientada conforme a rotação visual; menos colisões invisíveis nas esquinas.
+- Cinco monumentos: base heptagonal, pilar pentagonal e redução de seção no alto, alinhados às malhas 3D.
+- Andar, câmera, voo, recuperação de saves e interação de desmontagem compartilham o mesmo detector de colisão, com broad-phase em raio circunscrito.
+- Corrigido bloqueio indevido no chão causado por telhados elevados; ajustado raio do broad-phase das cabanas para incluir todos os cantos.
+- Preservados os volumes circulares da vegetação, animações, missões e formato dos salvamentos.
+- Testes: 138 existentes + 13 cenários novos = 151 testes automatizados, execução de verificação de código e servidor HTTP.
+- Limitações: colisão ainda aproximada (caixas e polígonos), sem física de triângulos/ossos do dragão; renderização WebGL exige verificação visual adicional.
+
+---
+
 # Asas de Brumária v1.2.3 — Colisão de câmera e voo
 
 - Câmera de terceira pessoa verifica todo o segmento entre o personagem e sua posição desejada, evitando atravessar cenário intermediário.

@@ -29,7 +29,7 @@ test('os cinco monumentos usam colisores na criação do cenário',()=>{
 test('ao andar não é possível atravessar a base, mesmo com um passo longo',()=>{
   const obstacles=collision.landmarkCollisionVolumes(0,0,0);
   const result=collision.moveWithCollisions({x:-8,z:0},{x:18,z:0},.52,obstacles);
-  assert.ok(result.x<=-4.82,`Personagem atravessou o monumento: x=${result.x}`);
+  assert.ok(result.x<=-4.55 && result.x>=-5,`Personagem atravessou o monumento: x=${result.x}`);
   assert.equal(result.blocked,true);
 });
 

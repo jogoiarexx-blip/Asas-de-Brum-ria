@@ -21,6 +21,7 @@ export class Landmarks {
       // Match the visible 7-sided pedestal and column with separate height-aware colliders.
       for(const collider of landmarkCollisionVolumes(def.x,def.z,g.position.y)){
         world.addObstacle(collider.x,collider.bottom,collider.z,collider.radius,collider.top-collider.bottom,collider.type);
+        Object.assign(world.obstacles.at(-1),collider);
       }
       scene.add(g);return {g,crystal,ring,rune};
     });

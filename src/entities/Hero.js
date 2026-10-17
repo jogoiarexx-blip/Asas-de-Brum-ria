@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {moveWithCollisions} from '../utils/collision.js';
+import {moveWithCollisions,obstacleBlocks} from '../utils/collision.js';
 const material = color => new THREE.MeshLambertMaterial({color});
 function buildHero() {
   const g=new THREE.Group();
@@ -45,7 +45,7 @@ export class Hero {
     let moving=!!(dx||dz);
     if(moving){
       const len=Math.hypot(dx,dz),step=(input.isDown('shift')?3.1:9)*dt;const nx=this.group.position.x+dx/len*step,nz=this.group.position.z+dz/len*step;
-      const result=moveWithCollisions(this.group.position,{x:nx-this.group.position.x,z:nz-this.group.position.z},.52,this.world.obstacles,(x,z)=>this.world.walkable(x,z),()=>true,{groundAt:(x,z)=>this.world.groundHeightAt(x,z,.52),maxStepUp:1.1});
+      const result=moveWithCollisions(this.group.position,{x:nx-this.group.position.x,z:nz-this.group.position.z},.52,this.world.obstacles,(x,z)=>this.world.walkable(x,z),o=>obstacleBlocks(o,this.group.position.y+1.1,1.1),{groundAt:(x,z)=>this.world.groundHeightAt(x,z,.52),maxStepUp:1.1});
       this.moveSpeed=Math.hypot(result.x-this.group.position.x,result.z-this.group.position.z)/Math.max(dt,.001);
       moving=this.moveSpeed>.0001;
       this.group.position.x=result.x;this.group.position.z=result.z;

@@ -162,6 +162,7 @@ export class World {
       const rim=new THREE.Mesh(new THREE.BoxGeometry(1.41,.15,1.41),gold);
       rim.position.set(x,y+1.25,z);rim.rotation.y=x*.1;this.scene.add(rim);
       this.addObstacle(x,y,z,1.04,1.35,'crate');
+      Object.assign(this.obstacles.at(-1),{shape:'box',halfWidth:.705,halfDepth:.705,angle:box.rotation.y});
     }
     const guides=[[6,16],[12,17],[18,6],[-2,13]];
     for(const [x,z] of guides) {
@@ -218,7 +219,12 @@ export class World {
       const top=new THREE.Mesh(new THREE.ConeGeometry(5.3,3.6,4),roof);top.position.y=5.6;top.rotation.y=Math.PI/4;top.castShadow=true;group.add(top);
       const door=new THREE.Mesh(new THREE.BoxGeometry(1.4,2.7,.08),new THREE.MeshLambertMaterial({color:0x513729}));door.position.set(0,1.35,2.54);group.add(door);
       this.scene.add(group);
-      this.addObstacle(x,y,z,3.65*size,7.6*size,'cabin');
+      this.addObstacle(x,y,z,Math.hypot(3*size,2.5*size),7.6*size,'cabin');
+      Object.assign(this.obstacles.at(-1),{shape:'box',halfWidth:3*size,halfDepth:2.5*size});
+      this.obstacles.at(-1).top=y+4.60*size;
+      // Four-sided roof, matching the rotated square-pyramid mesh above.
+      this.addObstacle(x,y+3.8*size,z,5.3*size,3.6*size,'cabin-roof');
+      Object.assign(this.obstacles.at(-1),{shape:'polygon',sides:4,phase:Math.PI/4,radiusTop:.1*size});
     };
     cabin(-12,-14,1);cabin(-22,9,.8);cabin(21,-23,1.13);cabin(-32,-17,.76);
     const platform=new THREE.Mesh(new THREE.CylinderGeometry(7.2,7.2,.75,24),new THREE.MeshLambertMaterial({color:0x9d7c5c}));
