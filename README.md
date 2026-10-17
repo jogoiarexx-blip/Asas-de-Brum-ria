@@ -1,3 +1,15 @@
+# Asas de Brumária v1.2.7 — Importação GLB funcional
+
+A versão anterior não possuía nenhum GLB configurado e o importador não estava acessível no jogo. Agora, pressione **T** durante a partida, abra a seção **PERSONAGEM 3D · GLB**, escolha **IMPORTAR GLB** e selecione um arquivo `.glb` do seu computador. Você também pode usar **TESTAR MODELO DEMO** e **VOLTAR AO ORIGINAL**.
+
+O modelo substitui o personagem **a pé e montado**. Animações com nomes contendo Idle, Walk, Run ou Ride são usadas quando disponíveis. A importação não altera missões nem a colisão do personagem. O navegador armazena arquivos até 20 MB localmente com IndexedDB e restaura o último modelo; arquivos maiores funcionam apenas na sessão atual, até 48 MB.
+
+O GLTFLoader e SkeletonUtils oficiais do Three.js r180 (licença MIT) estão em `vendor/addons` para não depender do CDN na versão publicada. Arquivos com compressão Draco, Meshopt e KTX2 ainda requerem exportação sem essas extensões. O modelo de demonstração é original e simplificado, destinado a testar o sistema. Para usar modelos de terceiros, obtenha seus arquivos GLB de fontes licenciadas.
+
+Execute `npm run check` para validar a estrutura e os testes. A execução WebGL de modelos externos em placas de vídeo variadas ainda precisa de testes manuais.
+
+---
+
 # Asas de Brumária v1.2.6 — Fogo otimizado e modo leve
 
 ## O que mudou

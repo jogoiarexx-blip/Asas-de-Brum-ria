@@ -66,3 +66,15 @@
 .gamepad-help{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);background:rgba(8,34,45,.88);border:1px solid #81cebb77;border-radius:9px;padding:6px 13px;font-size:9px;letter-spacing:.2px;font-weight:700;color:#d9f2e9;max-width:90vw;text-align:center;pointer-events:none;opacity:0;transition:opacity .25s;z-index:2}
 body:has(#controller-status.connected) .gamepad-help{opacity:.92}
 @media(max-width:900px){.gamepad-help{bottom:96px;font-size:8px;padding:5px 8px}#controller-status{font-size:8px;padding:4px 6px}}
+
+/* v1.2.7 - importador GLB no estábulo */
+.hero-glb-panel{margin:14px 0;border:1px solid #9dcfbe65;border-radius:11px;padding:13px;background:linear-gradient(125deg,#203c43ee,#2c4652dd);color:#e9f5f0}
+.hero-glb-panel strong{display:block;color:#f4d5a8;font-size:12px;letter-spacing:.06em}
+.hero-glb-panel p{font-size:11px;line-height:1.5;margin:8px 0}
+.hero-glb-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.hero-glb-buttons button{cursor:pointer;color:#f7f7ef;font:800 10px system-ui,sans-serif;padding:10px;border:1px solid #89c9bd99;background:#31656b;border-radius:7px}
+.hero-glb-buttons button:hover,.hero-glb-buttons button:focus-visible{background:#407e80;outline:1px solid #c0edde}
+.hero-glb-buttons button:disabled{opacity:.45;cursor:progress}
+#hero-glb-status{font-weight:700;word-break:break-word}
+#hero-glb-status[data-state="ok"]{color:#b4edc2}#hero-glb-status[data-state="error"]{color:#ffd1c1}#hero-glb-status[data-state="warn"]{color:#ffe8ab}
+@media(max-width:650px){.hero-glb-panel{padding:9px}.hero-glb-buttons button{font-size:9px;padding:8px}}

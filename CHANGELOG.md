@@ -1,3 +1,15 @@
+## v1.2.7 — Carregamento de GLB corrigido
+
+- Importação do arquivo GLB diretamente pelo navegador, com feedback detalhado.
+- Modelo 3D usado no personagem a pé e montado, inclusive com rig esquelético ao clonar via SkeletonUtils.
+- Demonstração GLB gerada pelo jogo, sem exigir download do modelo.
+- Armazenamento local opcional via IndexedDB e botão para restaurar personagem original.
+- GLTFLoader + dependências oficiais Three.js r180 embarcadas no site sob licença MIT.
+- Nove novos testes de GLB (196 aprovados na bateria local).
+- Continuidade das missões, controles, gráficos adaptativos e salvamentos.
+
+---
+
 # v1.2.6 — Desempenho e estabilidade do fogo
 
 - Corrigido gargalo de projéteis: reutilização de malhas, limite de objetos ativos e eliminação de fontes de luz por disparo.

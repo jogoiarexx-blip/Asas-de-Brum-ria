@@ -1,40 +1,112 @@
 import * as THREE from 'three';
-/** Only loaded when the game owner explicitly configures a local model. The
- * procedural character remains intact as a fallback if download/rig fails. */
+import {inspectGLB} from './glbValidation.js';
+
+const VERSION='0.180.0';
+const CDN=[`https://cdn.jsdelivr.net/npm/three@${VERSION}/examples/jsm/`,`https://unpkg.com/three@${VERSION}/examples/jsm/`];
+let loaderPromise=null;
+async function firstImport(urls){
+ let error;
+ for(const url of urls){try{return await import(/* @vite-ignore */ url);}catch(e){error=e;}}
+ throw new Error('Não foi possível carregar o leitor GLB. Verifique a internet ou execute o inicializador para guardar as bibliotecas localmente. '+String(error?.message??''));
+}
+async function addons(){
+ if(loaderPromise)return loaderPromise;
+ loaderPromise=(async()=>{
+   const loaders=[new URL('../../vendor/addons/loaders/GLTFLoader.js',import.meta.url).href,...CDN.map(c=>c+'loaders/GLTFLoader.js')];
+   const skeletons=[new URL('../../vendor/addons/utils/SkeletonUtils.js',import.meta.url).href,...CDN.map(c=>c+'utils/SkeletonUtils.js')];
+   const [loader,rig]=await Promise.all([firstImport(loaders),firstImport(skeletons).catch(()=>null)]);
+   return {GLTFLoader:loader.GLTFLoader,cloneSkinned:rig?.clone??null};
+ })();
+ try{return await loaderPromise;}catch(error){loaderPromise=null;throw error;}
+}
+function disposeModels(hero){
+ for(const mixer of hero.glbMixers??[])mixer.stopAllAction();
+ hero.glbMixers=[];
+ const materials=new Set(),geometries=new Set(),textures=new Set();
+ for(const root of hero.glbRoots??[]){
+   root.traverse(node=>{
+     if(!node.isMesh)return;
+     if(node.geometry)geometries.add(node.geometry);
+     for(const mat of (Array.isArray(node.material)?node.material:[node.material])){
+       if(!mat)continue;materials.add(mat);
+       for(const val of Object.values(mat))if(val?.isTexture)textures.add(val);
+     }
+   });
+   root.parent?.remove(root);
+ }
+ for(const g of geometries)g.dispose();for(const t of textures)t.dispose();for(const m of materials)m.dispose();
+ hero.glbRoots=[];hero.glbClips=[];hero.externalModel=null;hero.externalMixer=null;hero.externalClips=null;
+}
+function makeVariant(scene,yaw){
+ const box=new THREE.Box3().setFromObject(scene),size=box.getSize(new THREE.Vector3());
+ if(!Number.isFinite(size.y)||size.y<.01)throw new Error('GLB sem tamanho válido.');
+ const scale=2.23/size.y;
+ scene.scale.setScalar(scale);
+ scene.position.set(-(box.min.x+box.max.x)*.5*scale,-box.min.y*scale,-(box.min.z+box.max.z)*.5*scale);
+ const root=new THREE.Group();root.rotation.y=yaw;root.add(scene);
+ root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=false;}});
+ return root;
+}
+const clipName=(name='')=>{
+ const n=name.toLowerCase();
+ if(/ride|mount|sit/.test(n))return 'ride';
+ if(/run|sprint/.test(n))return 'run';
+ if(/walk/.test(n))return 'walk';
+ if(/idle|rest|breath/.test(n))return 'idle';
+ return null;
+};
+function mixAnimations(scene,clips){
+ const mixer=new THREE.AnimationMixer(scene),actions={};
+ for(const clip of clips){const slot=clipName(clip.name);if(slot&&!actions[slot])actions[slot]=mixer.clipAction(clip);}
+ if(!Object.keys(actions).length&&clips.length)actions.idle=mixer.clipAction(clips[0]);
+ const active=actions.idle??Object.values(actions)[0]??null;active?.play();
+ return {mixer,actions,active};
+}
+
+/** Load a self-contained user GLB. Does not replace existing model on failure. */
+export async function installHeroGLB(hero,bytes,{yaw=0,onStatus=()=>{}}={}){
+ const raw=bytes instanceof ArrayBuffer?bytes:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
+ const info=inspectGLB(raw);
+ onStatus(`Lendo ${info.meshCount} malha(s) 3D…`);
+ const {GLTFLoader,cloneSkinned}=await addons();
+ const loader=new GLTFLoader();
+ const gltf=await loader.parseAsync(raw,'');
+ if(!gltf?.scene)throw new Error('GLB sem cena 3D.');
+ // SkeletonUtils.clone preserves skin/bone references; when unavailable, parse
+ // a second time instead of using scene.clone() with broken skinning.
+ const mountedScene=cloneSkinned?cloneSkinned(gltf.scene):(await new GLTFLoader().parseAsync(raw,'')).scene;
+ const foot=makeVariant(gltf.scene,yaw),rider=makeVariant(mountedScene,yaw);
+ const footAnim=mixAnimations(gltf.scene,gltf.animations??[]);
+ const rideAnim=mixAnimations(mountedScene,gltf.animations??[]);
+ disposeModels(hero);
+ hero.group.add(foot);hero.rider.add(rider);
+ hero.group.userData.body.visible=false;hero.rider.userData.body.visible=false;
+ hero.glbRoots=[foot,rider];hero.glbClips=[footAnim,rideAnim];hero.glbMixers=[footAnim.mixer,rideAnim.mixer];
+ hero.externalModel=foot;hero.externalMixer=footAnim.mixer;hero.externalClips=footAnim.actions;
+ return info;
+}
+export function clearHeroGLB(hero){
+ disposeModels(hero);
+ hero.group.userData.body.visible=true;
+ hero.rider.userData.body.visible=true;
+}
 export async function loadOptionalHeroGLB(hero,url,{yaw=0,onError=console.warn}={}){
-  if(!url)return false;
-  try{
-    const addon=`https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js`;
-    const {GLTFLoader}=await import(addon);
-    const asset=await new GLTFLoader().loadAsync(url);
-    const model=asset.scene;
-    const bounds=new THREE.Box3().setFromObject(model);
-    const height=bounds.max.y-bounds.min.y;
-    if(!Number.isFinite(height)||height<=.01)throw new Error('Modelo GLB sem dimensões válidas');
-    const scale=2.23/height;
-    model.scale.setScalar(scale);
-    model.position.set(-(bounds.min.x+bounds.max.x)*scale*.5,-bounds.min.y*scale,-(bounds.min.z+bounds.max.z)*scale*.5);
-    model.rotation.y=yaw;
-    model.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
-    hero.group.add(model);
-    hero.group.userData.body.visible=false;
-    hero.externalModel=model;
-    const clips=asset.animations??[];
-    if(clips.length){
-      hero.externalMixer=new THREE.AnimationMixer(model);
-      hero.externalClips={};
-      for(const clip of clips){const key=clip.name.toLowerCase();
-        if(/idle|walk|run/.test(key))hero.externalClips[key.match(/idle|walk|run/)[0]]=hero.externalMixer.clipAction(clip);
-      }
-      hero.externalAction=hero.externalClips.idle??Object.values(hero.externalClips)[0]??null;
-      hero.externalAction?.play();
-    }
-    return true;
-  }catch(error){onError('Modelo GLB opcional indisponível; personagem original preservado:',error);return false;}
+ if(!url)return false;
+ try{
+   const response=await fetch(new URL(url,document.baseURI));
+   if(!response.ok)throw new Error(`GLB não encontrado: HTTP ${response.status} (${url})`);
+   await installHeroGLB(hero,await response.arrayBuffer(),{yaw});return true;
+ }catch(error){onError('Modelo GLB opcional indisponível; personagem original preservado:',error);return false;}
+}
+function transition(data,name){
+ const {mixer,actions}=data;
+ const next=actions[name]??actions.idle??Object.values(actions)[0];
+ if(next&&next!==data.active){next.reset().fadeIn(.2).play();data.active?.fadeOut(.2);data.active=next;}
+ return mixer;
 }
 export function updateOptionalHeroGLB(hero,dt){
-  if(!hero.externalMixer)return;
-  const next=hero.moveSpeed>.12?(hero.moveSpeed>5.5?hero.externalClips?.run??hero.externalClips?.walk:hero.externalClips?.walk)??hero.externalClips?.idle:hero.externalClips?.idle;
-  if(next&&next!==hero.externalAction){next.reset().fadeIn(.16).play();hero.externalAction?.fadeOut(.16);hero.externalAction=next;}
-  hero.externalMixer.update(dt);
+ if(!hero.glbClips?.length)return;
+ const foot=hero.glbClips[0],mounted=hero.glbClips[1];
+ transition(foot,hero.moveSpeed>.12?(hero.moveSpeed>5.5?'run':'walk'):'idle').update(dt);
+ transition(mounted,'ride').update(dt);
 }

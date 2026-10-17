@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#071a25">
   <meta name="description" content="Asas de Brumária: explore ilhas, monte em seu dragão e complete missões.">
-  <title>Asas de Brumária v1.2.6 — Aventura de Dragões</title>
+  <title>Asas de Brumária v1.2.7 — Aventura de Dragões</title>
   <link rel="stylesheet" href="./src/ui/style.css">
 </head>
 <body>
@@ -35,6 +35,13 @@
   <div id="stable" class="stable-screen hidden" role="dialog" aria-label="Estábulo e treinamento" aria-modal="true">
     <section class="stable-card">
       <div class="stable-heading"><div><small>VILA DE BRUMÁRIA</small><h2>ESTÁBULO DOS DRAGÕES</h2><p>Treine habilidades, descubra espécies e domine os circuitos aéreos.</p></div><button id="stable-close" class="stable-close" type="button" aria-label="Fechar estábulo">✕</button></div>
+      <section class="hero-glb-panel" aria-label="Importar modelo 3D do personagem">
+        <strong>PERSONAGEM 3D · GLB</strong>
+        <p>Importe um personagem em glTF Binary (.glb) do seu PC. O modelo aparece andando e montado no dragão. Você pode testar a demonstração primeiro.</p>
+        <input id="hero-glb-file" type="file" accept=".glb,model/gltf-binary" hidden>
+        <div class="hero-glb-buttons"><button id="hero-glb-import" type="button">IMPORTAR GLB</button><button id="hero-glb-demo" type="button">TESTAR MODELO DEMO</button><button id="hero-glb-reset" type="button">VOLTAR AO ORIGINAL</button></div>
+        <p id="hero-glb-status" data-state="neutral" role="status" aria-live="polite">Selecione um GLB. O arquivo é salvo somente neste navegador, quando possível.</p>
+      </section>
       <div id="stable-village-note" class="stable-note"></div>
       <div class="stable-balance"><strong id="train-points">0</strong> PONTOS DE TREINAMENTO <span id="train-circuits">0 circuitos</span></div>
       <div id="discovery-list" class="discovery-list">Marcos encontrados: 0/5</div>

@@ -1,14 +1,7 @@
-# Modelos opcionais do personagem
+# GLB do jogador
 
-Esta pasta não contém arquivos de terceiros para manter o pacote leve e seguro.
-
-Para substituir o **personagem a pé** por um GLB de origem permitida:
-1. Baixe um personagem em glTF/GLB de uma das fontes documentadas em `docs/ASSETS-GRATUITOS.md`.
-2. Converta para **GLB autocontido** em Blender se necessário (File > Export > glTF 2.0 > glTF Binary).
-3. Salve como `assets/models/hero.glb`.
-4. Edite `src/entities/heroAssetConfig.js` e troque `null` por `'./assets/models/hero.glb'`.
-5. Se necessário, ajuste `HERO_MODEL_FACING_YAW` para combinar com o eixo frontal. A animação reconhece automaticamente nomes contendo Idle, Walk e Run.
-
-O personagem no dragão permanece procedural até existir uma animação própria de montaria para o rig importado. Erros de carregamento não interrompem as missões: usa-se o personagem original.
-
-Verifique e preserve o arquivo de licença de cada asset. Não copie assets de jogos ou filmes protegidos.
+Abra o jogo, pressione T e use **IMPORTAR GLB** (não é necessário copiar o arquivo manualmente).
+O arquivo de demonstração `hero-demo.glb` é original e de uso livre neste projeto, para testes da importação.
+Para usar um modelo definitivo, selecione seu próprio arquivo .glb exportado pelo Blender, sem Draco/Meshopt.
+Asas de Brumária usa as malhas apenas como aparência: colisão, missões e salvamentos são preservados.
+Modelos são salvos localmente no IndexedDB (até 20 MB), apenas no navegador e origem em que foram importados.
