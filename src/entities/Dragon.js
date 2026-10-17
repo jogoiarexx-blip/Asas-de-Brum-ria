@@ -266,11 +266,12 @@ export class Dragon {
     this.fireCooldown=Math.max(0,this.fireCooldown-dt);
     this.attackTime=Math.max(0,this.attackTime-dt);this.hurtTime=Math.max(0,this.hurtTime-dt);
     if(this.riding) {
-      const go=input.isDown('w','arrowup'),brake=input.isDown('s','arrowdown');
-      const turn=(input.isDown('a','arrowleft')?1:0)-(input.isDown('d','arrowright')?1:0);
+      const travel=input.axis?.('w','s')??((input.isDown('s','arrowdown')?1:0)-(input.isDown('w','arrowup')?1:0));
+      const go=travel<-.12,brake=travel>.12;
+      const turn=-(input.axis?.('a','d')??((input.isDown('d','arrowright')?1:0)-(input.isDown('a','arrowleft')?1:0)));
       const boost=input.isDown('shift') && this.energy>4 && (this.airborne||go);
       const maxSpeed=this.airborne?(boost?(this.stats?.boostSpeed??49):(this.stats?.flightSpeed??31)):(boost?17:(this.stats?.groundSpeed??11));
-      const targetSpeed=go?maxSpeed:(brake?0:(this.airborne?9:0));
+      const targetSpeed=go?maxSpeed*Math.min(1,Math.max(.15,-travel)):(brake?0:(this.airborne?9:0));
       this.speed=approach(this.speed,targetSpeed,dt*(brake?39:go?24:13));
       const turnSpeed=steeringRate(this.speed,this.airborne);
       this.turnAxis=smoothedTurn(this.turnAxis,turn,dt);this.steerInput=this.turnAxis;

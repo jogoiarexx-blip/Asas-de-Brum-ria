@@ -1,3 +1,15 @@
+# v1.2.5 — Controle, personagem e arquitetura
+
+- Gamepad API padrão com suporte a Xbox/PlayStation/USB/Bluetooth, analógicos com deadzone e câmera independente.
+- Gatilhos analógicos de aceleração e freio, botões de voo, combate, interações e menu. Ações de botão executam só no momento de pressionar e se soltam ao desconectar o controle.
+- Navegação do estábulo pelo direcional do controle, com A para confirmar e B para fechar, sem remover teclado/toque.
+- Personagem procedural aprimorado: olhos, sobrancelhas, gorro, roupa, tiras, braços articulados com cotovelos e pernas com joelhos e botas.
+- Código separado em entrada/gamepad, visual, movimento, e carregador opcional de GLB; integração preparada para rigs e animações (Idle/Walk/Run) com fallback.
+- Fontes externas CC0 pesquisadas e documentadas, sem redistribuir modelos sem download/autorização explícita.
+- Salvamentos compatíveis com versões anteriores; novas baterias de testes mantêm a campanha e as colisões intactas.
+
+---
+
 # v1.2.4 — Contatos mais precisos com o cenário
 
 - Casas: corpo com caixa 6×5 (ajustada pelo tamanho de cada construção), telhado poligonal separado e afunilado em altura, em vez de um único cilindro largo.
@@ -13,12 +25,12 @@
 
 # Asas de Brumária v1.2.3 — Colisão de câmera e voo
 
-- Câmera de terceira pessoa verifica todo o segmento entre o personagem e sua posição desejada, evitando atravessar cenário intermediário.
-- Câmera recua antes de construções, monumentos, árvores e terreno.
-- Dragão em voo aplica colisão contínua em X/Y/Z, evitando atravessar paredes durante turbo, descer através de pedras e subir através de tetos.
-- Mantidos o pouso e os controles sem mudar o formato de salvamento ou as missões.
-- Dez novos testes automatizados (total: 138).
-- Os volumes são aproximados; renderização WebGL ainda requer validação manual.
+- Câmera de terceira pessoa agora verifica todo o segmento entre o personagem e a posição desejada; não basta avaliar a altura no destino.
+- Câmera recua automaticamente antes de construções, monumentos, árvores e terreno intermediário, incluindo durante o movimento suavizado.
+- Dragão em voo agora aplica colisão contínua e combinada em X/Y/Z com volumes e alturas dos obstáculos. Evita atravessar paredes durante turbo, descer através de pedras ou subir através de tetos.
+- Mantidos o pouso, a desaceleração ao colidir e os controles de voo, sem mudar o formato dos salvamentos e missões.
+- Dez novos testes de regressão em `tests/flight-camera-v123.test.js` (total: 138), além da checagem de sintaxe e imports.
+- Limites conhecidos: volumes de colisão são cilindros aproximados; a renderização gráfica completa precisa de verificação em computador com WebGL.
 
 ---
 
@@ -52,7 +64,18 @@
 
 ---
 
-# Changelog — Asas de Brumária
+# Asas de Brumária — Histórico
+
+## v1.1.0 — Asas Articuladas e Câmera Livre
+
+- Rig hierárquico das asas em ombro, cotovelo e punho: 3 segmentos animados por espécie, com malha interna/externa/terminal que acompanha os pivôs.
+- Patas dianteiras articuladas com ombro, punho e garras.
+- Novo controlador orbital: arrastar para girar, roda para zoom, V para restaurar a vista, limites seguros de ângulo e zoom.
+- Estábulo 3D atualizado para repetir a mesma pose da montaria.
+- Import map de Three.js escolhido dinamicamente: arquivo local opcional, jsDelivr e unpkg; mensagem clara ao falhar WebGL/CDN.
+- Novo iniciador Windows via PowerShell/HttpListener (sem Python). Ambos inicializadores tentam cache local do Three.js.
+- Preservados HUD, missões, progresso e chave do save sem mudança de formato.
+- 106 testes Node.js aprovados; HTTP dos arquivos locais aprovado; WebGL e PowerShell ainda não puderam ser executados neste ambiente de teste.
 
 ## v1.0.0 — Vínculos Vivos e Voo Assistido (15/10/2026)
 - Domesticação comportamental: a calma aumenta com proximidade e velocidade adequada; não é mais suficiente apertar E imediatamente.

@@ -1,3 +1,15 @@
+# Asas de Brumária — v1.2.5: Controles e Personagem Melhorado
+
+Esta atualização acrescenta suporte a gamepads padrão no navegador, personagens procedurais mais detalhados, animação modular, separação da entrada física da lógica e um carregador **opcional** de personagens GLB. Veja `docs/ASSETS-GRATUITOS.md` para fontes CC0.
+
+**Controles Xbox/PlayStation (mapeamento padrão):** analógico esquerdo move/guia; analógico direito gira a câmera; A/X no PlayStation interage; B/Círculo volta; X/Quadrado lança fogo; Y/Triângulo abre estábulo; LB/L1 desce; RB/R1 sobe; LT/L2 freia; RT/R2 acelera; clique do analógico esquerdo ativa turbo/andar devagar; clique do analógico direito recentraliza; Start abre o jogo ou o estábulo; Select salva. Setas do controle navegam pelos botões do estábulo com A para confirmar. A identificação depende da Gamepad API do navegador; conecte o controle e pressione um botão para habilitar o acesso.
+
+**Compatibilidade:** teclado e toque mantidos, progresso salvo inalterado. Personagem a pé recebeu novas malhas, rosto, equipamentos, articulações de joelho/cotovelo, transições de caminhada e corrida; a rigagem original da montaria foi preservada. Assets externos não acompanham o ZIP, mas podem ser adicionados ao diretório `assets/models/` de forma opcional. Modelos com licenças proibitivas não são distribuídos.
+
+**Testes:** execute `npm run check` com Node.js; a renderização WebGL e os controles reais ainda requerem testes manuais em computador com GPU e gamepad.
+
+---
+
 # Asas de Brumária v1.2.4 — Colisões por geometria
 
 **Melhoria principal:** cabanas usam limites de caixas alinhadas às paredes, caixotes usam caixas rotacionadas e monumentos utilizam polígonos de 7 e 5 lados, com a coluna afunilada em altura. Árvores, pedras e postes permanecem com volumes circulares por desempenho.
@@ -8,9 +20,9 @@ Os mesmos testes de geometria são usados para caminhar, deslizar, voar, aproxim
 
 ---
 
-## v1.2.3 — Câmera e voo
+## v1.2.3 — Melhorias no voo e na câmera
 
-A câmera recua diante de objetos entre o jogador e o ponto de visão; o voo considera mudanças horizontais e verticais conjuntamente. As missões e os saves anteriores são preservados. Pressione V para recentralizar a câmera e Ctrl para descer.
+A câmera agora recua diante de obstáculos, e o dragão verifica trajetórias 3D completas para reduzir atravessamentos durante curvas, subidas e descidas. O progresso anterior é preservado. Pressione V para centralizar a câmera e use Ctrl para descer com a montaria. Execute `npm run check` para conferir os 138 testes automatizados.
 
 ## v1.2.2 — Colisão nos monumentos
 
@@ -27,9 +39,28 @@ Corrige o personagem entrando na plataforma do estábulo: o chão sob a estrutur
 
 A plataforma central do estábulo é reconhecida como piso. Caixas, postes, NPCs e fogueira agora bloqueiam o movimento. Subidas muito altas são impedidas sem quebrar o deslizamento; para desmontar, o jogo procura uma área livre e segura. O salvamento mantém o mesmo formato da versão anterior. Confira `CHANGELOG.md` e execute `npm run check` para os testes.
 
-# Asas de Brumária — v1.0.0
+# Asas de Brumária — v1.1.0
 
 Um jogo-protótipo **3D em Three.js** sobre amizade, treinamento e aventuras com dragões. Mundo, personagens e nomes originais. Não utiliza personagens, modelos, áudio nem logos de *Como Treinar o Seu Dragão*.
+
+## v1.1.0 — Asas Articuladas e Câmera Livre
+
+A evolução preserva **as sete missões, os três dragões selecionáveis, os três selvagens, os dois contratos e a chave antiga do salvamento**. O motor continua em Three.js 0.180.0, sem precisar instalar Node.js para jogar.
+
+- **Anatomia das asas:** agora cada asa possui três articulações independentes (ombro, cotovelo e punho) e membranas separadas que acompanham as juntas, em vez de uma superfície totalmente rígida. As poses mudam durante decolagem, cruzeiro, planagem e pouso. As patas dianteiras ganharam ombros e punhos articulados.
+- **Câmera orbital:** arraste diretamente sobre a cena 3D para girar a vista; use a **roda do mouse para aproximar/afastar** e **V para centralizar**. Os controles de voo não foram alterados. O movimento da câmera é calculado de maneira independente de quadros.
+- **Prévia do estábulo:** o dragão exibido usa as mesmas três articulações de asa do dragão montado.
+- **Carregamento mais resistente:** o jogo tenta uma cópia local cacheada do Three.js e depois dois CDNs alternativos (jsDelivr e unpkg). Se a biblioteca ou o WebGL falharem, a interface informa o motivo. O inicializador Python e o inicializador Windows tentam salvar a biblioteca em disco na primeira execução com internet, permitindo abrir offline em execuções futuras.
+- **Windows sem Python:** `JOGAR-WINDOWS.bat` inicia um servidor HTTP com o PowerShell integrado ao Windows 10/11, sem instalar Python. `INICIAR-JOGO.bat` continua disponível como alternativa.
+
+**Validação:** 106 verificações automatizadas aprovadas (95 antigas + 11 novas). Servidor HTTP Python devolveu 200 aos módulos testados. **Limitações:** a execução completa do WebGL ainda não foi validada porque o Chromium de automação bloqueou o servidor local (`ERR_BLOCKED_BY_ADMINISTRATOR`). O PowerShell não pôde ser executado neste contêiner Linux e precisa de teste no Windows. Esta versão não contém arquivos GLB rigados nem executável `.exe`; a rigagem é hierárquica por grupos Three.js. A biblioteca Three.js não vem incluída no ZIP e requer internet **no primeiro acesso** para ser cacheada ou carregada por CDN.
+
+### Início rápido (Windows)
+
+1. Extraia o ZIP inteiro em uma pasta (não abra o HTML diretamente).
+2. Dê dois cliques em **`JOGAR-WINDOWS.bat`**. Isso abre uma janela do PowerShell e o jogo no navegador. Mantenha a janela aberta.
+3. Na primeira execução, permita acesso à internet para carregar/cachear o Three.js. Em execuções seguintes, se a biblioteca estiver em `vendor/three.module.js`, pode funcionar offline.
+4. Se a janela não abrir, use o inicializador tradicional `INICIAR-JOGO.bat` (exige Python 3) ou `python start_game.py`.
 
 ## v1.0.0 — Vínculos Vivos e Voo Assistido
 
@@ -58,8 +89,8 @@ O pacote contém `.replit` e o servidor Python aceita a variável `PORT` e host 
 ## Como jogar
 
 1. Extraia **todo o conteúdo** do ZIP em uma pasta.
-2. **Windows:** clique em `INICIAR-JOGO.bat` (requer Python 3 instalado). **Linux/macOS:** execute `python3 start_game.py` nessa pasta.
-3. O navegador abrirá o servidor local (geralmente `http://127.0.0.1:8765/`). Precisa de **conexão com a internet** para carregar o Three.js 0.180.0 pelo jsDelivr.
+2. **Windows:** clique em `JOGAR-WINDOWS.bat` (não requer Python) ou `INICIAR-JOGO.bat` (requer Python 3 instalado). **Linux/macOS:** execute `python3 start_game.py` nessa pasta.
+3. O navegador abrirá o servidor local (geralmente `http://127.0.0.1:8765/`). É necessária **internet na primeira execução** para obter Three.js 0.180.0, que pode ser salvo localmente. Há fallback por dois CDNs.
 4. Clique em **COMEÇAR A AVENTURA**. Mova-se até o dragão e pressione **E**.
 
 Alternativa: sirva a pasta com qualquer servidor HTTP local. **Não abra `index.html` diretamente pelo `file://`.** Chrome ou Edge recentes com WebGL são recomendados.
@@ -79,6 +110,8 @@ Alternativa: sirva a pasta com qualquer servidor HTTP local. **Não abra `index.
 | C | Alternar o clima para testes (céu, vento, chuva e tempestade) |
 | N | Avançar três horas no relógio ambiental para testes |
 | G | Alternar qualidade gráfica: automática, leve, equilibrada e detalhada |
+| V | Recentralizar câmera durante exploração ou voo |
+| Arrastar sobre o mundo 3D / roda do mouse | Girar câmera / aproximar ou afastar |
 | Esc | Fechar o estábulo ou diálogo |
 | P | Salvar partida manualmente |
 | M | Ativar/desativar áudio |
@@ -183,18 +216,20 @@ Ao retornar, use **CONTINUAR AVENTURA**. A opção **CRIAR NOVA PARTIDA** pede c
 
 Com **Node.js 20+**, execute `npm run check` para verificações estáticas de imports/sintaxe/IDs de interface e testes de lógica pura. O jogo **não precisa de npm para iniciar**.
 
-Na v0.9.0: **83 testes automatizados aprovados** (71 anteriores + 12 novos) para missões, progressão, salvamento, colisão, voo, clima e descoberta; arquivos verificados por servidor HTTP local. A validação visual completa com WebGL **não foi possível**: o navegador automatizado desta infraestrutura bloqueia endereços locais (`ERR_BLOCKED_BY_ADMINISTRATOR`) e o CDN não está acessível deste contêiner. O jogo deve ser validado em um navegador real, especialmente em dispositivos móveis.
+Na v1.1.0: **106 testes automatizados aprovados** (95 anteriores + 11 novos), incluindo câmera e rig das asas. Anteriormente, na v0.9.0: **83 testes automatizados aprovados** (71 anteriores + 12 novos) para missões, progressão, salvamento, colisão, voo, clima e descoberta; arquivos verificados por servidor HTTP local. A validação visual completa com WebGL **não foi possível**: o navegador automatizado desta infraestrutura bloqueia endereços locais (`ERR_BLOCKED_BY_ADMINISTRATOR`) e o CDN não está acessível deste contêiner. O jogo deve ser validado em um navegador real, especialmente em dispositivos móveis.
 
 ## Organização
 
 ```text
 asas-de-brumaria/
 ├── index.html
+├── JOGAR-WINDOWS.bat, start_windows.ps1
 ├── INICIAR-JOGO.bat
 ├── start_game.py
 ├── package.json
 ├── README.md
 ├── CHANGELOG.md
+├── vendor/README.txt (cache externo opcional)
 ├── src/
 │   ├── game/Game.js, Input.js
 │   ├── entities/Dragon.js, Hero.js, EnemyDragon.js, VillageNPCs.js, WildDragons.js

@@ -7,7 +7,8 @@ import {WildApproach} from '../src/systems/WildApproach.js';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('movimento lento é possível a pé sem comprometer o turbo montado',()=>{
   const hero=read('src/entities/Hero.js'),dragon=read('src/entities/Dragon.js');
-  assert.match(hero,/input\.isDown\('shift'\)\?3\.1:9/);
+  assert.match(hero,/slow\?3\.1:9/);
+  assert.match(hero,/walkIntent\(/);
   assert.match(dragon,/input\.isDown\('shift'\)/);
   assert.match(hero,/moveSpeed/);
 });

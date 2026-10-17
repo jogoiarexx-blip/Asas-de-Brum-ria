@@ -43,7 +43,7 @@ export class Game {
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x9bdbef);this.scene.fog=new THREE.FogExp2(0xa3e2ed,.00165);
     this.camera=new THREE.PerspectiveCamera(67,innerWidth/innerHeight,.15,1050);
     this.input=new Input();this.audio=new AudioSystem();this.ui=new UI();
-    this.cameraOrbit=new CameraOrbit();this.bindOrbitControls();
+    this.cameraOrbit=new CameraOrbit();this.bindOrbitControls();this.controllerWasConnected=false;
     this.graphics=new GraphicsQuality(this.renderer,window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches,navigator.deviceMemory??0);
     this.updateGraphicsLabel();
     this.saveSystem=new SaveSystem();this.savedData=this.saveSystem.read();
@@ -131,7 +131,8 @@ export class Game {
       try{this.stablePreview??=new StablePreview(document.getElementById('stable-preview-canvas'));
         this.stablePreview.showSpecies(this.progression.species);
       }catch(error){console.warn('Prévia 3D indisponível:',error);document.getElementById('stable-preview-caption').textContent='A prévia 3D não está disponível neste dispositivo.';}
-      this.input.down.clear();this.input.clearActions();}
+      this.input.down.clear();this.input.clearActions();
+      document.getElementById('stable-close')?.focus();}
   }
   buySkill(id){
     if(!this.nearStable()){this.ui.toast('Para treinar, volte ao estábulo da vila.');return;}
@@ -410,8 +411,30 @@ export class Game {
     this.camera.position.set(x+12,this.dragon.group.position.y+12,z+19);
     this._camTarget?.copy(this.dragon.group.position);
   }
+  navigateStable(direction){
+    const root=document.getElementById('stable');
+    const buttons=Array.from(root.querySelectorAll('button:not(:disabled)')).filter(b=>b.offsetParent!==null);
+    if(!buttons.length)return;
+    const current=buttons.indexOf(document.activeElement);
+    const next=(current+direction+buttons.length)%buttons.length;
+    buttons[next].focus();
+  }
   frame(){
     const dt=Math.min(this.clock.getDelta(),.05);this.elapsed+=dt;
+    this.input.update();
+    const controllerConnected=this.input.pad.connected;
+    if(controllerConnected!==this.controllerWasConnected){
+      this.controllerWasConnected=controllerConnected;
+      const status=document.getElementById('controller-status');
+      if(status){status.textContent=controllerConnected?'🎮 CONTROLE CONECTADO':'TECLADO / TOQUE';status.classList.toggle('connected',controllerConnected);}
+      if(controllerConnected&&this.started)this.ui.toast('Controle detectado: analógico esquerdo move, direito controla a câmera.',4);
+    }
+    if(this.input.lookAxis && this.started && this.ui.stable.classList.contains('hidden') && !this.ui.dialogueOpen){
+      const look=this.input.lookAxis;
+      if(Math.abs(look.x)>.001||Math.abs(look.y)>.001)this.cameraOrbit.drag(look.x*210*dt,look.y*150*dt);
+    }
+    if(!this.started && (this.input.consume('start')||this.input.consume('e'))){this.start();}
+
     this.world.update(dt,this.elapsed);
     this.landmarks.update(this.elapsed,this.discovery);
     if(this.started){
@@ -421,7 +444,7 @@ export class Game {
       if(weatherChanged)this.ui.toast(`Clima mudou: ${this.weather.mode.label}`,4);
     }
     if(this.started){
-      if(this.input.consume('t'))this.toggleStable();
+      if(this.input.consume('t')||this.input.consume('start'))this.toggleStable();
       if(this.input.consume('escape')){this.ui.stable.classList.add('hidden');this.ui.hideDialogue();}
       if(this.input.consume('p'))this.saveGame(true);
       if(this.input.consume('c')){this.weather.cycle();this.saveGame();this.ui.toast(`Clima: ${this.weather.mode.label}`,3);}
@@ -429,6 +452,9 @@ export class Game {
       if(this.input.consume('v')){this.cameraOrbit.reset();this.ui.toast('Câmera centralizada.');}
       if(this.input.consume('n')){this.dayNight.jumpHours(3);this.saveGame();this.ui.toast(`Hora do mundo: ${this.dayNight.clock}`,3);}
       if(!this.ui.stable.classList.contains('hidden')){
+        if(this.input.consume('menuup')||this.input.consume('menuleft'))this.navigateStable(-1);
+        if(this.input.consume('menudown')||this.input.consume('menuright'))this.navigateStable(1);
+        if(this.input.consume('e')&&this.input.pad.connected){const active=document.activeElement; if(active?.tagName==='BUTTON'&&this.ui.stable.contains(active))active.click();}
         this.input.clearActions();this.input.down.clear();
         try{this.stablePreview?.render(dt);}catch(error){
           console.warn('Renderização 3D do estábulo indisponível:',error);
