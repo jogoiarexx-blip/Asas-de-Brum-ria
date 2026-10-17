@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {WILD_DRAGON_DEFS} from '../systems/WildBonds.js';
 import {WildApproach} from '../systems/WildApproach.js';
 import {SPECIES} from '../systems/Progression.js';
+import {actorVisualLevel,shouldAnimateActor} from '../systems/ActorLOD.js';
 const shape=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{
   const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;return m;
 };
@@ -83,8 +84,16 @@ export class WildDragons {
         if(world.walkable(px,pz)&&world.clearanceAt(px,pz,2.4)<world.heightAt(px,pz)+.5){x=px;z=pz;break;}
       }
       const model=buildCreature(spec);model.group.position.set(x,world.heightAt(x,z),z);scene.add(model.group);
-      return {spec,...model,anchor:new THREE.Vector2(x,z),phase:i*2.1};
+      return {spec,...model,anchor:new THREE.Vector2(x,z),phase:i*2.1,visualLevel:'full',visualClock:0};
     });
+  }
+  /** Visual-only LOD. Wild bonds and gameplay positions remain independent. */
+  setDetail(observer,tier,camera,forward){
+    for(const creature of this.creatures){
+      const level=actorVisualLevel(observer,creature.group.position,camera,forward,tier,'wild');
+      creature.visualLevel=level;
+      creature.group.visible=level!=='hidden';
+    }
   }
   get remaining(){return this.creatures.filter(c=>this.bonds.progress(c.spec.id)<3);}
   nearby(position,limit=8){
@@ -99,7 +108,12 @@ export class WildDragons {
     for(const creature of this.creatures){
       const {group,anchor,phase,spec}=creature;
       const distance=position.distanceTo(group.position);
+      // Domestication always advances, even when the meshes are not drawn.
       const mood=this.approach.update(spec.id,dt,time,{distance,speed:heroSpeed,riding});
+      creature.visualClock+=dt;
+      const level=creature.visualLevel;
+      if(!shouldAnimateActor(level,creature.visualClock))continue;
+      creature.visualClock=0;
       const near=!riding&&distance<22;
       const tamed=this.bonds.progress(spec.id)>=3;
       const temperament=spec.temperament;

@@ -1,3 +1,14 @@
+## v1.3.0 — LOD de personagens e atualização inteligente
+
+- Dragões selvagens, sentinelas e moradores passam a usar controle de visibilidade por distância e direção da câmera.
+- Animações em média distância limitadas a 10 Hz; próximas, mantidas por quadro; distantes/fora de visão, omitidas.
+- IA de sentinelas em combate próximo preservada sem atrasar ataques. Patrulhas longínquas recebem atualização de intervalo variável conforme a qualidade, sem alterar missões.
+- Painel F3 informa número de personagens ativos e quantos têm animação de baixa frequência.
+- Regras reunidas em `ActorLOD.js` com testes de segurança, combate, visão e recuperação de atualização ao aproximar.
+- 238 testes automatizados aprovados, 0 falhas. Não foi possível realizar benchmark visual em GPU real.
+
+---
+
 ## v1.2.9 — Desempenho do cenário e culling seguro
 
 - Nuvens: substituídos 125 Mesh individuais por um InstancedMesh único; atualizações das matrizes reduzidas a 10–60 Hz conforme qualidade, usando animação contínua e acumulada para evitar saltos ao mudar o vento.

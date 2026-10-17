@@ -1,3 +1,20 @@
+# Asas de Brumária v1.3.0 — LOD de personagens e desempenho de combate
+
+## Melhorias nesta versão
+
+- **LOD visual de personagens:** dragões selvagens, sentinelas e moradores deixam de renderizar quando estão longe ou fora do campo de visão. O raio aumenta nos modos EQUILIBRADO e DETALHADO.
+- **Animação adaptativa:** personagens em distância intermediária atualizam braços, asas, caudas e cabeças a até 10 vezes por segundo, em vez de 60. Perto do personagem, permanecem com animação completa.
+- **Sentinelas preservadas no combate:** o comportamento e os ataques continuam atualizados a cada quadro dentro de 190 m; patrulhas acima desse alcance usam simulação agrupada a 5–8 vezes por segundo nos perfis leves. No modo DETALHADO, a simulação continua por quadro.
+- **Interações intactas:** vincular dragões, conversar e encontrar alvos continuam possíveis mesmo quando os objetos visuais distantes estão ocultos. Perto dos personagens, o LOD volta imediatamente para completo.
+- **Diagnóstico F3:** acrescentada contagem de personagens renderizados e animações com frequência limitada.
+- **Arquitetura:** regras de distância, direção e orçamento em `src/systems/ActorLOD.js`, independentes das malhas 3D e dos dados salvos.
+
+**Limitações:** as distâncias são políticas conservadoras aproximadas, não modelos simplificados de triângulos (LOD geométrico tradicional). A renderização WebGL completa e o FPS em uma GPU de entrada ainda precisam de medição prática. Não há ganhos de FPS garantidos por estes testes.
+
+**Testes:** 238 testes automatizados em `npm run check` (219 existentes + 19 novos). Nenhuma mudança no esquema dos saves, missões ou controles.
+
+---
+
 # Asas de Brumária v1.2.9 — Cenários otimizados por distância
 
 **Atualização técnica de desempenho para PCs modestos.** As 25 nuvens (125 partes visuais) agora são renderizadas em **um único lote instanciado**, sem criar 125 objetos 3D independentes. A animação dos lotes é feita com frequência reduzida em modo LEVE, preservando o movimento suave entre mudanças de vento.

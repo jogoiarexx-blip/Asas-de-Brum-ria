@@ -27,6 +27,7 @@ import {DayNight} from '../systems/DayNight.js';
 import {StablePreview} from '../ui/StablePreview.js';
 import {GraphicsQuality} from '../systems/GraphicsQuality.js';
 import {performanceSnapshot,shouldSkipRendering} from '../systems/PerformanceDiagnostics.js';
+import {sceneActorStats} from '../systems/ActorLOD.js';
 import {projectileLimit} from '../systems/PerformanceBudget.js';
 import {projectileAdmission} from '../systems/ProjectilePolicy.js';
 import {WildBonds} from '../systems/WildBonds.js';
@@ -46,7 +47,7 @@ export class Game {
     this.renderer.shadowMap.enabled=true;
     this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     this.container.appendChild(this.renderer.domElement);
-    this.webglLost=false;this.frameError=null;this.lastKnownFPS=0;this.diagnosticsVisible=false;
+    this.webglLost=false;this.frameError=null;this.lastKnownFPS=0;this.diagnosticsVisible=false;this.actorStats={visible:0,full:0,limited:0,hidden:0};this.actorViewDirection=new THREE.Vector3();
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x9bdbef);this.scene.fog=new THREE.FogExp2(0xa3e2ed,.00165);
     this.camera=new THREE.PerspectiveCamera(67,innerWidth/innerHeight,.15,1050);
     this.input=new Input();this.audio=new AudioSystem();this.ui=new UI();
@@ -137,7 +138,21 @@ export class Game {
     document.getElementById('performance-panel').textContent=performanceSnapshot({
       fps,renderer:this.renderer,projectiles:this.projectiles.length,effects:active,
       tier:this.graphics.tier,mounted:this.dragon.riding,
-      visibleIslands:this.world.visibleIslandCount,totalIslands:5});
+      visibleIslands:this.world.visibleIslandCount,totalIslands:5,
+      actorsVisible:this.actorStats.visible,actorsLimited:this.actorStats.limited});
+  }
+  updateActorDetail(){
+    const observer=this.dragon.riding?this.dragon.group.position:this.hero.group.position;
+    const camera=this.camera.position;
+    const forward=this.camera.getWorldDirection(this.actorViewDirection);
+    const tier=this.graphics.tier;
+    this.wildDragons.setDetail(observer,tier,camera,forward);
+    this.enemies.setDetail(observer,tier,camera,forward);
+    this.villagers.setDetail(observer,tier,camera,forward);
+    const levels=[...this.wildDragons.creatures.map(c=>c.visualLevel),
+      ...this.enemies.enemies.filter(e=>e.active&&e.alive).map(e=>e.visualLevel),
+      ...this.villagers.npcs.map(n=>n.root.visible?'full':'hidden')];
+    this.actorStats=sceneActorStats(levels);
   }
   bindOrbitControls(){
     // Orbit only on the canvas: HUD buttons and the stable panel remain clickable.
@@ -564,6 +579,7 @@ export class Game {
       this.ui.update(dt,this);
     }else this.dragon.update(dt,{isDown:()=>false},this.elapsed);
     this.updateCamera(dt);
+    this.updateActorDetail();
     this.world.updateDetail(this.camera.position,dt);
     this.renderer.render(this.scene,this.camera);
     this.fpsTime+=realDt;this.frames++;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {CONTRACTS} from '../systems/VillageContracts.js';
+import {actorVisualLevel} from '../systems/ActorLOD.js';
 export const VILLAGERS=[
   {id:'iara',name:'IARA',role:'Exploradora dos faróis',x:-17,z:25,coat:0x4b8079,cap:0x975a36},
   {id:'lume',name:'LUME',role:'Curandeira',x:22,z:14,coat:0x9f835c,cap:0xd1a271},
@@ -56,6 +57,12 @@ export class VillageNPCs {
       }
     }
   }
+  /** Hide distant NPC artwork only: dialogue, saved contracts and colliders stay. */
+  setDetail(observer,tier,camera,forward){
+    for(const npc of this.npcs){
+      npc.root.visible=actorVisualLevel(observer,npc.root.position,camera,forward,tier,'npc')!=='hidden';
+    }
+  }
   nearby(position,limit=5){
     let best=null,dist=limit*limit;
     for(const item of this.npcs){const dx=item.root.position.x-position.x,dz=item.root.position.z-position.z;
@@ -67,7 +74,8 @@ export class VillageNPCs {
   }
   update(dt,time){
     for(let i=0;i<this.npcs.length;i++){
-      const npc=this.npcs[i];npc.halo.rotation.z+=dt*.38;
+      const npc=this.npcs[i];if(!npc.root.visible)continue;
+      npc.halo.rotation.z+=dt*.38;
       for(const {arm,side} of npc.root.userData.arms)arm.rotation.z=side*Math.sin(time*1.7+i)*.13;
       npc.root.rotation.y=Math.sin(time*.43+i)*.28+Math.PI*.75;
     }

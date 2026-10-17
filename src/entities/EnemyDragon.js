@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {limitedTurn,pursuitYaw,shortestAngle} from '../systems/combatMath.js';
 import {approach,clamp} from '../utils/math.js';
+import {actorVisualLevel,shouldAnimateActor,enemySimulationStep} from '../systems/ActorLOD.js';
 
 // Malha leve e original, com asas de duas juntas, cauda articulada e cabeça animada.
 function enemyModel(color,accent) {
@@ -62,9 +63,13 @@ export class EnemyDragon {
     this.yaw=index*2.0;this.group.rotation.y=this.yaw;
     this.speed=16;this.health=3;this.maxHealth=3;this.alive=true;this.active=false;
     this.state='patrol';this.phase=index*2.3;this.fireCooldown=2+index*.55;
-    this.hurtPulse=0;this.decisionTimer=0;
+    this.hurtPulse=0;this.decisionTimer=0;this.visualClock=0;this.visualLevel='full';this.simulationCarry=0;
   }
-  setActive(value){this.active=value;this.group.visible=value&&this.alive;}
+  setActive(value){this.active=value;this.group.visible=value&&this.alive&&this.visualLevel!=='hidden';}
+  setDetail(observer,tier,camera,forward){
+    this.visualLevel=actorVisualLevel(observer,this.group.position,camera,forward,tier,'enemy');
+    this.group.visible=this.active&&this.alive&&this.visualLevel!=='hidden';
+  }
   takeHit(amount=1){
     if(!this.active||!this.alive)return false;
     this.health=Math.max(0,this.health-Math.max(0,amount));this.hurtPulse=.28;
@@ -97,6 +102,11 @@ export class EnemyDragon {
     origin.z=clamp(origin.z-Math.cos(this.yaw)*this.speed*dt,-398,398);
     const floor=this.world.heightAt(origin.x,origin.z)+15;
     origin.y=THREE.MathUtils.damp(origin.y,Math.max(floor,clamp(destination.y,22,88)),1.25,dt);
+    // AI, cooldowns, movement and fire remain active at full frequency.
+    // Only transforms of the decorative rig are rate-limited at a distance.
+    this.visualClock+=dt;
+    if(shouldAnimateActor(this.visualLevel,this.visualClock)){
+    this.visualClock=0;
     const {root,wings,head,tail}=this.model;
     root.rotation.z=THREE.MathUtils.damp(root.rotation.z,-shortestAngle(intendedYaw-this.yaw)*.20,2.8,dt);
     root.rotation.x=Math.sin(time*2+this.phase)*.04;
@@ -108,6 +118,7 @@ export class EnemyDragon {
     });
     tail.forEach((joint,i)=>joint.rotation.y=Math.sin(time*3-this.phase-i*.6)*(.11+i*.025));
     head.rotation.x=Math.sin(time*3.5+this.phase)*.06;
+    }
     if(this.state==='chase'&&distance<105&&distance>14&&this.fireCooldown<=0){
       const aimed=pursuitYaw(origin,p);
       if(Math.abs(shortestAngle(aimed-this.yaw))<.30){
@@ -133,5 +144,19 @@ export class EnemySquad {
     for(const e of this.alive){const d=e.position.distanceToSquared(position);if(d<dist){dist=d;best=e;}}
     return best;
   }
-  update(dt,time,dragon,onShot){if(this.active)this.alive.forEach(e=>e.update(dt,time,dragon,onShot));}
+  setDetail(observer,tier,camera,forward){
+    this.detailTier=tier;
+    for(const enemy of this.enemies)enemy.setDetail(observer,tier,camera,forward);
+  }
+  update(dt,time,dragon,onShot){
+    if(!this.active)return;
+    const tier=this.detailTier??'balanced';
+    for(const enemy of this.enemies){
+      if(!enemy.alive)continue;
+      const distance=enemy.position.distanceTo(dragon.group.position);
+      const step=enemySimulationStep(distance,enemy.simulationCarry,dt,tier);
+      enemy.simulationCarry=step.carry;
+      if(step.run)enemy.update(step.dt,time,dragon,onShot);
+    }
+  }
 }

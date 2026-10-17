@@ -1,0 +1,9 @@
+ASAS DE BRUMÁRIA v1.3.0 — RESULTADO DOS TESTES
+
+- Base v1.2.9: 219 testes automatizados.
+- Novos: 19 testes de LOD visual, atualização de sentinelas, proteção de combate e diagnóstico F3.
+- Total: 238 testes automatizados aprovados; 0 falhas.
+- Os testes são de lógica e código, não benchmarks de GPU.
+- Compatibilidade de saves mantida.
+- Windows: iniciar pelo JOGAR-WINDOWS.bat; é um servidor web local e navegador, não .exe nativo.
+- WebGL/controle físico: validação manual pendente.
