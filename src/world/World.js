@@ -3,6 +3,7 @@ import { ISLANDS } from './config.js';
 import { seededRandom, clamp } from '../utils/math.js';
 import { obstacleCeiling } from '../utils/collision.js';
 import { surfaceHeightAt,flattenVillageGround } from '../utils/surfaces.js';
+import {applyIslandVisibility,shouldRefreshClouds,wrappedCloudX} from './VisibilityBudget.js';
 const brown = new THREE.MeshLambertMaterial({color:0x855b37});
 const leafPalette = [0x245d49,0x2b7355,0x398565,0x31735c];
 const rand = seededRandom(18971);
@@ -24,6 +25,9 @@ export class World {
     this.materials = [];
     this.obstacles = [];this.surfaces=[];
     this.forestTrees = [];this.forestRocks = [];this.foliageMeshes = [];
+    this.foliageByIsland=new Map();this.grassByIsland=new Map();
+    this.detailTier='balanced';this.detailElapsed=Infinity;this.cloudElapsed=Infinity;
+    this.cloudTravel=0;this.visibleIslandCount=ISLANDS.length;
     this.cloudWind=1;
     this.populate();
   }
@@ -147,7 +151,7 @@ export class World {
       }
       mesh.count=placed;mesh.instanceMatrix.needsUpdate=true;
       if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
-      this.scene.add(mesh);
+      this.scene.add(mesh);this.grassByIsland.set(island.name,mesh);
     }
   }
   buildVillageProps() {
@@ -186,8 +190,24 @@ export class World {
   }
   flushFoliage() {
     const dummy=new THREE.Object3D();
-    const trees=this.forestTrees,rocks=this.forestRocks;
-    const addBatch=(geometry,material,items,place,colorOf,shadows=false)=>{
+    // Each island gets its own GPU batches, allowing per-island frustum culling.
+    const buckets=new Map(ISLANDS.map(i=>[i.name,{trees:[],rocks:[]}])) ;
+    const nearest=t=>{
+      let result=ISLANDS[0],best=Infinity;
+      for(const island of ISLANDS){
+        const dx=t.x-island.x,dz=t.z-island.z,d=dx*dx+dz*dz;
+        if(d<best){best=d;result=island;}
+      }
+      return result.name;
+    };
+    for(const t of this.forestTrees)buckets.get(nearest(t)).trees.push(t);
+    for(const r of this.forestRocks)buckets.get(nearest(r)).rocks.push(r);
+    const woodGeometry=new THREE.CylinderGeometry(.2,.38,2.4,6);
+    const crownMaterial=new THREE.MeshLambertMaterial({color:0xffffff});
+    const crowns=Array.from({length:3},(_,k)=>new THREE.ConeGeometry(1.65-k*.22,3.2-k*.4,7));
+    const stoneGeometry=new THREE.DodecahedronGeometry(1,0);
+    const stoneMaterial=new THREE.MeshLambertMaterial({color:0xffffff,flatShading:true});
+    const addBatch=(geometry,material,items,place,colorOf,shadows,islandName)=>{
       if(!items.length)return;
       const batch=new THREE.InstancedMesh(geometry,material,items.length);
       batch.instanceMatrix.setUsage(THREE.StaticDrawUsage);
@@ -200,16 +220,20 @@ export class World {
       if(batch.instanceColor)batch.instanceColor.needsUpdate=true;
       batch.castShadow=shadows;batch.computeBoundingSphere();
       this.scene.add(batch);this.foliageMeshes.push(batch);
+      this.foliageByIsland.get(islandName).push(batch);
     };
-    addBatch(new THREE.CylinderGeometry(.2,.38,2.4,6),brown,trees,
-      (t,d)=>{d.position.set(t.x,t.y+1.2*t.size,t.z);d.scale.setScalar(t.size);},null,true);
-    const crownMaterial=new THREE.MeshLambertMaterial({color:0xffffff});
-    for(let k=0;k<3;k++)addBatch(new THREE.ConeGeometry(1.65-k*.22,3.2-k*.4,7),crownMaterial,trees,
-      (t,d)=>{d.position.set(t.x,t.y+(3.1+k*.85)*t.size,t.z);d.scale.setScalar(t.size);},
-      t=>leafPalette[t.palette],k===0);
-    addBatch(new THREE.DodecahedronGeometry(1,0),new THREE.MeshLambertMaterial({color:0xffffff,flatShading:true}),rocks,
-      (r,d)=>{d.position.set(r.x,r.y+r.size*.45,r.z);d.rotation.y=r.rotation;d.scale.set(1.35*r.size,.67*r.size,.95*r.size);},
-      r=>r.palette,true);
+    for(const island of ISLANDS){
+      const {trees,rocks}=buckets.get(island.name);
+      this.foliageByIsland.set(island.name,[]);
+      addBatch(woodGeometry,brown,trees,
+        (t,d)=>{d.position.set(t.x,t.y+1.2*t.size,t.z);d.scale.setScalar(t.size);},null,true,island.name);
+      for(let k=0;k<3;k++)addBatch(crowns[k],crownMaterial,trees,
+        (t,d)=>{d.position.set(t.x,t.y+(3.1+k*.85)*t.size,t.z);d.scale.setScalar(t.size);},
+        t=>leafPalette[t.palette],k===0,island.name);
+      addBatch(stoneGeometry,stoneMaterial,rocks,
+        (r,d)=>{d.position.set(r.x,r.y+r.size*.45,r.z);d.rotation.y=r.rotation;d.scale.set(1.35*r.size,.67*r.size,.95*r.size);},
+        r=>r.palette,true,island.name);
+    }
   }
   buildVillage() {
     const cabin=(x,z,size=1)=>{
@@ -243,17 +267,51 @@ export class World {
   }
   buildClouds() {
     const material=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.62,depthWrite:false,fog:true});
-    for(let i=0;i<25;i++){
-      const group=new THREE.Group();group.position.set((rand()-.5)*850,85+rand()*78,(rand()-.5)*850);
-      const scale=1.8+rand()*2.8;
-      for(let j=0;j<5;j++) {
-        const puff=new THREE.Mesh(new THREE.SphereGeometry(1,8,6),material);
-        puff.position.set((j-2)*2.0,(rand()-.5)*.8,(rand()-.5)*2);
-        puff.scale.set(2.5+rand(),1.15+rand()*.65,1.6+rand());group.add(puff);
-      }
-      group.scale.setScalar(scale);group.userData.drift=.8+rand()*1.6;
-      this.clouds.push(group);this.scene.add(group);
+    const geometry=new THREE.SphereGeometry(1,8,6);
+    // All 125 cloud puffs share one geometry, material, and GPU draw call.
+    const CLOUD_COUNT=25,PUFFS=5;
+    this.cloudMesh=new THREE.InstancedMesh(geometry,material,CLOUD_COUNT*PUFFS);
+    this.cloudMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.cloudMesh.frustumCulled=false;this.cloudMesh.castShadow=false;
+    this.scene.add(this.cloudMesh);
+    for(let i=0;i<CLOUD_COUNT;i++){
+      const cloud={x:(rand()-.5)*850,y:85+rand()*78,z:(rand()-.5)*850,
+        scale:1.8+rand()*2.8,drift:.8+rand()*1.6,puffs:[]};
+      for(let j=0;j<PUFFS;j++)cloud.puffs.push({
+        x:(j-2)*2,y:(rand()-.5)*.8,z:(rand()-.5)*2,
+        sx:2.5+rand(),sy:1.15+rand()*.65,sz:1.6+rand()
+      });
+      this.clouds.push(cloud);
     }
+    this.updateClouds(0);
+  }
+  updateClouds(time){
+    if(!this.cloudMesh)return;
+    const dummy=this.cloudDummy??=new THREE.Object3D();
+    let index=0;
+    for(const cloud of this.clouds){
+      const x=wrappedCloudX(cloud.x,cloud.drift,time,1);
+      for(const puff of cloud.puffs){
+        dummy.position.set(x+puff.x*cloud.scale,cloud.y+puff.y*cloud.scale,cloud.z+puff.z*cloud.scale);
+        dummy.rotation.set(0,0,0);
+        dummy.scale.set(puff.sx*cloud.scale,puff.sy*cloud.scale,puff.sz*cloud.scale);
+        dummy.updateMatrix();this.cloudMesh.setMatrixAt(index++,dummy.matrix);
+      }
+    }
+    this.cloudMesh.instanceMatrix.needsUpdate=true;
+    this.cloudElapsed=0;
+  }
+  setDetailQuality(tier){
+    this.detailTier=tier;
+    this.detailElapsed=Infinity;
+    this.cloudElapsed=Infinity;
+  }
+  updateDetail(observer,dt=0){
+    this.detailElapsed+=Math.max(0,dt);
+    if(this.detailElapsed<.24)return;
+    this.detailElapsed=0;
+    const state=applyIslandVisibility(observer,this.detailTier,ISLANDS,this.foliageByIsland,this.grassByIsland);
+    this.visibleIslandCount=state.visible;
   }
   buildSeabirds() {
     const mat=new THREE.MeshBasicMaterial({color:0xe3faf9,side:THREE.DoubleSide});this.birds=[];
@@ -269,7 +327,9 @@ export class World {
   update(dt,time) {
     this.elapsed=time;this.waterTexture.offset.x=(time*.004)%1;this.waterTexture.offset.y=(time*.003)%1;
     if(this.fire)this.fire.scale.y=1+Math.sin(time*9)*.16;
-    for(const cloud of this.clouds){cloud.position.x+=cloud.userData.drift*dt*this.cloudWind;if(cloud.position.x>450)cloud.position.x=-450;}
+    const elapsed=Math.max(0,dt);
+    this.cloudTravel+=elapsed*this.cloudWind;this.cloudElapsed+=elapsed;
+    if(shouldRefreshClouds(this.cloudElapsed,this.detailTier))this.updateClouds(this.cloudTravel);
     for(const bird of this.birds){const d=bird.userData;bird.position.x=d.centerX+Math.cos(time*.18*d.speed+d.offset)*18;bird.position.z=d.centerZ+Math.sin(time*.18*d.speed+d.offset)*18;bird.rotation.y=-time*.18*d.speed-d.offset;}
   }
 }

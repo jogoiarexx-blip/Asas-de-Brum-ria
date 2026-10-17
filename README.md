@@ -1,3 +1,15 @@
+# Asas de Brumária v1.2.9 — Cenários otimizados por distância
+
+**Atualização técnica de desempenho para PCs modestos.** As 25 nuvens (125 partes visuais) agora são renderizadas em **um único lote instanciado**, sem criar 125 objetos 3D independentes. A animação dos lotes é feita com frequência reduzida em modo LEVE, preservando o movimento suave entre mudanças de vento.
+
+A vegetação deixa de usar um único lote espalhado pelo mapa inteiro: árvores, rochas e arbustos passam a ser distribuídos em lotes por ilha, o que permite ao Three.js descartar lotes fora da câmera e ocultar detalhes de ilhas muito distantes. A distância aumenta com a altitude e usa margem de transição para evitar alternância incessante na borda do alcance. **Colisão, terreno, missões e objetos interativos não são ocultados por essa técnica.**
+
+**Diagnóstico F3:** agora também informa quantas ilhas estão exibindo vegetação detalhada e a quantidade de lotes das nuvens. Qualidade DETALHADA mantém a vegetação de todas as ilhas visível, sem corte por distância.
+
+**Validação:** 219 testes automatizados aprovados (206 existentes + 13 novos), verificação de imports e sintaxe. O desempenho real em GPU fraca ainda precisa ser medido no navegador; não há promessa de FPS específico.
+
+---
+
 # Asas de Brumária v1.2.8 — Confiabilidade e diagnósticos
 
 - **GLB persistente:** a gravação no IndexedDB agora só é confirmada depois que a transação termina; falhas de commit exibem aviso, sem falso sucesso.

@@ -1,0 +1,10 @@
+ASAS DE BRUMÁRIA 1.2.9 — RELATÓRIO DE TESTES
+
+- npm run check: 219 testes aprovados, 0 falhas.
+- Inclui 13 novos testes de folhagem por ilha, política de distância, histerese, clouds instanciadas, animação sem saltos e painel F3.
+- Arquitetura de renderização: 125 puffs de nuvens agrupados em um único lote.
+- O número de chamadas reais por frame depende da câmera, sombras, clima, qualidade e hardware.
+- A geometria do cenário e as colisões mantêm compatibilidade com saves 1.2.8.
+- A visualização WebGL e execução do PowerShell Windows NÃO foram reproduzidas no ambiente Linux.
+
+Manual: abrir o jogo, pressionar F3, escolher GRÁFICOS LEVE por G, voar entre ilhas e observar a contagem de ilhas com vegetação ativa e as chamadas à GPU.

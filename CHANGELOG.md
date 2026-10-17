@@ -1,3 +1,15 @@
+## v1.2.9 — Desempenho do cenário e culling seguro
+
+- Nuvens: substituídos 125 Mesh individuais por um InstancedMesh único; atualizações das matrizes reduzidas a 10–60 Hz conforme qualidade, usando animação contínua e acumulada para evitar saltos ao mudar o vento.
+- Floresta: batches de árvores e pedras organizados por ilha para frustum culling mais eficaz. Matrizes estáticas são criadas apenas na carga inicial.
+- Grama: batches existentes por ilha passam a ocultar detalhes distantes em LEVE/EQUILIBRADO. Em DETALHADO, mantêm toda a vegetação.
+- Distância de detalhe adaptada à altura da câmera e com histerese de 24 metros. Apenas visual é ocultado: colisões e missões continuam ativas.
+- F3 mostra o número de ilhas com vegetação ativa e indica nuvens desenhadas em um lote.
+- 13 testes novos de política de visibilidade, animação de nuvens, regressões e integração; total: 219 testes.
+- Resultados de FPS precisam ser confirmados em GPUs físicas e no navegador WebGL.
+
+---
+
 ## v1.2.8 — Confiabilidade, estabilidade e diagnóstico F3
 
 - Corrigida confirmação prematura da gravação de GLB no armazenamento local; o resultado agora depende de transação concluída.

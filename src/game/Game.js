@@ -136,7 +136,8 @@ export class Game {
     for(const bucket of Object.values(this.effects.buckets))active+=bucket.particles.length;
     document.getElementById('performance-panel').textContent=performanceSnapshot({
       fps,renderer:this.renderer,projectiles:this.projectiles.length,effects:active,
-      tier:this.graphics.tier,mounted:this.dragon.riding});
+      tier:this.graphics.tier,mounted:this.dragon.riding,
+      visibleIslands:this.world.visibleIslandCount,totalIslands:5});
   }
   bindOrbitControls(){
     // Orbit only on the canvas: HUD buttons and the stable panel remain clickable.
@@ -242,7 +243,7 @@ export class Game {
   }
   applySceneQuality(){
     const tier=this.graphics.tier;
-    this.effects?.setQuality(tier);this.weather?.setQuality(tier);
+    this.effects?.setQuality(tier);this.weather?.setQuality(tier);this.world?.setDetailQuality(tier);
     if(this.world?.sun){this.world.sun.castShadow=tier!=='economy';}
     // Shadows are fully disabled in economy. Never change map size on each shot.
   }
@@ -563,6 +564,7 @@ export class Game {
       this.ui.update(dt,this);
     }else this.dragon.update(dt,{isDown:()=>false},this.elapsed);
     this.updateCamera(dt);
+    this.world.updateDetail(this.camera.position,dt);
     this.renderer.render(this.scene,this.camera);
     this.fpsTime+=realDt;this.frames++;
     if(this.fpsTime>=1){const fps=Math.round(this.frames/this.fpsTime);this.lastKnownFPS=fps;this.ui.setFPS(fps);this.renderDiagnostics(fps);
