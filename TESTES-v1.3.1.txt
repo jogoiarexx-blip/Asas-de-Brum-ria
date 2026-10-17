@@ -1,0 +1,8 @@
+ASAS DE BRUMÁRIA v1.3.1 — REGISTRO DE VALIDAÇÃO
+
+Base: 238 testes anteriores da v1.3.0.
+Novos testes: 14 — mudança de malha, reutilização de geometria e material, integração ao LOD, pose do herói, painel F3 e alocações de combate.
+Resultado: 252/252 passaram em npm run check (Node.js 22).
+Compatibilidade: API de controles e dados salvos sem alterações de formato.
+Testes WebGL com GPU e medição real FPS ainda pendentes.
+O executável Windows é um script que abre o jogo WebGL no navegador via servidor local.

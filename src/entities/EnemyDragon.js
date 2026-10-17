@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import {limitedTurn,pursuitYaw,shortestAngle} from '../systems/combatMath.js';
 import {approach,clamp} from '../utils/math.js';
 import {actorVisualLevel,shouldAnimateActor,enemySimulationStep} from '../systems/ActorLOD.js';
+import {dragonMeshVisibility} from '../systems/DragonMeshLOD.js';
+import {buildDragonProxy} from './DragonProxy.js';
 
 // Malha leve e original, com asas de duas juntas, cauda articulada e cabeça animada.
 function enemyModel(color,accent) {
@@ -59,6 +61,9 @@ export class EnemyDragon {
     this.world=world;this.index=index;
     this.anchor=new THREE.Vector3(data.x,data.y,data.z);
     this.group=new THREE.Group();this.model=enemyModel(data.color,data.accent);this.group.add(this.model.root);
+    this.proxy=buildDragonProxy(data.color,data.accent,{enemy:true});this.proxy.visible=false;this.group.add(this.proxy);
+    this.scratchDestination=new THREE.Vector3();this.scratchDirection=new THREE.Vector3();
+    this.scratchMuzzle=new THREE.Vector3();this.scratchPredicted=new THREE.Vector3();
     this.group.position.copy(this.anchor);this.group.visible=false;scene.add(this.group);
     this.yaw=index*2.0;this.group.rotation.y=this.yaw;
     this.speed=16;this.health=3;this.maxHealth=3;this.alive=true;this.active=false;
@@ -68,6 +73,9 @@ export class EnemyDragon {
   setActive(value){this.active=value;this.group.visible=value&&this.alive&&this.visualLevel!=='hidden';}
   setDetail(observer,tier,camera,forward){
     this.visualLevel=actorVisualLevel(observer,this.group.position,camera,forward,tier,'enemy');
+    const visibility=dragonMeshVisibility(this.visualLevel);
+    this.model.root.visible=visibility.high;
+    this.proxy.visible=visibility.low;
     this.group.visible=this.active&&this.alive&&this.visualLevel!=='hidden';
   }
   takeHit(amount=1){
@@ -83,10 +91,10 @@ export class EnemyDragon {
     const origin=this.group.position,p=player.group.position;
     const distance=origin.distanceTo(p);
     this.state=player.riding&&distance<153?'chase':'patrol';
-    const destination=new THREE.Vector3();
+    const destination=this.scratchDestination;
     if(this.state==='chase'){
       const avoid=distance<26;
-      const direction=new THREE.Vector3().subVectors(p,origin).normalize();
+      const direction=this.scratchDirection.subVectors(p,origin).normalize();
       destination.copy(p).addScaledVector(direction,avoid?-32:-2);
       destination.y=p.y+Math.sin(time*1.1+this.phase)*6+(this.index-1)*4;
     } else {
@@ -123,9 +131,9 @@ export class EnemyDragon {
       const aimed=pursuitYaw(origin,p);
       if(Math.abs(shortestAngle(aimed-this.yaw))<.30){
         this.fireCooldown=2.7+this.index*.38;
-        const muzzle=origin.clone().add(new THREE.Vector3(-Math.sin(this.yaw)*4.6,1.1,-Math.cos(this.yaw)*4.6));
+        const muzzle=this.scratchMuzzle.copy(origin);muzzle.x-=Math.sin(this.yaw)*4.6;muzzle.y+=1.1;muzzle.z-=Math.cos(this.yaw)*4.6;
         const lead=Math.min(.45,distance/70);
-        const predicted=p.clone().addScaledVector(player.forward(),player.speed*lead);
+        const predicted=this.scratchPredicted.copy(p).addScaledVector(player.forward(),player.speed*lead);
         predicted.y+=.4;
         onShot(muzzle,predicted.sub(muzzle).normalize(),this);
       }

@@ -1,3 +1,15 @@
+# Asas de Brumária v1.3.1 — LOD geométrico e animações do herói
+
+Esta atualização substitui a malha 3D completa dos dragões distantes (quando LOD=limited) por uma silhueta original de **cinco malhas** com geometrias e materiais compartilhados. Os dragões próximos continuam usando sua forma detalhada. As partes simplificadas não projetam sombras nem executam animações de asas por quadro. Nas distâncias ocultas, nenhum dos dois modelos é desenhado.
+
+O personagem procedural ganhou uma animação discreta de respiração quando parado, pivô de cabeça para olhar suavemente e joelhos mais flexíveis durante a corrida. A animação de montaria foi preservada, e a importação opcional de GLB continua usando as próprias animações do modelo quando presentes.
+
+Durante a perseguição, os inimigos reutilizam vetores temporários para cálculos de destino, direção e fogo, evitando criar novos vetores a cada atualização. F3 informa quantos dragões estão usando as malhas simplificadas.
+
+**Testes:** 252 verificações automatizadas, incluindo testes de construção efetiva das malhas, reuso de recursos 3D, animação e integração. A validação visual e o ganho real de FPS dependem de teste WebGL em GPU real. Missões, arquivos GLB, controles e saves mantidos. O jogo é Three.js no navegador; o pacote Windows fornece um inicializador local e não um EXE nativo.
+
+---
+
 # Asas de Brumária v1.3.0 — LOD de personagens e desempenho de combate
 
 ## Melhorias nesta versão

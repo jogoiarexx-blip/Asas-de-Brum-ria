@@ -17,17 +17,18 @@ export function buildHero(){
  // Diagonal saddle-rider leather strap across the tunic.
  const strap=add(body,new THREE.BoxGeometry(.13,.94,.1),leather,-.1,1.2,-.39);strap.rotation.z=-.36;
  add(body,new THREE.BoxGeometry(.32,.15,.12),coatLight,0,1.56,-.29);
+ const head=new THREE.Group();head.position.y=1.91;body.add(head);
  // Head and protective leather cap, with visible eyes and readable facial features.
- add(body,new THREE.SphereGeometry(.32,14,12),skin,0,1.92,-.025);
- add(body,new THREE.SphereGeometry(.33,12,8),hair,0,2.085,.025,1,.57,1);
- const brim=add(body,new THREE.BoxGeometry(.68,.065,.35),leather,0,2.09,-.19);
+ add(head,new THREE.SphereGeometry(.32,14,12),skin,0,.01,-.025);
+ add(head,new THREE.SphereGeometry(.33,12,8),hair,0,.175,.025,1,.57,1);
+ const brim=add(head,new THREE.BoxGeometry(.68,.065,.35),leather,0,.18,-.19);
  brim.rotation.x=.06;
  for(const side of [-1,1]){
-   add(body,new THREE.SphereGeometry(.045,8,6),dark,side*.125,1.947,-.318);
-   add(body,new THREE.SphereGeometry(.016,6,5),metal,side*.113,1.965,-.352);
-   const brow=add(body,new THREE.BoxGeometry(.115,.026,.042),hair,side*.126,2.035,-.312);brow.rotation.z=side*.11;
+   add(head,new THREE.SphereGeometry(.045,8,6),dark,side*.125,.037,-.318);
+   add(head,new THREE.SphereGeometry(.016,6,5),metal,side*.113,.055,-.352);
+   const brow=add(head,new THREE.BoxGeometry(.115,.026,.042),hair,side*.126,.125,-.312);brow.rotation.z=side*.11;
  }
- add(body,new THREE.BoxGeometry(.16,.025,.018),leather,0,1.827,-.326);
+ add(head,new THREE.BoxGeometry(.16,.025,.018),leather,0,-.083,-.326);
  const legs=[],arms=[];
  for(const side of [-1,1]){
    const leg=new THREE.Group();leg.position.set(side*.225,.68,0);body.add(leg);
@@ -47,6 +48,6 @@ export function buildHero(){
  const cape=new THREE.Group();cape.position.set(0,1.51,.30);body.add(cape);
  const capeMesh=add(cape,new THREE.ConeGeometry(.73,1.34,5),capeMat,0,-.6,.2,1,1,.20);capeMesh.rotation.x=.12;
  add(cape,new THREE.BoxGeometry(.66,.12,.11),metal,0,-.07,-.08);
- g.userData={legs,arms,cape,body};
+ g.userData={legs,arms,cape,body,head};
  return g;
 }

@@ -1,3 +1,16 @@
+# v1.3.1 — Malhas simplificadas, animações e combate com menos alocações
+
+- Novo módulo `src/entities/DragonProxy.js`: proxy geométrico com 5 malhas, poucas faces, geometrias compartilhadas, materiais reutilizados e sem sombras.
+- Dragões selvagens e sentinelas alternam automaticamente entre modelo detalhado, proxy e ocultação usando o LOD já existente (qualidade de vídeo, distância e direção da câmera).
+- Preservadas a lógica de IA e vínculo, as colisões, o combate próximo e as posições dos grupos originais.
+- Herói procedural com respiração de repouso, pivô animado na cabeça e articulação aprimorada dos joelhos em corrida e montaria.
+- Inimigos reutilizam vetores para perseguição e disparos, com menos objetos temporários por quadro.
+- Painel F3 indica quantos dragões estão com malha simplificada.
+- 252 testes automatizados: 238 anteriores + 14 novos, incluindo quatro testes de construção real de proxies com implementação mock da API 3D.
+- Limitação: sem medição FPS em dispositivo real ou validação visual de todas as trocas LOD via WebGL; não é um LOD de rig completo.
+
+---
+
 ## v1.3.0 — LOD de personagens e atualização inteligente
 
 - Dragões selvagens, sentinelas e moradores passam a usar controle de visibilidade por distância e direção da câmera.

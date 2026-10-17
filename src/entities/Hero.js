@@ -16,11 +16,11 @@ export class Hero {
   }
   setMounted(value){this.mounted=value;this.group.visible=!value;this.rider.visible=value;}
   animate(model,pose,dt,now,mounted=false){
-    const {legs,arms,cape,body}=model.userData;
+    const {legs,arms,cape,body,head}=model.userData;
     legs.forEach((leg,i)=>{
       const phase=i===0?1:-1;
       leg.hip.rotation.x=THREE.MathUtils.damp(leg.hip.rotation.x,mounted?-.73:pose.stride*phase,12,dt);
-      leg.knee.rotation.x=THREE.MathUtils.damp(leg.knee.rotation.x,mounted?.86:Math.max(0,-pose.stride*phase)*.75,11,dt);
+      leg.knee.rotation.x=THREE.MathUtils.damp(leg.knee.rotation.x,mounted?.86:Math.max(0,-pose.stride*phase)*.75+pose.footLift*.2,11,dt);
     });
     arms.forEach((arm,i)=>{
       const phase=i===0?-1:1;
@@ -28,6 +28,8 @@ export class Hero {
       arm.elbow.rotation.x=THREE.MathUtils.damp(arm.elbow.rotation.x,mounted?-.64:-.18,10,dt);
     });
     body.rotation.z=THREE.MathUtils.damp(body.rotation.z,mounted?Math.sin(now*2)*.015:pose.sway,7,dt);
+    body.scale.y=THREE.MathUtils.damp(body.scale.y,1+pose.breath,4,dt);
+    head.rotation.y=THREE.MathUtils.damp(head.rotation.y,pose.headTurn,3,dt);
     body.rotation.x=THREE.MathUtils.damp(body.rotation.x,pose.bodyLean,7,dt);
     cape.rotation.x=THREE.MathUtils.damp(cape.rotation.x,pose.cape+Math.sin(now*(mounted?6:9))*.04,5,dt);
   }

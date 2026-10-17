@@ -139,7 +139,8 @@ export class Game {
       fps,renderer:this.renderer,projectiles:this.projectiles.length,effects:active,
       tier:this.graphics.tier,mounted:this.dragon.riding,
       visibleIslands:this.world.visibleIslandCount,totalIslands:5,
-      actorsVisible:this.actorStats.visible,actorsLimited:this.actorStats.limited});
+      actorsVisible:this.actorStats.visible,actorsLimited:this.actorStats.limited,
+      actorsProxied:this.actorStats.proxied??0});
   }
   updateActorDetail(){
     const observer=this.dragon.riding?this.dragon.group.position:this.hero.group.position;
@@ -153,6 +154,8 @@ export class Game {
       ...this.enemies.enemies.filter(e=>e.active&&e.alive).map(e=>e.visualLevel),
       ...this.villagers.npcs.map(n=>n.root.visible?'full':'hidden')];
     this.actorStats=sceneActorStats(levels);
+    this.actorStats.proxied=this.wildDragons.creatures.filter(c=>c.lowDetail.visible&&c.group.visible).length+
+      this.enemies.enemies.filter(e=>e.proxy.visible&&e.group.visible).length;
   }
   bindOrbitControls(){
     // Orbit only on the canvas: HUD buttons and the stable panel remain clickable.

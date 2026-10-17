@@ -3,6 +3,8 @@ import {WILD_DRAGON_DEFS} from '../systems/WildBonds.js';
 import {WildApproach} from '../systems/WildApproach.js';
 import {SPECIES} from '../systems/Progression.js';
 import {actorVisualLevel,shouldAnimateActor} from '../systems/ActorLOD.js';
+import {dragonMeshVisibility} from '../systems/DragonMeshLOD.js';
+import {buildDragonProxy} from './DragonProxy.js';
 const shape=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{
   const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;return m;
 };
@@ -83,8 +85,14 @@ export class WildDragons {
         const px=spec.x+Math.cos(angle)*radius,pz=spec.z+Math.sin(angle)*radius;
         if(world.walkable(px,pz)&&world.clearanceAt(px,pz,2.4)<world.heightAt(px,pz)+.5){x=px;z=pz;break;}
       }
-      const model=buildCreature(spec);model.group.position.set(x,world.heightAt(x,z),z);scene.add(model.group);
-      return {spec,...model,anchor:new THREE.Vector2(x,z),phase:i*2.1,visualLevel:'full',visualClock:0};
+      const model=buildCreature(spec);
+      const highDetail=new THREE.Group();highDetail.name='DetailedDragon';
+      while(model.group.children.length)highDetail.add(model.group.children[0]);
+      const palette=SPECIES[spec.species].colors;
+      const lowDetail=buildDragonProxy(palette[1],palette[4]);lowDetail.visible=false;
+      model.group.add(highDetail,lowDetail);
+      model.group.position.set(x,world.heightAt(x,z),z);scene.add(model.group);
+      return {spec,...model,highDetail,lowDetail,anchor:new THREE.Vector2(x,z),phase:i*2.1,visualLevel:'full',visualClock:0};
     });
   }
   /** Visual-only LOD. Wild bonds and gameplay positions remain independent. */
@@ -92,6 +100,9 @@ export class WildDragons {
     for(const creature of this.creatures){
       const level=actorVisualLevel(observer,creature.group.position,camera,forward,tier,'wild');
       creature.visualLevel=level;
+      const visibility=dragonMeshVisibility(level);
+      creature.highDetail.visible=visibility.high;
+      creature.lowDetail.visible=visibility.low;
       creature.group.visible=level!=='hidden';
     }
   }

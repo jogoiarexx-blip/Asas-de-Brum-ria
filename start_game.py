@@ -40,7 +40,7 @@ for candidate in ([port] if remote else range(port,port+20)):
     except OSError:continue
 if server is None:raise SystemExit('Nenhuma porta disponivel.')
 url=f'http://127.0.0.1:{port}/'
-print(f'Asas de Brumaria v1.3.0 em {url}',flush=True)
+print(f'Asas de Brumaria v1.3.1 em {url}',flush=True)
 if not remote:threading.Timer(1,lambda:webbrowser.open(url)).start()
 try:server.serve_forever()
 except KeyboardInterrupt:pass
