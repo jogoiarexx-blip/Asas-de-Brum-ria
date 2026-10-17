@@ -6,3 +6,5 @@ Requer navegador atualizado com WebGL2; pode precisar de internet para obter o T
 Para controle USB/Bluetooth, use controle reconhecido pela Gamepad API.
 G alterna perfis de qualidade, F3 mostra FPS, chamadas de GPU e quantidade de dragões simplificados.
 Testes automatizados locais: 252/252 aprovados. FPS real não medido em GPU de entrada.
+
+V1.3.2: F3 abre diagnostico. Pressione B ou clique em COMPARAR FPS (B) para medir aproximadamente 15 segundos dos perfis LEVE, EQUILIBRADO e DETALHADO. O jogo pausa missões e combates durante o teste; depois restaura automaticamente a qualidade original. COPIAR RESULTADOS facilita compartilhar os números.

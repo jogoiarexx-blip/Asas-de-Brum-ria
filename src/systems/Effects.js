@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {effectLimit} from './PerformanceBudget.js';
+import {ReusableSlots} from './ReusableSlots.js';
 /** One instanced draw call per effect type, no temporary meshes or point lights. */
 export class Effects {
   constructor(scene){
@@ -16,13 +17,17 @@ export class Effects {
     for(const [type,material] of Object.entries(this.materials)){
       const mesh=new THREE.InstancedMesh(this.geometry,material,capacity);
       mesh.count=0;mesh.frustumCulled=false;mesh.castShadow=false;
-      scene.add(mesh);this.buckets[type]={mesh,particles:[]};
+      const pool=new ReusableSlots(capacity,()=>({
+        position:new THREE.Vector3(),velocity:new THREE.Vector3(),
+        life:0,maxLife:0,scale:1,rotation:0
+      }));
+      scene.add(mesh);this.buckets[type]={mesh,pool,particles:pool.active};
     }
   }
   setQuality(tier){
     this.limit=effectLimit(tier);
     for(const bucket of Object.values(this.buckets)){
-      if(bucket.particles.length>this.limit)bucket.particles.length=this.limit;
+      bucket.pool.trim(this.limit);
       bucket.mesh.count=bucket.particles.length;
     }
   }
@@ -31,11 +36,15 @@ export class Effects {
     const remaining=Math.max(0,this.limit-bucket.particles.length);
     const size=Math.min(remaining,Math.max(0,Math.floor(count)));
     for(let i=0;i<size;i++){
+      const particle=bucket.pool.take();
+      if(!particle)break;
       const theta=Math.random()*Math.PI*2,vertical=(Math.random()-.38)*2;
       const speed=7+Math.random()*13;
-      const v=new THREE.Vector3(Math.cos(theta),vertical,Math.sin(theta)).normalize().multiplyScalar(speed);
-      const life=.45+Math.random()*.55;
-      bucket.particles.push({position:position.clone(),velocity:v,life,maxLife:life,scale:.5+Math.random()*.8,rotation:Math.random()*6});
+      particle.position.copy(position);
+      particle.velocity.set(Math.cos(theta),vertical,Math.sin(theta)).normalize().multiplyScalar(speed);
+      particle.life=particle.maxLife=.45+Math.random()*.55;
+      particle.scale=.5+Math.random()*.8;
+      particle.rotation=Math.random()*6;
     }
   }
   update(dt){
@@ -44,7 +53,7 @@ export class Effects {
       const particles=bucket.particles;
       for(let i=particles.length-1;i>=0;i--){
         const p=particles[i];p.life-=dt;
-        if(p.life<=0){particles[i]=particles[particles.length-1];particles.pop();continue;}
+        if(p.life<=0){bucket.pool.releaseAt(i);continue;}
         p.position.addScaledVector(p.velocity,dt);p.velocity.y-=8*dt;p.rotation+=dt*6;
         p.scale*=Math.max(.001,1-dt*2.1);
       }

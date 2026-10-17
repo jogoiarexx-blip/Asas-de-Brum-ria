@@ -1,3 +1,17 @@
+# Asas de Brumária v1.3.2 — Combate otimizado e comparador real de FPS
+
+- **Fogo otimizado:** partículas de explosões e projéteis agora são criados previamente e reutilizados durante o combate. O pool evita alocações repetidas de vetores e malhas quando o jogador dispara muitas vezes.
+- **Comparação no seu hardware:** pressione **F3**, depois **B** (ou clique em **COMPARAR FPS**). O jogo mostra LEVE, EQUILIBRADO e DETALHADO, com 0,8 s de aquecimento e 4 s de medição por perfil (aproximadamente 15 segundos no total).
+- **Cena estável:** durante a comparação, o jogo pausa movimentação, inimigos, missões e temporizadores, sem alterar os salvamentos ou a preferência gráfica do jogador. Finalizado/cancelado o teste, o perfil original é restaurado.
+- **Relatório:** FPS médio, 1% low, p95 (milissegundos), quadros acima de 50 ms, chamadas de renderização e triângulos; botão **COPIAR RESULTADOS**.
+- **Segurança:** pressionar B novamente, trocar gráficos, abrir o estábulo, perder o foco da aba ou perder o contexto WebGL cancela e restaura a qualidade gráfica.
+
+A medição acontece **no navegador do próprio dispositivo**, não é um benchmark já executado pelo ChatGPT nem um número garantido de FPS. Para resultados comparáveis, mantenha a câmera e a posição fixas. Mede um quadro congelado de renderização, e não todas as tarefas de uma partida dinâmica.
+
+Validação local: **269 testes automatizados aprovados**, sem falhas. Não houve validação de FPS com uma GPU física de baixa potência neste ambiente. A jogabilidade, os controles USB/Bluetooth, as missões e os saves permanecem compatíveis.
+
+---
+
 # Asas de Brumária v1.3.1 — LOD geométrico e animações do herói
 
 Esta atualização substitui a malha 3D completa dos dragões distantes (quando LOD=limited) por uma silhueta original de **cinco malhas** com geometrias e materiais compartilhados. Os dragões próximos continuam usando sua forma detalhada. As partes simplificadas não projetam sombras nem executam animações de asas por quadro. Nas distâncias ocultas, nenhum dos dois modelos é desenhado.

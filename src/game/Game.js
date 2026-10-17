@@ -26,6 +26,7 @@ import {Landmarks} from '../world/Landmarks.js';
 import {DayNight} from '../systems/DayNight.js';
 import {StablePreview} from '../ui/StablePreview.js';
 import {GraphicsQuality} from '../systems/GraphicsQuality.js';
+import {GraphicsBenchmark,formatBenchmark} from '../systems/GraphicsBenchmark.js';
 import {performanceSnapshot,shouldSkipRendering} from '../systems/PerformanceDiagnostics.js';
 import {sceneActorStats} from '../systems/ActorLOD.js';
 import {projectileLimit} from '../systems/PerformanceBudget.js';
@@ -85,20 +86,32 @@ export class Game {
     this.stablePreview=null;
     if(this.savedData){document.getElementById('start-btn').firstChild.textContent='CONTINUAR AVENTURA ';document.getElementById('new-game-btn').classList.remove('hidden');}
     document.getElementById('new-game-btn').addEventListener('click',()=>this.newGame());
-    this.projectiles=[];this.projectilePool=[];this._projectileFrom=new THREE.Vector3();this._projectileTo=new THREE.Vector3();this.clock=new THREE.Clock();this.started=false;this.elapsed=0;this.fpsTime=0;this.frames=0;
+    this.projectiles=[];this.projectilePool=[];this._projectileFrom=new THREE.Vector3();this._projectileTo=new THREE.Vector3();this._fireStart=new THREE.Vector3();this._aimBest=new THREE.Vector3();this.clock=new THREE.Clock();this.started=false;this.elapsed=0;this.fpsTime=0;this.frames=0;
     this.health=100;this.maxHealth=100;this.hurtImmunity=0;this.hitFlash=0;this.needsProjectileClear=false;
     if(this.savedData)this.restoreSave(this.savedData);
     this.projectileGeometry=new THREE.IcosahedronGeometry(.9,1);
     this.projectileMaterials={player:new THREE.MeshBasicMaterial({color:0xffb65a}),enemy:new THREE.MeshBasicMaterial({color:0xf06ca9})};
+    // Pre-warm the maximum draw budget using shared geometry/materials.
+    // All record/mesh allocations happen while loading, not during rapid fire.
+    for(let i=0;i<projectileLimit('quality');i++){
+      this.projectilePool.push({mesh:new THREE.Mesh(this.projectileGeometry,this.projectileMaterials.player),
+        velocity:new THREE.Vector3(),life:0,owner:'player'});
+    }
     this.camera.position.set(6,24,38);this.camera.lookAt(0,12,0);
     window.addEventListener('resize',()=>this.onResize());
     document.getElementById('quality-toggle').addEventListener('click',()=>this.cycleGraphics());
+    this.benchmark=new GraphicsBenchmark();this.benchmarkPrevious=null;
+    this.benchmarkReport='Pressione B ou o botão COMPARAR FPS para medir os três modos nesta máquina.';
+    document.getElementById('benchmark-toggle').addEventListener('click',()=>this.toggleBenchmark());
+    document.getElementById('benchmark-copy').addEventListener('click',()=>this.copyBenchmarkReport());
     window.addEventListener('pagehide',()=>this.saveGame());
-    document.addEventListener('visibilitychange',()=>{if(document.hidden)this.saveGame();});
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden){this.cancelBenchmark('Teste interrompido: aba em segundo plano.');this.saveGame();}
+    });
     document.getElementById('start-btn').addEventListener('click',()=>this.start());
     this.ui.updateQuest(this.missions);
     this.renderer.domElement.addEventListener('webglcontextlost',event=>{
-      event.preventDefault();this.webglLost=true;
+      event.preventDefault();this.webglLost=true;this.cancelBenchmark('Teste interrompido: contexto WebGL perdido.');
       this.ui.toast('GPU reiniciada: aguardando restaurar gráficos…',5);
     });
     this.renderer.domElement.addEventListener('webglcontextrestored',()=>{
@@ -114,7 +127,7 @@ export class Game {
   }
   handleFrameFailure(error){
     if(this.frameError)return;
-    this.frameError=error;
+    this.frameError=error;this.cancelBenchmark('Teste interrompido após erro do jogo.');
     console.error('Erro na atualização do jogo:',error);
     try{this.saveGame();}catch{}
     // Keep the error visible instead of a frozen frame without explanation.
@@ -130,6 +143,65 @@ export class Game {
   toggleDiagnostics(){
     this.diagnosticsVisible=!this.diagnosticsVisible;
     document.getElementById('performance-panel')?.classList.toggle('hidden',!this.diagnosticsVisible);
+    document.getElementById('benchmark-controls')?.classList.toggle('hidden',!this.diagnosticsVisible);
+  }
+  showBenchmarkReport(){
+    const el=document.getElementById('benchmark-report');
+    el.textContent=this.benchmarkReport;
+    document.getElementById('benchmark-toggle').textContent=this.benchmark.active?'CANCELAR TESTE (B)':'COMPARAR FPS (B)';
+    document.getElementById('benchmark-copy').disabled=!this.benchmark.results.length;
+  }
+  setBenchmarkTier(tier){
+    this.graphics.tier=tier;this.graphics.apply();this.applySceneQuality();this.updateGraphicsLabel();
+  }
+  restoreBenchmarkGraphics(){
+    if(!this.benchmarkPrevious)return;
+    // Benchmark never alters the persisted graphics mode or user save.
+    this.setBenchmarkTier(this.benchmarkPrevious.tier);
+    this.graphics.slowSamples=this.benchmarkPrevious.slowSamples;
+    this.graphics.fastSamples=this.benchmarkPrevious.fastSamples;
+    this.graphics.cooldown=Math.max(10,this.benchmarkPrevious.cooldown);
+    this.benchmarkPrevious=null;
+  }
+  cancelBenchmark(message='Teste de desempenho cancelado.'){
+    if(!this.benchmark.active)return;
+    this.benchmark.cancel();this.restoreBenchmarkGraphics();
+    this.benchmarkReport=message;this.showBenchmarkReport();
+  }
+  toggleBenchmark(){
+    if(this.benchmark.active){this.cancelBenchmark();return;}
+    if(!this.started||!this.ui.stable.classList.contains('hidden')){
+      this.ui.toast('Inicie o jogo e feche o estábulo para comparar o desempenho.');return;
+    }
+    this.benchmarkPrevious={tier:this.graphics.tier,slowSamples:this.graphics.slowSamples,
+      fastSamples:this.graphics.fastSamples,cooldown:this.graphics.cooldown};
+    this.benchmarkReport='Iniciando comparação real no mesmo cenário. Fique parado e mantenha a câmera fixa.';
+    this.setBenchmarkTier(this.benchmark.start());
+    if(!this.diagnosticsVisible)this.toggleDiagnostics();
+    this.showBenchmarkReport();
+  }
+  updateBenchmark(dt){
+    if(!this.benchmark.active)return;
+    const event=this.benchmark.recordFrame(dt,this.renderer.info?.render);
+    this._benchmarkUIClock=(this._benchmarkUIClock??0)+Math.min(dt,.1);
+    // Don't redraw benchmark DOM every frame; it would bias the measurement.
+    if(!event&&this._benchmarkUIClock<.25)return;
+    this._benchmarkUIClock=0;
+    if(event?.type==='next')this.setBenchmarkTier(event.tier);
+    if(event?.type==='complete'){
+      this.restoreBenchmarkGraphics();
+      this.benchmarkReport=formatBenchmark(event.results);
+      this.ui.toast('Comparação concluída! Resultados no painel F3.',5);
+    }else if(this.benchmark.active){
+      this.benchmarkReport=`Teste em andamento: ${this.benchmark.progress()}\nPerfil anterior: ${this.benchmark.results.length}/3 concluídos.\nNão mova a câmera para comparar a mesma cena.`;
+    }
+    this.showBenchmarkReport();
+  }
+  async copyBenchmarkReport(){
+    if(!this.benchmark.results.length)return;
+    try{await navigator.clipboard.writeText(formatBenchmark(this.benchmark.results));
+      this.ui.toast('Resultados de desempenho copiados para compartilhar.',3);
+    }catch{this.ui.toast('Não foi possível copiar; fotografe o painel F3.',3);}
   }
   renderDiagnostics(fps){
     if(!this.diagnosticsVisible)return;
@@ -194,6 +266,7 @@ export class Game {
   }
   toggleStable(){
     const open=this.ui.stable.classList.contains('hidden');
+    if(open&&this.benchmark.active)this.cancelBenchmark('Teste cancelado ao abrir o estábulo.');
     this.ui.stable.classList.toggle('hidden',!open);
     if(open){this.ui.renderStable(this);
       try{this.stablePreview??=new StablePreview(document.getElementById('stable-preview-canvas'));
@@ -266,7 +339,10 @@ export class Game {
     // Shadows are fully disabled in economy. Never change map size on each shot.
   }
   updateGraphicsLabel(){document.getElementById('quality-toggle').textContent=`GRÁFICOS: ${this.graphics.label} · G`;}
-  cycleGraphics(){this.graphics.cycle();this.applySceneQuality();this.updateGraphicsLabel();this.ui.toast(`Qualidade: ${this.graphics.label}`,3);}
+  cycleGraphics(){
+    if(this.benchmark.active)this.cancelBenchmark('Teste interrompido: modo gráfico alterado.');
+    this.graphics.cycle();this.applySceneQuality();this.updateGraphicsLabel();this.ui.toast(`Qualidade: ${this.graphics.label}`,3);
+  }
   onResize(){
     this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();this.renderer.setSize(innerWidth,innerHeight);
     this.graphics.onResize(window.devicePixelRatio||1);
@@ -352,14 +428,19 @@ export class Game {
     this.dragon.dismount();this.hero.setMounted(false);this.ui.toast('Você desmontou do dragão.');this.saveGame();
   }
   getProjectile(owner){
-    const mesh=this.projectilePool.pop()??new THREE.Mesh(this.projectileGeometry,this.projectileMaterials[owner]);
-    mesh.material=this.projectileMaterials[owner];mesh.visible=true;
-    return mesh;
+    // Reuse the entire projectile record and its velocity vector, not just the mesh.
+    const bullet=this.projectilePool.pop()??{
+      mesh:new THREE.Mesh(this.projectileGeometry,this.projectileMaterials[owner]),
+      velocity:new THREE.Vector3(),life:0,owner
+    };
+    bullet.owner=owner;
+    bullet.mesh.material=this.projectileMaterials[owner];bullet.mesh.visible=true;
+    return bullet;
   }
   recycleProjectileAt(index){
     const bullet=this.projectiles[index];
     this.scene.remove(bullet.mesh);
-    this.projectilePool.push(bullet.mesh);
+    this.projectilePool.push(bullet);
     this.projectiles.splice(index,1);
   }
   spawnProjectile(origin,direction,owner){
@@ -367,11 +448,13 @@ export class Game {
     const admission=projectileAdmission(this.projectiles,owner,cap);
     if(!admission.allowed)return false;
     if(admission.evictIndex>=0)this.recycleProjectileAt(admission.evictIndex);
-    const mesh=this.getProjectile(owner);
+    const bullet=this.getProjectile(owner),mesh=bullet.mesh;
     mesh.position.copy(origin);mesh.scale.setScalar(owner==='enemy'?1.9:1.5);
     this.scene.add(mesh);
     const speed=owner==='enemy'?56:95;
-    this.projectiles.push({mesh,velocity:direction.clone().multiplyScalar(speed),life:owner==='enemy'?3.2:2.4,owner});
+    bullet.velocity.copy(direction).multiplyScalar(speed);
+    bullet.life=owner==='enemy'?3.2:2.4;
+    this.projectiles.push(bullet);
     this.audio.play(owner==='enemy'?'enemyFire':'fire');
     return true;
   }
@@ -386,17 +469,23 @@ export class Game {
     this.projectileMaterials.player.color.setHex(this.progression.species==='brasa'?0xff6542:this.progression.species==='raio'?0x9dd8ff:0xffb65a);
     const direction=this.dragon.forward();
     // Assistência de mira limitada ao campo frontal. Exige apontar para o alvo.
-    let best=null,bestDot=.77;
-    let possible=[];
-    if(this.missions.stage===3)possible=this.missions.targets.filter(t=>!t.userData.destroyed).map(t=>t.position);
-    if(this.missions.stage===4)possible=this.enemies.alive.map(e=>e.position);
-    for(const target of possible){
-      const to=target.clone().sub(this.dragon.group.position);
-      const distance=to.length(),dot=direction.dot(to.clone().normalize());
-      if(distance<164&&dot>bestDot){best=to.normalize();bestDot=dot;}
+    let bestDot=.77,bestFound=false;
+    // No arrays or cloned vectors on every fire input.
+    const candidates=this.missions.stage===3?this.missions.targets:
+      this.missions.stage===4?this.enemies.enemies:[];
+    const shooter=this.dragon.group.position;
+    for(const candidate of candidates){
+      if(this.missions.stage===3&&candidate.userData.destroyed)continue;
+      if(this.missions.stage===4&&!candidate.alive)continue;
+      const target=candidate.position;
+      const dx=target.x-shooter.x,dy=target.y-shooter.y,dz=target.z-shooter.z;
+      const distance=Math.hypot(dx,dy,dz);
+      if(distance<.001||distance>=164)continue;
+      const dot=(direction.x*dx+direction.y*dy+direction.z*dz)/distance;
+      if(dot>bestDot){this._aimBest.set(dx/distance,dy/distance,dz/distance);bestFound=true;bestDot=dot;}
     }
-    if(best)direction.lerp(best,.86).normalize();
-    const start=this.dragon.group.localToWorld(new THREE.Vector3(0,.48,-4.4));
+    if(bestFound)direction.lerp(this._aimBest,.86).normalize();
+    const start=this.dragon.group.localToWorld(this._fireStart.set(0,.48,-4.4));
     if(this.spawnProjectile(start,direction,'player')){
       this.dragon.fireCooldown=stats.fireCooldown;this.dragon.energy-=stats.fireCost;
       this.effects.burst(start,'fire',7);
@@ -514,6 +603,22 @@ export class Game {
     }
     const dt=Math.min(realDt,.05);this.elapsed+=dt;
     this.input.update();
+    // Time the same static frame at each graphics tier. Pause simulation,
+    // AI, physics and saves during the brief measurement, preventing scene
+    // changes or in-game damage from invalidating the comparison.
+    if(this.started){
+      if(this.input.consume('b'))this.toggleBenchmark();
+      if(this.benchmark.active){
+        if(this.input.consume('f3'))this.toggleDiagnostics();
+        if(this.input.consume('g'))this.cycleGraphics();
+        if(this.input.consume('t')||this.input.consume('start'))this.toggleStable();
+        if(this.benchmark.active){
+          this.renderer.render(this.scene,this.camera);
+          this.updateBenchmark(realDt);
+          return;
+        }
+      }
+    }
     const controllerConnected=this.input.pad.connected;
     if(controllerConnected!==this.controllerWasConnected){
       this.controllerWasConnected=controllerConnected;
@@ -585,9 +690,11 @@ export class Game {
     this.updateActorDetail();
     this.world.updateDetail(this.camera.position,dt);
     this.renderer.render(this.scene,this.camera);
+    const benchmarking=this.benchmark.active;
+    if(benchmarking)this.updateBenchmark(realDt);
     this.fpsTime+=realDt;this.frames++;
     if(this.fpsTime>=1){const fps=Math.round(this.frames/this.fpsTime);this.lastKnownFPS=fps;this.ui.setFPS(fps);this.renderDiagnostics(fps);
-      if(this.started && !document.hidden && this.graphics.sample(fps)){this.applySceneQuality();this.updateGraphicsLabel();this.ui.toast(`Ajuste automático: gráficos ${this.graphics.label}`,3);}
+      if(this.started && !document.hidden && !benchmarking && this.graphics.sample(fps)){this.applySceneQuality();this.updateGraphicsLabel();this.ui.toast(`Ajuste automático: gráficos ${this.graphics.label}`,3);}
       this.fpsTime=0;this.frames=0;}
   }
 }

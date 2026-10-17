@@ -86,3 +86,14 @@ body:has(#controller-status.connected) .gamepad-help{opacity:.92}
  background:#081d25e8;box-shadow:0 8px 30px #0008}
 #performance-panel.hidden{display:none!important}
 @media(max-width:740px){#performance-panel{right:6px;bottom:70px;font-size:9px;padding:8px}}
+
+/* Benchmark lives next to the F3 diagnostics and never blocks game controls. */
+#benchmark-controls{position:fixed;right:12px;bottom:190px;z-index:17;max-width:min(600px,94vw);
+  background:#081d25ee;border:1px solid #8ddac8aa;border-radius:10px;padding:10px;
+  pointer-events:auto;box-shadow:0 8px 28px #0009}
+#benchmark-controls button{background:#245767;color:#f0ffe9;border:1px solid #b0e0ca;
+  border-radius:6px;padding:7px 10px;font-weight:700;cursor:pointer}
+#benchmark-controls button:disabled{opacity:.4;cursor:default}
+#benchmark-report{white-space:pre-wrap;overflow-wrap:anywhere;max-height:33vh;overflow:auto;
+ font:11px/1.55 ui-monospace,Consolas,monospace;margin:9px 0 0;color:#dcf6e7}
+@media(max-width:800px){#benchmark-controls{right:6px;bottom:260px;padding:7px}#benchmark-report{font-size:9px;max-height:24vh}}

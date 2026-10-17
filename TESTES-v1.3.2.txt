@@ -1,0 +1,8 @@
+Asas de Brumária v1.3.2 — Registro de validação
+
+Base v1.3.1: 252 testes automatizados.
+Testes novos v1.3.2: 17 (benchmark comparativo, reutilização do combate, proteção do estado).
+Total: 269 testes automatizados aprovados, nenhuma falha na suíte npm run check.
+Testes cobrem aquecimento, FPS 1% low, p95, cancelamentos, restauração de estado gráfico, pool em 20.000 ciclos.
+Não houve benchmark WebGL real em hardware fraco neste ambiente; o comparador permite medir no computador do usuário.
+Windows: launcher PowerShell que abre um jogo Three.js no navegador; não é EXE nativo.

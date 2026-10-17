@@ -1,3 +1,13 @@
+## v1.3.2 — Evitar engasgos em explosões e medir FPS por perfil
+
+- Novo pool `ReusableSlots.js` e partículas pré-alocadas em `Effects.js`, mantendo renderização instanciada.
+- Pré-criação de 28 registros de projéteis (malhas e vetores compartilhados) e eliminação de clones/arrays durante mira de disparos.
+- Novo `GraphicsBenchmark.js` para registrar quadros reais, FPS médio, 1% low, p95 e draw calls em cada perfil; aquecimento antes de comparar.
+- Benchmark com cena congelada, recuperação do perfil anterior, cancelamento seguro e resultados copiáveis via F3/B.
+- 17 testes adicionais, total de 269 aprovados. Os testes não medem FPS real em GPU.
+
+---
+
 # v1.3.1 — Malhas simplificadas, animações e combate com menos alocações
 
 - Novo módulo `src/entities/DragonProxy.js`: proxy geométrico com 5 malhas, poucas faces, geometrias compartilhadas, materiais reutilizados e sem sombras.
