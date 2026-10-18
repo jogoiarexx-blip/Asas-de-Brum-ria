@@ -2,7 +2,8 @@
 export const SPECIES = Object.freeze({
   nimbo: {name:'Nimbo',kind:'Asa da Névoa',price:0,description:'Equilibrado e confiável.',colors:[0x172e3c,0x254858,0x397c7b,0x236978,0x328b94,0x83c2ae],speed:1,stamina:1,fire:1},
   brasa: {name:'Brasa',kind:'Fúria Rubra',price:2,description:'Especialista em sopro de fogo.',colors:[0x422429,0x923c32,0xc57c44,0xa64232,0xd46a39,0xf5bc74],speed:.93,stamina:.93,fire:1.5},
-  raio: {name:'Raio',kind:'Vento Celeste',price:3,description:'Veloz e resistente no voo.',colors:[0x202b5c,0x3554a8,0x6b92d7,0x5072c9,0x8ca6ee,0xc2e8ff],speed:1.22,stamina:1.18,fire:.85}
+  raio: {name:'Raio',kind:'Vento Celeste',price:3,description:'Veloz e resistente no voo.',colors:[0x202b5c,0x3554a8,0x6b92d7,0x5072c9,0x8ca6ee,0xc2e8ff],speed:1.22,stamina:1.18,fire:.85},
+  furia_luz: {name:'Fúria da Luz',kind:'Guardião Luminoso',price:4,description:'Dragão branco de olhos azuis, rápido e ágil.',colors:[0x849db1,0xe2eff2,0xb2d3e5,0xbacfdc,0xe8f6fa,0x8acdec],speed:1.17,stamina:1.12,fire:1.07}
 });
 export const SKILLS = Object.freeze({
   speed:{name:'Asas fortes',max:3},stamina:{name:'Fôlego',max:3},fire:{name:'Sopro poderoso',max:3}
