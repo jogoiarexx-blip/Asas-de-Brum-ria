@@ -1,3 +1,16 @@
+# Asas de Brumária v1.4.4 — Dragões mais expressivos e florestas variadas
+
+## Evolução visual desta versão
+
+- **Asas dos dragões:** novos movimentos de varredura horizontal, torção do cotovelo e ponta das asas durante voo e planagem, integrados ao `wingPose` existente. Cabeça e cauda reagem às curvas sem alterar física nem colisões.
+- **Silhueta de cada espécie:** Nimbo recebeu barbatanas extras, Brasa ganhou placas laterais e Raio tem lâminas aerodinâmicas. Os modelos usam os mesmos rigs, materiais e controles de espécies anteriores.
+- **Cavaleiro:** inclinação responsiva a velocidade, subida, descida e curvas, acompanhada de cabeça e capa, sem interferir com a importação opcional de GLB.
+- **Florestas:** substituição de copas homogêneas por coníferas e árvores de copa arredondada, ambas instanciadas por ilha. As variações são determinísticas a partir da posição existente, sem consumir o RNG global ou alterar a geração das árvores, hitboxes e saves. O sub-bosque instanciado permanece.
+- **Orçamento gráfico:** uma chamada de desenho adicional no máximo por ilha para as copas, sem animação de vértices por CPU, materiais por árvore, luzes adicionais ou colisões novas.
+- **Validação:** quatro testes matemáticos novos (copas determinísticas, coexistência de dois formatos, simetria e finitude das poses e planagem) aprovados localmente em Node 22. Adicionado workflow GitHub Actions para `npm run check` a cada push e pull request; o resultado do fluxo completo e o FPS WebGL ainda precisam ser confirmados.
+
+---
+
 # Asas de Brumária v1.4.3 — Faróis de fogo e cenário florido
 
 ## Conteúdo novo
