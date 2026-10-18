@@ -1,0 +1,6 @@
+ASAS DE BRUMARIA v1.4.2
+
+Bateria automatizada: 426 testes aprovados (410 na v1.4.0 + 11 de navegacao/chuva + 5 de patrulha/terreno).
+Servidor HTTP local e integridade dos dois ZIPs verificados.
+Limites: ainda sem benchmark ou inspecao visual WebGL em hardware do usuario.
+Windows usa inicializador e navegador; nao e executavel nativo.

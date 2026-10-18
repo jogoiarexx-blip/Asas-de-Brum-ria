@@ -133,21 +133,16 @@ body:has(#controller-status.connected) .gamepad-help{opacity:.92}
 #dodge-status{color:#94e6fd;white-space:nowrap;font-weight:800}
 @media(max-width:850px){#dodge-status{font-size:7px}}
 
-/* 1.4.1: quest guidance and readable HUD; do not obscure the minimap. */
-.mission-compass{position:absolute;top:88px;left:50%;transform:translateX(-50%);
-  display:flex;align-items:center;gap:12px;z-index:4;min-width:215px;max-width:calc(100vw - 680px);
-  padding:10px 18px 10px 10px;border-radius:12px;border:1px solid rgba(245,213,155,.58);
-  background:rgba(7,29,36,.88);box-shadow:0 6px 20px #0006;pointer-events:none}
-#mission-compass-arrow{display:grid;place-items:center;flex:0 0 36px;height:36px;border-radius:50%;
-  color:#072b36;background:#e9d292;font-size:25px;font-weight:900;box-shadow:0 0 15px #edc77c55}
-.mission-compass strong,.mission-compass small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mission-compass strong{color:#f5e0b6;font-size:10px;letter-spacing:.7px}
-.mission-compass small{color:#d0ece6;font-size:10px;margin-top:2px;font-weight:700}
-.mountain-status{top:388px!important;right:30px!important;max-width:188px!important;z-index:1}
-.map-panel{box-shadow:0 10px 30px #05273360}
-@media(max-width:1200px){.mission-compass{top:340px;left:30px;transform:none;max-width:310px}}
-@media(pointer:coarse),(max-width:850px){.mission-compass{top:236px;left:11px;max-width:min(250px,57vw);
-  padding:6px 9px;min-width:0;gap:7px}.mission-compass strong,.mission-compass small{font-size:8px}
-  #mission-compass-arrow{flex-basis:26px;height:26px;font-size:18px}
-  .mountain-status{top:277px!important;right:10px!important;max-width:109px!important;font-size:8px!important}}
-@media(max-height:560px) and (orientation:landscape){.mission-compass{top:198px}}
+/* v1.4.1 — objetivos objetivos contextuais e aparência refinada em PC e celular. */
+#quest-guide{margin-top:13px;padding:9px 10px;border:1px solid rgba(133,226,208,.20);border-radius:7px;
+ background:linear-gradient(110deg,rgba(32,85,90,.48),rgba(12,53,62,.35));color:#d8f4e3;
+ font-size:10px;font-weight:800;letter-spacing:.12px;line-height:1.45}
+#waypoint{min-height:25px;line-height:1.35;letter-spacing:.4px;text-align:center;white-space:normal;
+ color:#ffe4a3;text-shadow:0 0 9px #112f38}
+.mission-card{box-shadow:0 12px 36px #05263466,0 0 0 1px rgba(255,255,255,.035) inset}
+.mission-card::after{content:'';display:block;position:absolute;left:20px;right:20px;bottom:-1px;height:1px;
+ background:linear-gradient(90deg,transparent,#8ce7c655,transparent)}
+#mini-map{box-shadow:inset 0 0 15px #061b24a0}
+@media(pointer:coarse),(max-width:850px){#quest-guide{margin-top:7px;padding:5px 6px;font-size:8px;line-height:1.24}
+ #waypoint{font-size:7px;min-height:29px}.mission-card::after{left:8px;right:8px}}
+@media(max-height:560px) and (orientation:landscape){#quest-guide{font-size:8px;margin-top:4px;padding:4px 6px}}

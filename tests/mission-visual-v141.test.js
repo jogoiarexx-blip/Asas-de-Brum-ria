@@ -1,65 +1,72 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {objectiveGuidance,missionObjectiveName} from '../src/systems/ObjectiveGuidance.js';
-import {CONTRACTS,VillageContracts} from '../src/systems/VillageContracts.js';
-import {terrainPalette} from '../src/world/TerrainPalette.js';
-const read=(p)=>readFileSync(new URL(p,import.meta.url),'utf8');
+import {headingToObjective,missionNextStep,shouldShowMountainHint} from '../src/systems/ObjectiveGuidance.js';
+import {rainStreakPoints} from '../src/systems/WeatherStreaks.js';
+const source=path=>readFileSync(new URL(path,import.meta.url),'utf8');
 
-test('bússola identifica esquerda, direita, frente e atrás a partir do yaw',()=>{
-  const pos={x:0,y:12,z:0};
-  assert.equal(objectiveGuidance(pos,{x:0,y:12,z:-80},0).direction,'FRENTE');
-  assert.equal(objectiveGuidance(pos,{x:80,y:12,z:0},0).direction,'DIREITA');
-  assert.equal(objectiveGuidance(pos,{x:-80,y:12,z:0},0).direction,'ESQUERDA');
-  assert.equal(objectiveGuidance(pos,{x:0,y:12,z:80},0).direction,'ATRÁS');
+test('navegação distingue esquerda, direita, frente e retorno',()=>{
+ const from={x:0,z:0};
+ assert.equal(headingToObjective(from,{x:0,z:-100},0).direction,'EM FRENTE');
+ assert.equal(headingToObjective(from,{x:80,z:0},0).direction,'À DIREITA');
+ assert.equal(headingToObjective(from,{x:-80,z:0},0).direction,'À ESQUERDA');
+ assert.equal(headingToObjective(from,{x:0,z:80},0).direction,'ATRÁS');
 });
-test('bússola mostra diferença de altitude e distância sem arredondamento inválido',()=>{
-  const up=objectiveGuidance({x:1,y:10,z:1},{x:1,y:35,z:-19},0);
-  assert.equal(up.altitudeHint,'SUBA 25 m');assert.equal(up.distance,32);
-  const down=objectiveGuidance({x:0,y:30,z:0},{x:0,y:5,z:-10},0);
-  assert.equal(down.altitudeHint,'DESÇA 25 m');
-  assert.equal(objectiveGuidance({x:0,y:0,z:0},null,0),null);
+test('orientação mantém distância horizontal mesmo com grande diferença de altura',()=>{
+ const nav=headingToObjective({x:0,y:100,z:0},{x:30,y:0,z:-40},0);
+ assert.equal(nav.distance,50);assert.equal(nav.direction,'À DIREITA');
 });
-test('bússola retorna alvos próximos e lida com ângulos extremos',()=>{
-  const near=objectiveGuidance({x:0,y:0,z:0},{x:2,y:0,z:2},100);
-  assert.equal(near.near,true);
-  const n=objectiveGuidance({x:0,y:0,z:0},{x:0,y:0,z:-100},Math.PI*20);
-  assert.equal(n.direction,'FRENTE');
+test('sem destino o HUD não aponta falsamente para o jogador',()=>{
+ assert.equal(headingToObjective({x:0,z:0},null,0),null);
+ assert.equal(headingToObjective({x:0,z:0},{x:0,z:0},NaN).direction,'CHEGOU');
 });
-test('missão da sentinela anuncia o combate, filhotes identificam santuário',()=>{
-  assert.match(missionObjectiveName(4,false,false),/SENTINELA/);
-  assert.match(missionObjectiveName(5,true,false),/SANTUÁRIO/);
-  assert.match(missionObjectiveName(5,false,false),/FILHOTE/);
+test('a missão dos sentinelas mostra vida do alvo e ação imediata',()=>{
+ const instruction=missionNextStep({stage:4,progress:1,riding:true,nearestEnemyHealth:2});
+ assert.match(instruction,/2 sentinelas/);assert.match(instruction,/2 PV/);assert.match(instruction,/FOGO/);
 });
-test('contrato aéreo de patrulha reabre no dia seguinte mantendo save da história',()=>{
-  assert.ok(CONTRACTS.patrulha?.requiresMount);
-  const state=new VillageContracts(null,1);
-  assert.equal(state.talk('tavi').action,'accepted');
-  for(let i=0;i<3;i++)assert.equal(state.collect('patrulha',i,true),true);
-  assert.equal(state.talk('tavi').action,'reward');
-  const saved=state.snapshot();
-  const restored=new VillageContracts(saved,1);
-  assert.equal(restored.state.patrulha.status,'done');
-  restored.syncDay(2);
-  assert.equal(restored.state.patrulha.status,'idle');
-  assert.notDeepEqual(state.points('patrulha'),restored.points('patrulha'));
+test('resgate orienta aproximação, transporte e entrega sem pular etapas',()=>{
+ assert.match(missionNextStep({stage:5,carriedIndex:-1,rescueHold:0,riding:true}),/DEVAGAR/);
+ assert.match(missionNextStep({stage:5,carriedIndex:-1,rescueHold:.7,riding:true}),/APROXIMAÇÃO/);
+ assert.match(missionNextStep({stage:5,carriedIndex:1,riding:true}),/SANTUÁRIO/);
 });
-test('paleta do terreno cria transição entre costa, pasto e rochedo',()=>{
-  const sand=terrainPalette(.3,.1,0),grass=terrainPalette(8,.1,0),rock=terrainPalette(24,.7,0);
-  assert.notDeepEqual(sand,grass);assert.notDeepEqual(grass,rock);
-  for(const p of [sand,grass,rock])assert.ok(p.every(v=>v>=0&&v<=1));
+test('treinamento, circuito e combate têm orientações diferentes',()=>{
+ assert.match(missionNextStep({stage:1,progress:2,riding:true}),/3º aro/);
+ assert.match(missionNextStep({stage:6,riding:false}),/ESTÁBULO/);
+ assert.match(missionNextStep({inMountain:true,expeditionPhase:'boss',bossHealth:5,riding:true}),/CONTRA-ATAQUE/);
 });
-test('renderizador usa os novos materiais gráficos leves',()=>{
-  const world=read('../src/world/World.js'),weather=read('../src/systems/Weather.js');
-  assert.match(world,/import \{terrainPalette\} from '\.\/TerrainPalette\.js'/);assert.match(world,/terrainPalette\(/);assert.match(world,/bumpMap:waterTexture/);
-  assert.match(weather,/makeRainStreakTexture\(/);
+test('portal é contextual, não tapa o minimapa durante missões distantes',()=>{
+ assert.equal(shouldShowMountainHint({x:0,z:0},4,false,false),false);
+ assert.equal(shouldShowMountainHint({x:285,z:35},4,false,false),true);
+ assert.equal(shouldShowMountainHint({x:285,z:35},1,false,false),false);
+ assert.equal(shouldShowMountainHint({x:285,z:35},4,true,false),false);
 });
-test('interface apresenta orientação de objetivo e corrige sobreposição no minimapa',()=>{
-  const ui=read('../src/ui/UI.js'),html=read('../index.html'),css=read('../src/ui/style.css');
-  assert.match(ui,/objectiveGuidance\(/);assert.match(html,/id="mission-compass"/);
-  assert.match(css,/\.mission-compass/);assert.match(css,/\.mountain-status/);
+test('chuva usa linhas finas e não partículas quadradas',()=>{
+ const weather=source('../src/systems/Weather.js');
+ assert.match(weather,/new THREE\.LineSegments/);
+ assert.doesNotMatch(weather,/new THREE\.Points\(/);
+ const streak=rainStreakPoints({x:4,y:8,z:9},.5,1);
+ assert.equal(streak.length,6);
+ assert.ok(streak[4]<streak[1]);
 });
-test('etapa final orienta o jogador até a vila, em vez de ficar sem waypoint',()=>{
- const source=read('../src/systems/Missions.js');
- assert.match(source,/if\(this\.stage===6\)return new THREE\.Vector3/);
+test('traços de chuva são curtos, finitos e influenciados pelo vento',()=>{
+ for(const wind of [-2,0,3]){
+  const p=rainStreakPoints({x:1,y:2,z:3},.7,wind);
+  assert.ok(p.every(Number.isFinite));
+  assert.ok(p[1]-p[4]>=1.3&&p[1]-p[4]<5);
+ }
+ assert.equal(rainStreakPoints({x:0,y:0,z:0},0,0).length,6);
+});
+test('HUD expõe etapa ativa e direção da próxima missão',()=>{
+ const html=source('../index.html'),ui=source('../src/ui/UI.js');
+ assert.match(html,/id="quest-guide"/);
+ assert.match(ui,/missionNextStep\(/);
+ assert.match(ui,/headingToObjective\(/);
+ assert.match(ui,/shouldShowMountainHint\(/);
+});
+
+test('marcadores de cristais e filhotes deixam o céu mais limpo',()=>{
+ const missions=source('../src/systems/Missions.js');
+ assert.match(missions,/CylinderGeometry\(\.13,\.7,22/);
+ assert.match(missions,/CylinderGeometry\(\.12,\.8,15/);
+ assert.doesNotMatch(missions,/CylinderGeometry\(\.26,1\.7,48/);
 });

@@ -1,24 +1,22 @@
 import { ISLANDS, QUEST_DEFS } from '../world/config.js';
 import {shouldThrottleHUD} from '../systems/PerformanceBudget.js';
+import {headingToObjective,missionNextStep,shouldShowMountainHint} from '../systems/ObjectiveGuidance.js';
 import {SPECIES,SKILLS} from '../systems/Progression.js';
 import {CONTRACTS} from '../systems/VillageContracts.js';
 import {CIRCUITS} from '../systems/Training.js';
 import {LANDMARKS} from '../systems/Discovery.js';
 import {WILD_DRAGON_DEFS} from '../systems/WildBonds.js';
-import {objectiveGuidance,missionObjectiveName} from '../systems/ObjectiveGuidance.js';
 export class UI {
   constructor(){
     this.mode=document.getElementById('mode-pill');this.fps=document.getElementById('fps-pill');
     this.questIndex=document.getElementById('quest-index');this.questTitle=document.getElementById('quest-title');
-    this.questDesc=document.getElementById('quest-desc');this.questProgress=document.getElementById('quest-progress');
+    this.questDesc=document.getElementById('quest-desc');this.questProgress=document.getElementById('quest-progress');this.questGuide=document.getElementById('quest-guide');
     this.energyNumber=document.getElementById('energy-number');this.energyBar=document.getElementById('energy-bar');
     this.speed=document.getElementById('speed-text');this.altitude=document.getElementById('altitude-text');this.dodgeStatus=document.getElementById('dodge-status');
     this.healthNumber=document.getElementById('health-number');this.healthBar=document.getElementById('health-bar');
     this.healthLabel=document.getElementById('health-label');
     this.hitOverlay=document.getElementById('hurt-overlay');this.targetLock=document.getElementById('target-lock');
     this.waypoint=document.getElementById('waypoint');this.toastElement=document.getElementById('toast');
-    this.compass=document.getElementById('mission-compass');this.compassArrow=document.getElementById('mission-compass-arrow');
-    this.compassTitle=document.getElementById('mission-compass-title');this.compassDistance=document.getElementById('mission-compass-distance');
     this.interaction=document.getElementById('interaction');this.mini=document.getElementById('mini-map');this.ctx=this.mini.getContext('2d');
     this.lastStage=-1;this.lastProgress=-1;this.toastTimer=null;this.uiClock=0;
     this.stable=document.getElementById('stable');this.trainingStatus=document.getElementById('training-status');
@@ -161,18 +159,18 @@ export class UI {
       game.mountain.boats.find((boat,i)=>game.expedition.boatHealth[i]>0)?.position:
       game.expedition.phase==='boss'?game.mountain.boss.position:{x:753,y:50,z:35}):null;
     const target=mountainTarget??game.training.waypoint??contractTarget??missions.waypoint(dragon);
-    const dist=target?Math.round(position.distanceTo(target)):0;
-    this.waypoint.textContent=game.inMountain?`EXPEDIÇÃO: ALVO A ${dist} m`:game.training.active?`TREINO: ${dist} m`:contractTarget?`CONTRATO A ${dist} m`:missions.complete?'ARQUIPÉLAGO LIBERADO':missions.stage===6?'VOLTE À VILA · TECLA T':`OBJETIVO A ${dist} m`;
-    const yaw=dragon.riding?dragon.yaw:hero.group.rotation.y;
-    const guide=objectiveGuidance(position,target,yaw);
-    this.compass.classList.toggle('hidden',!guide);
-    if(guide){
-      this.compassArrow.textContent=guide.near?'◆':guide.arrow;
-      const name=game.training.active?'PRÓXIMO ARO':contractTarget?contract.title:
-        missionObjectiveName(missions.stage,missions.carriedIndex>=0,game.inMountain,game.expedition.phase);
-      this.compassTitle.textContent=name;
-      this.compassDistance.textContent=guide.near?'ALVO PRÓXIMO':`${guide.distance} m · ${guide.direction}${guide.altitudeHint?' · '+guide.altitudeHint:''}`;
-    }
+    const bearing=headingToObjective(position,target,dragon.riding?dragon.yaw:hero.group.rotation.y);
+    const enemyForGuide=!game.inMountain&&missions.stage===4?game.enemies.nearest(dragon.group.position):null;
+    this.questGuide.textContent=missionNextStep({stage:missions.stage,progress:missions.progress,riding:dragon.riding,
+      carriedIndex:missions.carriedIndex,rescueHold:missions.rescueHold,
+      nearestEnemyHealth:enemyForGuide?.health,inMountain:game.inMountain,expeditionPhase:game.expedition.phase,
+      bossHealth:game.expedition.bossHealth,activeContract:contractTarget,training:game.training.active});
+    const waypointType=game.inMountain?'EXPEDIÇÃO':game.training.active?'TREINO':contractTarget?'CONTRATO':'OBJETIVO';
+    this.waypoint.textContent=bearing?`${bearing.symbol} ${waypointType} · ${bearing.distance} m · ${bearing.direction}`:
+      missions.complete?'ARQUIPÉLAGO LIBERADO':missions.stage===6?'VOLTE À VILA · TECLA T':'ENCONTRE O PRÓXIMO OBJETIVO';
+    const portal=document.getElementById('mountain-status');
+    portal.classList.toggle('hidden',!game.inMountain && !shouldShowMountainHint(position,missions.stage,false,game.expedition.phase==='complete'));
+
     this.contractStatus.classList.toggle('hidden',!activeContract);
     if(activeContract)this.contractStatus.textContent=`${contract.title} · ${state.collected.filter(Boolean).length}/${contract.points.length}${state.status==='ready'?' · VOLTE AO NPC':''}`;
     this.trainingStatus.classList.toggle('hidden',!game.training.active);

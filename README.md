@@ -1,3 +1,18 @@
+## v1.4.2 — Gráficos e missões
+
+A v1.4.2 reúne as melhorias gráficas do terreno e da água com o trabalho de orientação de missões das versões anteriores, sem apagar progressos.
+
+- Chuva com traços finos em uma única geometria LineSegments, sem pontos quadrados; quantidade ajustada à qualidade gráfica.
+- Feixes de cristais e de resgate menores e mais transparentes para evitar triângulos enormes sobre o céu.
+- Objetivos com direção e distância horizontal no minimapa, próximos passos contextuais para resgate dos filhotes, sentinelas, circuitos, contratos e chefes.
+- Aviso do portal das montanhas apenas ao chegar perto dele; não cobre permanentemente o minimapa.
+- Mantidos água com relevo sutil, tons de terreno por altitude/declividade e a missão diária adicional de patrulha com Tavi.
+- Nenhum campo novo no formato do salvamento, nenhum modelo externo obrigatório.
+
+**Validação:** 426 testes automatizados aprovados. É necessária validação gráfica WebGL e FPS em hardware real.
+
+---
+
 # Asas de Brumária v1.4.1 — Orientação de missões e melhorias visuais
 
 - **Bússola de objetivos no HUD:** seta indica a direção relativa ao jogador, distância real até o alvo, instrução para subir ou descer e nome do objetivo. Funciona para sentinelas, aros, filhotes, contratos, treinamento, barcos e chefe. A missão final agora aponta para a vila.

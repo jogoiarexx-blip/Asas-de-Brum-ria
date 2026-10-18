@@ -3,20 +3,6 @@ import {WEATHER_MODES,weatherMode,normalizeWeather,advanceWeather,nextWeather} f
 import {skyLighting} from './dayCycleMath.js';
 import {weatherParticleLimit} from './PerformanceBudget.js';
 
-/** Transparent rain streaks replace visible white square sprites in flight. */
-export function makeRainStreakTexture(){
-  const canvas=document.createElement('canvas');canvas.width=16;canvas.height=64;
-  const ctx=canvas.getContext('2d');
-  const alpha=ctx.createLinearGradient(0,0,0,64);
-  alpha.addColorStop(0,'rgba(218,239,252,0)');
-  alpha.addColorStop(.26,'rgba(218,239,252,.18)');
-  alpha.addColorStop(.85,'rgba(227,248,255,.8)');
-  alpha.addColorStop(1,'rgba(227,248,255,0)');
-  ctx.strokeStyle=alpha;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(9,4);ctx.lineTo(7,61);ctx.stroke();
-  const texture=new THREE.CanvasTexture(canvas);texture.magFilter=THREE.LinearFilter;
-  return texture;
-}
-
 /** Chuva e relâmpagos exclusivamente locais, sem texturas externas ou partículas infinitas. */
 export class Weather {
   constructor(scene,world,camera,initial){
@@ -25,19 +11,19 @@ export class Weather {
     this.flashTime=0;this.flashCooldown=17;this.weatherChanges=0;
     this.seed=8521;this.count=matchMedia('(pointer:coarse)').matches?100:260;
     this.positions=new Float32Array(this.count*3);
+    this.streaks=new Float32Array(this.count*6);
     this.speed=new Float32Array(this.count);
     this.reseed();
-    this.geometry=new THREE.BufferGeometry();this.geometry.setAttribute('position',new THREE.BufferAttribute(this.positions,3));
-    this.rainTexture=makeRainStreakTexture();
-    this.material=new THREE.PointsMaterial({color:0xc2e9f3,size:1.35,map:this.rainTexture,transparent:true,opacity:.78,depthWrite:false,fog:true,sizeAttenuation:true,alphaTest:.015});
-    this.rain=new THREE.Points(this.geometry,this.material);this.rain.frustumCulled=false;
+    this.geometry=new THREE.BufferGeometry();this.geometry.setAttribute('position',new THREE.BufferAttribute(this.streaks,3));
+    this.material=new THREE.LineBasicMaterial({color:0xb4d9ee,transparent:true,opacity:.43,depthWrite:false,fog:true});
+    this.rain=new THREE.LineSegments(this.geometry,this.material);this.rain.frustumCulled=false;
     this.rain.visible=false;scene.add(this.rain);
     this.activeCount=this.count;
     this.flash=new THREE.PointLight(0xe7efff,0,600);this.flash.position.set(0,130,0);scene.add(this.flash);
   }
   setQuality(tier){
     this.activeCount=Math.min(this.count,weatherParticleLimit(tier));
-    this.geometry.setDrawRange(0,this.activeCount);
+    this.geometry.setDrawRange(0,this.activeCount*2);
   }
   random(){this.seed=(1664525*this.seed+1013904223)>>>0;return this.seed/4294967296;}
   reseed(){for(let i=0;i<this.count;i++){
@@ -66,13 +52,22 @@ export class Weather {
     if(wet){
       // Coordenadas da chuva são relativas ao jogador para evitar renderizar todo o mundo.
       this.rain.position.set(focus.x,focus.y+20,focus.z);
-      this.material.opacity=.35+desired.rain*.44;
+      this.material.opacity=.22+desired.rain*.37;
+      const streakLength=1.4+desired.rain*2.3;
+      const windLean=Math.max(-3,Math.min(3,desired.wind));
       for(let i=0;i<this.activeCount;i++){
         let y=this.positions[i*3+1]-this.speed[i]*dt*(1+desired.rain*.3);
         if(y<-25){y+=90;this.positions[i*3]=(this.random()-.5)*130;this.positions[i*3+2]=(this.random()-.5)*130;}
         this.positions[i*3+1]=y;
         this.positions[i*3]+=.9*desired.wind*dt;
         if(this.positions[i*3]>65)this.positions[i*3]-=130;
+        // Reuse one typed array and one draw call regardless of weather strength.
+        // Direct typed-array writes avoid hundreds of short-lived objects every frame.
+        const j=i*6,x=this.positions[i*3],z=this.positions[i*3+2];
+        this.streaks[j]=x;this.streaks[j+1]=y;this.streaks[j+2]=z;
+        this.streaks[j+3]=x+windLean*streakLength*.12;
+        this.streaks[j+4]=y-streakLength;
+        this.streaks[j+5]=z+windLean*streakLength*.03;
       }
       this.geometry.attributes.position.needsUpdate=true;
     }
@@ -85,5 +80,5 @@ export class Weather {
     this.flash.intensity=this.flashTime>0?15*this.flashTime/.17:0;
     return previous!==this.state.mode;
   }
-  dispose(){this.scene.remove(this.rain,this.flash);this.geometry.dispose();this.material.dispose();this.rainTexture.dispose();}
+  dispose(){this.scene.remove(this.rain,this.flash);this.geometry.dispose();this.material.dispose();}
 }

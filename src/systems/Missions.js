@@ -32,7 +32,7 @@ export class Missions {
         const orbit=new THREE.Mesh(new THREE.TorusGeometry(4.8,.12,5,30),new THREE.MeshBasicMaterial({color:0xf0df8a}));
         orbit.rotation.x=(k+1)*.55;orbit.rotation.y=k*.45;group.add(orbit);
       }
-      const beam=new THREE.Mesh(new THREE.CylinderGeometry(.26,1.7,48,8,1,true),new THREE.MeshBasicMaterial({color:0x8affdf,transparent:true,opacity:.22,depthWrite:false,side:THREE.DoubleSide}));beam.position.y=17;group.add(beam);
+      const beam=new THREE.Mesh(new THREE.CylinderGeometry(.13,.7,22,7,1,true),new THREE.MeshBasicMaterial({color:0x8affdf,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide}));beam.position.y=10;group.add(beam);
       this.scene.add(group);this.crystals.push(group);
     }
     for(let i=0;i<TARGET_POSITIONS.length;i++){
@@ -61,7 +61,7 @@ export class Missions {
         const e=new THREE.Mesh(new THREE.SphereGeometry(.14,6,6),eye);e.position.set(side*.48,.87,-1.73);group.add(e);
       }
       const ring=new THREE.Mesh(new THREE.TorusGeometry(4,.16,5,28),glow);ring.rotation.x=.2;group.add(ring);
-      const beam=new THREE.Mesh(new THREE.CylinderGeometry(.2,1.4,22,7,1,true),new THREE.MeshBasicMaterial({color:0x83ffc7,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=11;group.add(beam);
+      const beam=new THREE.Mesh(new THREE.CylinderGeometry(.12,.8,15,7,1,true),new THREE.MeshBasicMaterial({color:0x83ffc7,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=7.5;group.add(beam);
       group.userData.ring=ring;this.scene.add(group);this.hatchlings.push(group);
     }
     // Santuário visível apenas durante a operação de transporte dos filhotes.
@@ -114,7 +114,6 @@ export class Missions {
     if(this.stage===3)return this.nearest(this.targets.filter(g=>!g.userData.destroyed),dragon.group.position)?.position??null;
     if(this.stage===4)return this.enemies?.nearest(dragon.group.position)?.position??null;
     if(this.stage===5)return this.carriedIndex>=0?this.nest.position:this.nearest(this.hatchlings.filter(g=>!g.userData.rescued),dragon.group.position)?.position??null;
-    if(this.stage===6)return new THREE.Vector3(8,dragon.world.groundHeightAt(8,7,1.65)+4,7);
     return null;
   }
   snapshot(){
