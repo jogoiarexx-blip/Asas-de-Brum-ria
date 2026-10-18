@@ -211,6 +211,33 @@ export class Dragon {
           stripe.position.set(side*.65,.58,-.68);group.add(stripe);
         }
       }
+      // Distinct silhouettes: maritime fins, ember shoulder armor and
+      // lightning swept blades. All geometry is static and species-switched.
+      const finGeo=new THREE.ConeGeometry(.28,.95,5);
+      for(const side of [-1,1]){
+        if(id==='nimbo'){
+          for(let k=0;k<3;k++){
+            const web=new THREE.Mesh(finGeo,mat);
+            web.position.set(side*(.7+k*.12),.18-k*.11,1.2+k*.66);
+            web.rotation.z=-side*.72;web.rotation.x=.4;group.add(web);
+          }
+        }else if(id==='brasa'){
+          for(let k=0;k<3;k++){
+            const plate=new THREE.Mesh(new THREE.DodecahedronGeometry(.36-k*.055,0),mat);
+            plate.scale.set(1.35,.48,1.65);
+            plate.position.set(side*(.94+k*.09),.45,-.8+k*.8);
+            group.add(plate);
+          }
+        }else{
+          for(let k=0;k<3;k++){
+            const blade=new THREE.Mesh(finGeo,mat);
+            blade.scale.set(.62,1.4-k*.16,.55);
+            blade.position.set(side*(.92+k*.17),.85-k*.07,.8+k*.7);
+            blade.rotation.z=-side*1.05;blade.rotation.x=-.5;
+            group.add(blade);
+          }
+        }
+      }
       group.visible=id==='nimbo';this.speciesOrnaments[id]=group;
     };
     createAccents('nimbo',0x9de4c8);createAccents('brasa',0xffaf55);createAccents('raio',0xa7d9ff);
