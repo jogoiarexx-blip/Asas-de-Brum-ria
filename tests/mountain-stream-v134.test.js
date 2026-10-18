@@ -8,15 +8,18 @@ import {readGPUSettings,writeGPUSettings,chooseContextOptions} from '../src/syst
 function stubThree(){
   let disposed=0;
   class Obj{constructor(){this.children=[];this.userData={};this.position={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;}};this.rotation={};this.scale={set(){}};this.parent=null;}
+    updateMatrix(){this.matrix={};}
     add(object){object.parent=this;this.children.push(object);}
     remove(object){this.children=this.children.filter(x=>x!==object);object.parent=null;}
     traverse(fn){fn(this);for(const child of this.children)child.traverse(fn);}}
   class Geometry{setAttribute(){}setIndex(){}computeVertexNormals(){}dispose(){disposed++;}}
   class Mesh extends Obj{constructor(geometry,material){super();this.geometry=geometry;this.material=material;}}
+  class Instanced extends Mesh{constructor(geometry,material,max){super(geometry,material);this.maxCount=max;this.instanceMatrix={needsUpdate:false};this.count=max;this.matrices=[];}
+    setMatrixAt(index,matrix){this.matrices[index]=matrix;}}
   class Material{constructor(options){Object.assign(this,options);}dispose(){disposed++;}}
   class Attribute{constructor(buffer,count){this.buffer=buffer;this.count=count;}}
   class Color{constructor(hex){this.r=((hex>>16)&255)/255;this.g=((hex>>8)&255)/255;this.b=(hex&255)/255;}}
-  return {THREE:{Group:Obj,Mesh,BufferGeometry:Geometry,Float32BufferAttribute:Attribute,Color,
+  return {THREE:{Group:Obj,Object3D:Obj,Mesh,InstancedMesh:Instanced,BufferGeometry:Geometry,Float32BufferAttribute:Attribute,Color,
     MeshLambertMaterial:Material,MeshStandardMaterial:Material,MeshBasicMaterial:Material,
     ConeGeometry:Geometry,CylinderGeometry:Geometry,BoxGeometry:Geometry,IcosahedronGeometry:Geometry,
     SphereGeometry:Geometry,PlaneGeometry:Geometry,TorusGeometry:Geometry,DoubleSide:2},get disposed(){return disposed;}};
@@ -101,4 +104,41 @@ test('progresso de campanha permanece opcional para saves antigos',async()=>{
  const old=normalizeSave(sample);assert.equal(old.expedition.phase,'boats');
  const newer=normalizeSave({...sample,expedition:{boatHealth:[0,0,0],bossHealth:3,phase:'boss',inRegion:true},player:{x:1120,y:80,z:0,mounted:true}});
  assert.equal(newer.expedition.phase,'boss');assert.equal(newer.player.x,1120);
+});
+
+test('montanhas usam apenas um draw call de rochas instanciadas com colisores preservados',async()=>{
+ const mock=stubThree(),{MountainRegion}=await moduleWithThree(mock.THREE);
+ const level=new MountainRegion(new mock.THREE.Group(),{obstacles:[],mountainRegion:null},new ExpeditionProgress());
+ assert.equal(typeof level.rocksMesh.setMatrixAt,'function');
+ assert.ok(level.rocksMesh.count>0&&level.rocksMesh.count<=14);
+ assert.equal(level.obstacles.filter(o=>o.type==='mountain-rock').length,level.rocksMesh.count);
+ level.unload();
+});
+test('aviso do dragão gigante só aparece na fase do chefe e barcos danificados alteram velas',async()=>{
+ const mock=stubThree(),{MountainRegion}=await moduleWithThree(mock.THREE);
+ const progress=new ExpeditionProgress();
+ const level=new MountainRegion(new mock.THREE.Group(),{obstacles:[],mountainRegion:null},progress);
+ level.setBossWarning(true);assert.equal(level.bossWarningRing.visible,false);
+ progress.hitBoat(0);level.refresh();
+ assert.ok(level.boatSails[0].scale !== undefined);
+ for(let i=0;i<3;i++)while(progress.boatHealth[i]>0)progress.hitBoat(i);
+ level.refresh();level.setBossWarning(true);assert.equal(level.bossWarningRing.visible,true);
+ level.setBossWarning(false);assert.equal(level.bossWarningRing.visible,false);
+ level.unload();
+});
+test('descarga do mapa libera geometria e material compartilhados apenas uma vez',async()=>{
+ const mock=stubThree(),{MountainRegion}=await moduleWithThree(mock.THREE);
+ const level=new MountainRegion(new mock.THREE.Group(),{obstacles:[],mountainRegion:null},new ExpeditionProgress());
+ const resources=new Set();
+ level.root.traverse(obj=>{
+   if(obj.geometry)resources.add(obj.geometry);
+   const mats=obj.material?Array.isArray(obj.material)?obj.material:[obj.material]:[];
+   mats.forEach(material=>resources.add(material));
+ });
+ let disposed=0;
+ for(const resource of resources){
+   resource.dispose=()=>{disposed++;};
+ }
+ level.unload();
+ assert.equal(disposed,resources.size,'material ou geometria compartilhada foi descartada repetidamente');
 });

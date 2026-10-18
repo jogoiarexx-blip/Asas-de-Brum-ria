@@ -1,0 +1,7 @@
+Asas de Brumária 1.3.5
+
+Executar: npm run check
+BASE: 308 testes. NOVOS: 12. TOTAL: 320 aprovados, 0 falhas.
+Regressões: passagem do mapa sob demanda, sinalização/cadência do chefe, danos nas velas, batching instanciado das rochas, descarte único de materiais compartilhados.
+O ganho real de FPS e a renderização WebGL exigem teste em uma GPU real.
+JOGO WINDOWS: executado via navegador+inicializador, não um EXE nativo.

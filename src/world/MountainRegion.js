@@ -7,7 +7,7 @@ export class MountainRegion {
   constructor(scene,world,progress){
     this.scene=scene;this.world=world;this.progress=progress;
     this.root=new THREE.Group();this.root.name='MAPA_MONTANHAS_SOMBRA';scene.add(this.root);
-    this.obstacles=[];this.boats=[];this.boatObstacles=[];this.boss=null;this.elapsed=0;this.attackClock=0;
+    this.obstacles=[];this.boats=[];this.boatSails=[];this.boatObstacles=[];this.boss=null;this.elapsed=0;this.attackClock=0;
     this.buildTerrain();this.buildShips();this.buildBoss();this.refresh();
     world.obstacles.push(...this.obstacles);
   }
@@ -42,14 +42,22 @@ export class MountainRegion {
     water.rotation.x=-Math.PI/2;water.position.set(1030,-2.15,0);this.root.add(water);
     // Few angular cliffs, not hundreds of imported textures/meshes.
     const stone=new THREE.MeshLambertMaterial({color:0x59626c,flatShading:true});
+    // One GPU draw call for all decorative rocks, instead of one draw call
+    // and one geometry allocation per cliff. Physics uses the same colliders.
+    const rocks=new THREE.InstancedMesh(new THREE.ConeGeometry(1,1,5),stone,14);
+    const dummy=new THREE.Object3D();let used=0;
     for(let i=0;i<14;i++){
       const a=i*2.4,r=35+(i*17)%113,x=1042+Math.cos(a)*r,z=3+Math.sin(a)*r;
       const h=this.heightAt(x,z);if(h<2)continue;
       const radius=4+i%4,peak=7+i%6*3;
-      const rock=new THREE.Mesh(new THREE.ConeGeometry(radius,peak,5),stone);
-      rock.position.set(x,h+peak*.3,z);rock.rotation.y=a;rock.castShadow=false;this.root.add(rock);
+      dummy.position.set(x,h+peak*.3,z);
+      dummy.rotation.y=a;
+      dummy.scale.set(radius,peak,radius);
+      dummy.updateMatrix();rocks.setMatrixAt(used++,dummy.matrix);
       this.obstacles.push({x,z,radius:radius*.8,bottom:h,top:h+peak,type:'mountain-rock'});
     }
+    rocks.count=used;rocks.castShadow=false;rocks.instanceMatrix.needsUpdate=true;
+    this.root.add(rocks);this.rocksMesh=rocks;
     const beacon=new THREE.Mesh(new THREE.TorusGeometry(9,.55,8,36),new THREE.MeshBasicMaterial({color:0x8bf2e9}));
     beacon.position.set(806,55,35);beacon.rotation.y=Math.PI/2;this.root.add(beacon);this.entryBeacon=beacon;
   }
@@ -65,7 +73,7 @@ export class MountainRegion {
       const mast=new THREE.Mesh(new THREE.CylinderGeometry(.25,.32,16,7),wood);mast.position.y=9;group.add(mast);
       const sail=new THREE.Mesh(new THREE.PlaneGeometry(9,11),sailMat);sail.position.set(0,10,0);sail.rotation.y=Math.PI/2;group.add(sail);
       const banner=new THREE.Mesh(new THREE.ConeGeometry(1.5,3,5),new THREE.MeshBasicMaterial({color:0xf4c084}));banner.position.set(-4,2,0);group.add(banner);
-      group.rotation.y=.4+i*1.18;this.root.add(group);this.boats.push(group);
+      group.rotation.y=.4+i*1.18;this.root.add(group);this.boats.push(group);this.boatSails.push(sail);
       const obstacle={x,z,radius:7,bottom:2,top:17,type:'enemy-ship',shape:'box',halfWidth:7,halfDepth:3.8,angle:group.rotation.y};
       this.obstacles.push(obstacle);this.boatObstacles.push(obstacle);
     }
@@ -91,14 +99,24 @@ export class MountainRegion {
     }
     const tail=new THREE.Mesh(new THREE.ConeGeometry(4,27,6),scales);tail.rotation.x=Math.PI/2;tail.position.z=20;group.add(tail);
     const crown=new THREE.Mesh(new THREE.TorusGeometry(14,.45,7,32),gold);crown.rotation.x=Math.PI/2;group.add(crown);
+    const warningMaterial=new THREE.MeshBasicMaterial({color:0xff5c33,transparent:true,opacity:.86,depthWrite:false});
+    const warning=new THREE.Mesh(new THREE.TorusGeometry(20,.65,6,48),warningMaterial);
+    warning.rotation.x=Math.PI/2;warning.position.y=17;warning.visible=false;group.add(warning);
+    this.bossWarningRing=warning;
     this.root.add(group);this.boss=group;
   }
   refresh(){
     this.boats.forEach((boat,i)=>{
-      const exists=this.progress.boatHealth[i]>0;boat.visible=exists;
+      const health=this.progress.boatHealth[i];
+      const exists=health>0;boat.visible=exists;
+      // Sails visibly tear after the first hit, instead of looking untouched.
+      this.boatSails[i].scale.set(health===1?.77:1,health===1?.78:1,1);
       const hull=this.boatObstacles[i];if(hull){hull.top=exists?17:2;hull.bottom=exists?2:2;}
     });
     this.boss.visible=this.progress.phase==='boss';
+  }
+  setBossWarning(active){
+    if(this.bossWarningRing)this.bossWarningRing.visible=Boolean(active)&&this.boss.visible;
   }
   update(dt,time){
     this.elapsed+=dt;
@@ -107,11 +125,18 @@ export class MountainRegion {
       this.boss.position.x=GIANT_DRAGON_POSITION.x+Math.sin(time*.35)*13;
       this.boss.position.y=GIANT_DRAGON_POSITION.y+Math.cos(time*.7)*4;
       for(const {pivot,side} of this.wings)pivot.rotation.z=side*(.25+Math.sin(time*2)*.25);
+      if(this.bossWarningRing.visible)this.bossWarningRing.rotation.z+=dt*2.5;
     }
   }
   unload(){
-    this.root.traverse(obj=>{if(obj.geometry)obj.geometry.dispose();
-      if(obj.material){for(const material of (Array.isArray(obj.material)?obj.material:[obj.material]))material.dispose();}
+    // Hulls, sails and rocks share GPU resources: dispose each unique object once.
+    const disposed=new Set();
+    const release=resource=>{if(resource&&!disposed.has(resource)){
+      disposed.add(resource);resource.dispose();
+    }};
+    this.root.traverse(obj=>{
+      release(obj.geometry);
+      if(obj.material){for(const material of (Array.isArray(obj.material)?obj.material:[obj.material]))release(material);}
     });
     this.root.parent?.remove(this.root);
     const set=new Set(this.obstacles);this.world.obstacles=this.world.obstacles.filter(item=>!set.has(item));

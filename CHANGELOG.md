@@ -1,3 +1,15 @@
+## v1.3.5 — Transição robusta e chefe sinalizado
+
+- Regressão corrigida: chegada ao portal antes de concluir o carregamento dinâmico não deixa o jogador atravessar para uma região vazia.
+- Ataque do dragão gigante agora conta com aviso visual, ciclo previsível e segunda fase acelerada. Timer de combate é reiniciado ao sair de alcance.
+- Primeiro acerto nos barcos altera o visual das velas.
+- Rochedos das montanhas migrados para InstancedMesh; colisores preservados.
+- Geometrias e materiais compartilhados liberados uma vez durante o unload.
+- 12 testes adicionais (320 no total), incluindo integração dos objetos 3D com stubs e verificações do temporizador de ataque.
+- Sem alterações no formato dos salvamentos.
+
+---
+
 ## v1.3.4 — Segunda região em streaming e batalhas de chefe
 
 - Novo módulo carregado dinamicamente `src/world/MountainRegion.js`, com terreno montanhoso original, pedras, oceano, três barcos 3D e dragão colossal animado.

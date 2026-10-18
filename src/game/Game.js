@@ -33,8 +33,9 @@ import {projectileLimit} from '../systems/PerformanceBudget.js';
 import {projectileAdmission} from '../systems/ProjectilePolicy.js';
 import {WildBonds} from '../systems/WildBonds.js';
 import {WildDragons} from '../entities/WildDragons.js';
-import {ExpeditionProgress,MOUNTAIN_PORTAL,MOUNTAIN_ENTRY,shouldLoadMountain,shouldEnterMountain,shouldExitMountain} from '../systems/ExpeditionRules.js';
+import {ExpeditionProgress,MOUNTAIN_PORTAL,MOUNTAIN_ENTRY,shouldLoadMountain,shouldEnterMountain,shouldExitMountain,shouldHoldMountainGate} from '../systems/ExpeditionRules.js';
 import {readGPUSettings,writeGPUSettings,chooseContextOptions,describeRenderer} from '../systems/GPUSettings.js';
+import {bossAttackStep} from '../systems/MountainCombat.js';
 
 export class Game {
   constructor() {
@@ -62,7 +63,7 @@ export class Game {
     this.graphics.resolutionScale=this.gpuPrefs.resolution;this.graphics.shadowsAllowed=this.gpuPrefs.shadows;this.graphics.apply();
     this.initGPUOptions();this.updateGraphicsLabel();
     this.saveSystem=new SaveSystem();this.savedData=this.saveSystem.read();
-    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.mountainShots=0;this.gateWarned=false;this.mountainRetryUntil=0;
+    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this._bossShotDirection=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
     this.portal=this.makeMountainPortal();
     this.progression=new Progression(this.savedData?.progression);this.autoSaveTime=0;this.lastSaveOk=null;
     this.world=new World(this.scene);
@@ -403,7 +404,7 @@ export class Game {
   }
   unloadMountain(){
     if(!this.mountain||this.inMountain)return;
-    this.mountain.unload();this.mountain=null;
+    this.mountain.setBossWarning(false);this.mountain.unload();this.mountain=null;
   }
   updateExpedition(dt){
     if(!this.started)return;
@@ -415,6 +416,15 @@ export class Game {
           if(!this.gateWarned){this.ui.toast('Conclua as runas para liberar fogo antes de entrar nas montanhas!',4);this.gateWarned=true;}
         }else{this.gateWarned=false;this.loadMountain();}
       }else this.gateWarned=false;
+      // Stream gate: do not let fast travel outrun the dynamic import.
+      if(shouldHoldMountainGate(pos,riding,this.missions.stage>=3,!!this.mountain)){
+        pos.x=MOUNTAIN_PORTAL.enterAt-2;
+        this.dragon.speed=Math.min(this.dragon.speed,6);
+        if(!this.gateLoadingWarned){
+          this.ui.toast('Carregando Montanhas da Sombra… Aguarde junto ao portal.',4);
+          this.gateLoadingWarned=true;
+        }
+      }else this.gateLoadingWarned=false;
       if(this.mountain&&shouldEnterMountain(pos,riding)&&this.missions.stage>=3){
         this.inMountain=true;this.expedition.inRegion=true;
         this.dragon.group.position.set(MOUNTAIN_ENTRY.x,Math.max(47,pos.y),MOUNTAIN_ENTRY.z);
@@ -435,18 +445,20 @@ export class Game {
       this.saveGame();this.unloadMountain();
     }
     if(this.mountain){
-      this.mountain.refresh();this.mountain.update(dt,this.elapsed);
-      if(this.inMountain&&this.expedition.phase==='boss'&&riding){
-        const boss=this.mountain.boss,dist=boss.position.distanceTo(this.dragon.group.position);
-        if(dist<230&&dist>19){
-          this.mountainShots+=dt;
-          if(this.mountainShots>=2.8){
-            this.mountainShots=0;
-            const dir=this.dragon.group.position.clone().sub(boss.position).normalize();
-            this.spawnProjectile(boss.position,dir,'enemy');
-          }
-        }
-      }
+      // refresh() is called only when progression changes; no repeated scene
+      // writes on every frame while exploring the streaming region.
+      this.mountain.update(dt,this.elapsed);
+    }
+    const boss=this.mountain?.boss;
+    const bossDistance=boss?boss.position.distanceTo(this.dragon.group.position):Infinity;
+    const active=this.inMountain&&this.expedition.phase==='boss'&&riding&&bossDistance>19&&bossDistance<230;
+    const attack=bossAttackStep(this.bossAttackState,dt,{active,health:this.expedition.bossHealth});
+    this.bossAttackState=attack.state;
+    this.mountain?.setBossWarning(attack.charging);
+    if(attack.warn)this.ui.toast('⚠ DRAGÃO GIGANTE PREPARANDO FOGO! DESVIE!',2.4);
+    if(attack.fire&&boss){
+      const direction=this._bossShotDirection.copy(this.dragon.group.position).sub(boss.position).normalize();
+      this.spawnProjectile(boss.position,direction,'enemy');
     }
     this.updateExpeditionUI();
   }
@@ -455,7 +467,7 @@ export class Game {
     if(this.inMountain){
       const p=this.expedition;
       el.textContent=p.phase==='boats'?`🏔 MONTANHAS · DESTRUIR BARCOS ${p.boatsSunk}/3`:
-        p.phase==='boss'?`🐉 DRAGÃO GIGANTE · VIDA ${p.bossHealth}/12`:
+        p.phase==='boss'?`🐉 DRAGÃO GIGANTE · VIDA ${p.bossHealth}/12${this.bossAttackState.warned?' · ⚠ SOPRO IMINENTE!':''}`:
         p.phase==='return'?'✅ CHEFE DERROTADO · RETORNE PELO PORTAL A OESTE':
         '🏔 EXPEDIÇÃO CONCLUÍDA';
     }else el.textContent=this.expedition.phase==='complete'?'🏆 MONTANHAS LIBERTADAS':

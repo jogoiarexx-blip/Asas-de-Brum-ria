@@ -33,3 +33,10 @@ const inCorridor=(p)=>Math.abs(p.z-MOUNTAIN_PORTAL.z)<95;
 export const shouldLoadMountain=(p,riding=false)=>riding&&p.y>14&&p.x>MOUNTAIN_PORTAL.loadAt&&p.x<425&&inCorridor(p);
 export const shouldEnterMountain=(p,riding=false)=>riding&&p.y>14&&p.x>MOUNTAIN_PORTAL.enterAt&&inCorridor(p);
 export const shouldExitMountain=(p,riding=false)=>riding&&p.x<MOUNTAIN_PORTAL.exitAt&&p.x>650;
+
+/** Hold the mount at the gate while the asynchronously imported level is absent.
+ * Otherwise a fast flying dragon can pass x=425 before the chunk finishes loading. */
+export function shouldHoldMountainGate(p,riding=false,unlocked=false,loaded=false){
+ return riding&&unlocked&&!loaded&&p.y>14&&p.x>=MOUNTAIN_PORTAL.enterAt&&
+   p.x<650&&Math.abs(p.z-MOUNTAIN_PORTAL.z)<95;
+}

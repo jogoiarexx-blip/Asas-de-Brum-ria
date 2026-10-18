@@ -1,3 +1,18 @@
+# Asas de Brumária v1.3.5 — Estabilidade da expansão e chefe melhorado
+
+## Atualização
+
+- **Passagem das montanhas mais segura:** voar rápido não deixa o personagem ultrapassar o portal enquanto o módulo do mapa ainda é carregado. O dragão aguarda brevemente junto à entrada; depois que o cenário chega, basta voar para leste novamente. Se a importação falhar, o jogo avisa e tenta de novo após o intervalo existente.
+- **Dragão gigante com ataques anunciados:** um anel vermelho e uma mensagem sinalizam o sopro por cerca de 0,95 segundo. Os ataques começam em ciclos de 3,65 segundos e passam para 2,65 segundos após a metade da vida do chefe. O ataque não acontece se o personagem estiver fora do alcance da batalha.
+- **Barcos com dano visível:** após o primeiro acerto, a vela encolhe, antes de o barco desaparecer no segundo golpe. O progresso já salvo continua valendo.
+- **Desenho mais leve nas montanhas:** rochas decorativas são desenhadas com uma malha instanciada, mantendo volumes individuais de colisão. Essa parte passa de até 14 chamadas de desenho para 1, sem alterar a disposição.
+- **Descarregamento da região:** materiais/geometrias compartilhados são liberados uma única vez cada quando a região é descarregada.
+- **Missões, controles, resgate e progresso:** nada no formato do save foi alterado. São 320 testes automatizados aprovados.
+
+O desempenho em PCs fracos ainda depende de testes no navegador com GPU real. O modo ⚙ GPU e o painel F3 continuam disponíveis.
+
+---
+
 # Asas de Brumária v1.3.4 — Expedição às Montanhas da Sombra
 
 A nova campanha paralela começa em uma **passagem azul a leste do arquipélago**, aproximadamente em X=328, Z=35. Monte no dragão, desbloqueie a habilidade de fogo na história principal e **voe na direção do portal** (aproxime-se acima de 14 m de altitude). A geometria da nova região é carregada dinamicamente ao aproximar-se — não é construída durante o início do jogo. Após cruzar o portal, você chegará ao cenário com ilhas montanhosas, barcos de saqueadores e um dragão gigante.
