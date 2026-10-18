@@ -444,13 +444,18 @@ export class Dragon {
       const pose=wingPose({time,side,phase:this.pose,speed:this.speed,bank:this.bank,wingLift,climbing:this.verticalVelocity});
       wing.rotation.z=THREE.MathUtils.damp(wing.rotation.z,pose.shoulder-side*contact.wingFold,7,dt);
       wing.rotation.x=THREE.MathUtils.damp(wing.rotation.x,pose.twist,5,dt);
+      wing.rotation.y=THREE.MathUtils.damp(wing.rotation.y,pose.sweep,5,dt);
       elbow.rotation.z=THREE.MathUtils.damp(elbow.rotation.z,pose.elbow,7,dt);
+      elbow.rotation.x=THREE.MathUtils.damp(elbow.rotation.x,pose.elbowTwist,5,dt);
       tip.rotation.z=THREE.MathUtils.damp(tip.rotation.z,pose.wrist,8,dt);
+      tip.rotation.y=THREE.MathUtils.damp(tip.rotation.y,pose.wristYaw,7,dt);
       tip.rotation.x=THREE.MathUtils.damp(tip.rotation.x,pose.glide?-.17:.01,6,dt);
     }
     for(let i=0;i<this.tail.length;i++){
       this.tail[i].rotation.y=THREE.MathUtils.damp(this.tail[i].rotation.y,tailYaw(this.steerInput,i,time),6,dt);
       this.tail[i].rotation.x=THREE.MathUtils.damp(this.tail[i].rotation.x,flightPitch(this.verticalVelocity,this.airborne)*(.28+i*.07),4,dt);
+      this.tail[i].rotation.z=THREE.MathUtils.damp(this.tail[i].rotation.z,
+        -this.bank*(.07+i*.04)+Math.sin(time*2.4-i*.46)*.012,3.6,dt);
     }
     for(const {shoulder,wrist,side} of this.forelegs){
       const step=this.riding&&!this.airborne?Math.sin(time*8+side*Math.PI)*Math.min(.21,this.speed*.02):0;
@@ -461,6 +466,8 @@ export class Dragon {
     for(const {leg,side} of this.legs)leg.rotation.x=THREE.MathUtils.damp(leg.rotation.x,this.pose==='takeoff'?.38:this.airborne?.27:this.pose==='landing'?-.13-contact.crouch*.4:(this.riding?Math.sin(time*9+side*2)*Math.min(.27,this.speed*.022):0),6,dt);
     this.headPivot.rotation.x=THREE.MathUtils.damp(this.headPivot.rotation.x,(this.airborne?-.065:Math.sin(time*1.6)*.04)-(this.attackTime>0?.18:0)+contact.headDip,8,dt);
     this.headPivot.rotation.y=Math.sin(time*.9)*.065;
+    this.headPivot.rotation.z=THREE.MathUtils.damp(this.headPivot.rotation.z,
+      -this.bank*.17+this.turnAxis*.06,6,dt);
     for(const pupil of this.pupils)pupil.position.x=(pupil.position.x<0?-1:1)*.07+Math.sin(time*.72)*.025;
     for(const {brow,side} of this.brows)brow.rotation.z=side*(.22+(this.pose==='takeoff'?-.14:Math.sin(time*.8)*.07));
     this.jawPivot.rotation.x=THREE.MathUtils.damp(this.jawPivot.rotation.x,this.attackTime>0?-.48:Math.sin(time*1.7)*.025,11,dt);
