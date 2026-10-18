@@ -7,7 +7,7 @@ import {readGPUSettings,writeGPUSettings,chooseContextOptions} from '../src/syst
 
 function stubThree(){
   let disposed=0;
-  class Obj{constructor(){this.children=[];this.userData={};this.position={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;}};this.rotation={};this.scale={set(){}};this.parent=null;}
+  class Obj{constructor(){this.children=[];this.userData={};this.position={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;}};this.rotation={set(x,y,z){this.x=x;this.y=y;this.z=z;}};this.scale={set(){}};this.parent=null;}
     updateMatrix(){this.matrix={};}
     add(object){object.parent=this;this.children.push(object);}
     remove(object){this.children=this.children.filter(x=>x!==object);object.parent=null;}
@@ -28,9 +28,13 @@ async function moduleWithThree(stub){
  const url=new URL('../src/world/MountainRegion.js',import.meta.url);
  const rules=new URL('../src/systems/ExpeditionRules.js',import.meta.url).href;
  const aerial=new URL('../src/systems/AerialCombat.js',import.meta.url).href;
+ const shipDamage=new URL('../src/systems/ShipDamage.js',import.meta.url).href;
+ const bossMotion=new URL('../src/systems/BossMotion.js',import.meta.url).href;
  let code=readFileSync(url,'utf8').replace("import * as THREE from 'three';",'const THREE=globalThis.__brumariaMockThree;');
  code=code.replace("from '../systems/ExpeditionRules.js'",`from '${rules}'`);
  code=code.replace("from '../systems/AerialCombat.js'",`from '${aerial}'`);
+ code=code.replace("from '../systems/ShipDamage.js'",`from '${shipDamage}'`);
+ code=code.replace("from '../systems/BossMotion.js'",`from '${bossMotion}'`);
  globalThis.__brumariaMockThree=stub;
  try{return await import('data:text/javascript,'+encodeURIComponent(code));}finally{delete globalThis.__brumariaMockThree;}
 }
@@ -143,4 +147,25 @@ test('descarga do mapa libera geometria e material compartilhados apenas uma vez
  }
  level.unload();
  assert.equal(disposed,resources.size,'material ou geometria compartilhada foi descartada repetidamente');
+});
+test('um barco destruído afunda durante a batalha e não reaparece após recarregar o mapa',async()=>{
+ const mock=stubThree(),{MountainRegion}=await moduleWithThree(mock.THREE);
+ const scene=new mock.THREE.Group(),world={obstacles:[],mountainRegion:null};
+ const progress=new ExpeditionProgress();
+ let region=new MountainRegion(scene,world,progress);
+ progress.hitBoat(0);const result=progress.hitBoat(0);
+ region.notifyBoatHit(0,result);region.refresh();region.update(.05,3);
+ assert.equal(region.boats[0].visible,true,'casco deve afundar gradualmente');
+ assert.equal(region.boatDebrisMesh.visible,true);
+ const y=region.boats[0].position.y;
+ for(let i=0;i<70;i++)region.update(.05,3+i*.05);
+ assert.equal(region.boats[0].visible,false);
+ assert.ok(region.boats[0].position.y<y);
+ assert.equal(region.boatDebrisMesh.visible,false);
+ region.unload();
+ region=new MountainRegion(scene,world,new ExpeditionProgress(progress.snapshot()));
+ region.update(.016,8);
+ assert.equal(region.boats[0].visible,false);
+ assert.equal(region.boatDebrisMesh.visible,false,'partida carregada não repete destroços');
+ region.unload();
 });

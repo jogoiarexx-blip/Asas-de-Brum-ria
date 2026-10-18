@@ -3,6 +3,7 @@ import { approach, clamp, forwardFromYaw, seededRandom } from '../utils/math.js'
 import {moveWithCollisions, obstacleBlocks} from '../utils/collision.js';
 import {moveFlightWithCollisions} from '../utils/spatialSweep.js';
 import {inspectLanding,flightCollisionResponse} from './LandingPhysics.js';
+import {flightContactPose} from './FlightContact.js';
 import {flightPhase, liftBlend} from './flightMath.js';
 import {wingPose} from './wingPose.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
@@ -42,7 +43,7 @@ export class Dragon {
     this.group.position.set(8,world.groundHeightAt(8,7,1.65)+2.55,7);
     this.yaw=-.5;this.speed=0;this.airborne=false;this.riding=false;this.energy=100;this.fireCooldown=0;
     this.wings=[];this.tail=[];this.legs=[];this.forelegs=[];this.windStrength=0;this.windDrift=0;this.speciesId='nimbo';this.stats=null;
-    this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.dodgeRemaining=0;this.dodgeCooldown=0;this.dodgeSide=1;this.impactCooldown=0;this.impactPulse=0;this.impactKick=0;this.createModel();
+    this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.dodgeRemaining=0;this.dodgeCooldown=0;this.dodgeSide=1;this.impactCooldown=0;this.impactPulse=0;this.impactKick=0;this.contactPulse=0;this.contactKind=null;this.contactSpeed=0;this.createModel();
   }
   createModel() {
     const dark=new THREE.MeshStandardMaterial({color:0x172e3c,roughness:.7,metalness:.1});
@@ -297,7 +298,12 @@ export class Dragon {
       this.yaw+=this.turnAxis*turnSpeed*dt;
       const forward=this.forward();
       const up=input.isDown('space'),down=input.isDown('ctrl');
-      if(up&&!this.airborne){this.airborne=true;this.takeoffTime=0;this.landingTimer=0;}
+      if(up&&!this.airborne){
+        this.airborne=true;this.takeoffTime=0;this.landingTimer=0;
+        if(this.world.walkable(this.group.position.x,this.group.position.z)){
+          this.contactPulse=1;this.contactKind='takeoff';this.contactSpeed=this.speed;
+        }
+      }
       const gust=this.airborne?windDisplacement(this.windStrength,time,dt,this.group.position.y-this.world.heightAt(this.group.position.x,this.group.position.z)): {x:0,z:0};
       this.windDrift=Math.hypot(gust.x,gust.z)/Math.max(dt,.001);
       const strafe=this.airborne?dodgeImpulse(this.yaw,this.dodgeSide,dt,activeDodge):{x:0,z:0};
@@ -335,6 +341,7 @@ export class Dragon {
             clearanceAt:(x,z,r)=>this.world.clearanceAt(x,z,r)});
           if(!up&&landing.safe){
             this.airborne=false;this.takeoffTime=0;this.verticalVelocity=0;this.landingTimer=.52;
+            this.contactPulse=1;this.contactKind='landing';this.contactSpeed=this.speed;
           }else if(this.airborne){
             // Skim over unsafe surfaces until the pilot reduces speed or
             // finds a flat island; never land on water or a cliff edge.
@@ -374,9 +381,11 @@ export class Dragon {
     const floorNow=Math.max(2.7,this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.65)+2.58);
     this.pose=flightPhase(this.airborne,this.takeoffTime,this.group.position.y-floorNow,this.verticalVelocity<-.8,this.landingTimer);
     const wingLift=liftBlend(this.airborne,this.takeoffTime,this.landingTimer);
+    const contact=flightContactPose({phase:this.pose,takeoffTime:this.takeoffTime,landingTimer:this.landingTimer});
+    this.visual.position.y=THREE.MathUtils.damp(this.visual.position.y,contact.offsetY,12,dt);
     for(const {wing,elbow,tip,side} of this.wings){
       const pose=wingPose({time,side,phase:this.pose,speed:this.speed,bank:this.bank,wingLift,climbing:this.verticalVelocity});
-      wing.rotation.z=THREE.MathUtils.damp(wing.rotation.z,pose.shoulder,7,dt);
+      wing.rotation.z=THREE.MathUtils.damp(wing.rotation.z,pose.shoulder-side*contact.wingFold,7,dt);
       wing.rotation.x=THREE.MathUtils.damp(wing.rotation.x,pose.twist,5,dt);
       elbow.rotation.z=THREE.MathUtils.damp(elbow.rotation.z,pose.elbow,7,dt);
       tip.rotation.z=THREE.MathUtils.damp(tip.rotation.z,pose.wrist,8,dt);
@@ -392,8 +401,8 @@ export class Dragon {
       wrist.rotation.x=THREE.MathUtils.damp(wrist.rotation.x,this.airborne?-.65:.02,7,dt);
     }
     this.neckCrest.rotation.z=THREE.MathUtils.damp(this.neckCrest.rotation.z,this.bank*.28,4,dt);
-    for(const {leg,side} of this.legs)leg.rotation.x=THREE.MathUtils.damp(leg.rotation.x,this.pose==='takeoff'?.38:this.airborne?.27:this.pose==='landing'?-.13:(this.riding?Math.sin(time*9+side*2)*Math.min(.27,this.speed*.022):0),6,dt);
-    this.headPivot.rotation.x=THREE.MathUtils.damp(this.headPivot.rotation.x,(this.airborne?-.065:Math.sin(time*1.6)*.04)-(this.attackTime>0?.18:0),8,dt);
+    for(const {leg,side} of this.legs)leg.rotation.x=THREE.MathUtils.damp(leg.rotation.x,this.pose==='takeoff'?.38:this.airborne?.27:this.pose==='landing'?-.13-contact.crouch*.4:(this.riding?Math.sin(time*9+side*2)*Math.min(.27,this.speed*.022):0),6,dt);
+    this.headPivot.rotation.x=THREE.MathUtils.damp(this.headPivot.rotation.x,(this.airborne?-.065:Math.sin(time*1.6)*.04)-(this.attackTime>0?.18:0)+contact.headDip,8,dt);
     this.headPivot.rotation.y=Math.sin(time*.9)*.065;
     for(const pupil of this.pupils)pupil.position.x=(pupil.position.x<0?-1:1)*.07+Math.sin(time*.72)*.025;
     for(const {brow,side} of this.brows)brow.rotation.z=side*(.22+(this.pose==='takeoff'?-.14:Math.sin(time*.8)*.07));

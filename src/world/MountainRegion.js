@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import {BOAT_POSITIONS,GIANT_DRAGON_POSITION} from '../systems/ExpeditionRules.js';
 import {bossDamageStage} from '../systems/AerialCombat.js';
+import {shipDamageAppearance,shipDebrisStep,shipSinkingPose} from '../systems/ShipDamage.js';
+import {bossMotionTarget,bossMotionStep} from '../systems/BossMotion.js';
 
 // This entire module is dynamically imported ONLY while flying toward the gate.
 // Its scene resources and collision volumes are released when leaving the zone.
@@ -8,7 +10,7 @@ export class MountainRegion {
   constructor(scene,world,progress){
     this.scene=scene;this.world=world;this.progress=progress;
     this.root=new THREE.Group();this.root.name='MAPA_MONTANHAS_SOMBRA';scene.add(this.root);
-    this.obstacles=[];this.boats=[];this.boatSails=[];this.boatObstacles=[];this.boss=null;this.elapsed=0;this.attackClock=0;this.bossHitFlash=0;
+    this.obstacles=[];this.boats=[];this.boatSails=[];this.boatMasts=[];this.boatDecks=[];this.boatObstacles=[];this.boatDebrisAges=Array(BOAT_POSITIONS.length).fill(null);this.boss=null;this.elapsed=0;this.attackClock=0;this.bossHitFlash=0;
     this.buildTerrain();this.buildShips();this.buildBoss();this.refresh();
     world.obstacles.push(...this.obstacles);
   }
@@ -74,10 +76,21 @@ export class MountainRegion {
       const mast=new THREE.Mesh(new THREE.CylinderGeometry(.25,.32,16,7),wood);mast.position.y=9;group.add(mast);
       const sail=new THREE.Mesh(new THREE.PlaneGeometry(9,11),sailMat);sail.position.set(0,10,0);sail.rotation.y=Math.PI/2;group.add(sail);
       const banner=new THREE.Mesh(new THREE.ConeGeometry(1.5,3,5),new THREE.MeshBasicMaterial({color:0xf4c084}));banner.position.set(-4,2,0);group.add(banner);
+      this.boatDecks.push(deck);this.boatMasts.push(mast);
       group.rotation.y=.4+i*1.18;this.root.add(group);this.boats.push(group);this.boatSails.push(sail);
       const obstacle={x,z,radius:7,bottom:2,top:17,type:'enemy-ship',shape:'box',halfWidth:7,halfDepth:3.8,angle:group.rotation.y};
       this.obstacles.push(obstacle);this.boatObstacles.push(obstacle);
     }
+    // A single GPU draw call for nine transient wood fragments. All matrices
+    // start hidden, and are populated only when a boat sinks during play.
+    this.boatDebrisMesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1.8,.7,1.1),wood,BOAT_POSITIONS.length*3);
+    this.boatDebrisMesh.frustumCulled=false;this.boatDebrisMesh.visible=false;
+    this.debrisDummy=new THREE.Object3D();
+    for(let i=0;i<BOAT_POSITIONS.length*3;i++){
+      this.debrisDummy.scale.set(0,0,0);this.debrisDummy.updateMatrix();
+      this.boatDebrisMesh.setMatrixAt(i,this.debrisDummy.matrix);
+    }
+    this.root.add(this.boatDebrisMesh);
   }
   buildBoss(){
     const group=new THREE.Group();group.position.set(GIANT_DRAGON_POSITION.x,GIANT_DRAGON_POSITION.y,GIANT_DRAGON_POSITION.z);
@@ -120,15 +133,22 @@ export class MountainRegion {
   refresh(){
     this.boats.forEach((boat,i)=>{
       const health=this.progress.boatHealth[i];
-      const exists=health>0;boat.visible=exists;
+      const appearance=shipDamageAppearance(health);
+      const exists=appearance.visible;boat.visible=exists||this.boatDebrisAges[i]!==null;
       // Sails visibly tear after the first hit, instead of looking untouched.
-      this.boatSails[i].scale.set(health===1?.77:1,health===1?.78:1,1);
+      this.boatSails[i].scale.set(appearance.sailScale,appearance.sailScale,1);
+      this.boatMasts[i].rotation.z=appearance.mastTilt;
+      this.boatDecks[i].rotation.z=appearance.deckTilt;
       const hull=this.boatObstacles[i];if(hull){hull.top=exists?17:2;hull.bottom=exists?2:2;}
     });
     this.boss.visible=this.progress.phase==='boss';
     const stage=bossDamageStage(this.progress.bossHealth);
     for(let i=0;i<this.bossDamageMarks.length;i++)this.bossDamageMarks[i].visible=i<stage;
     this.bossScales.emissiveIntensity=.02+stage*.06;
+  }
+  notifyBoatHit(index,result){
+    if(result?.hit&&result.sunk&&index>=0&&index<this.boatDebrisAges.length)
+      this.boatDebrisAges[index]=0;
   }
   flashBossHit(){this.bossHitFlash=.36;}
   setBossWarning(active,pattern='aimed'){
@@ -143,10 +163,47 @@ export class MountainRegion {
     this.elapsed+=dt;
     this.bossHitFlash=Math.max(0,this.bossHitFlash-dt);
     if(this.bossScales)this.bossScales.emissiveIntensity=.02+bossDamageStage(this.progress.bossHealth)*.06+this.bossHitFlash*1.1;
-    this.boats.forEach((boat,i)=>{if(boat.visible)boat.position.y=BOAT_POSITIONS[i][1]+Math.sin(time*1.7+i)*.5;});
+    this.boats.forEach((boat,i)=>{
+      const age=this.boatDebrisAges[i];
+      if(age!==null){
+        const sinking=shipSinkingPose(age);
+        boat.visible=sinking.visible;
+        boat.position.y=BOAT_POSITIONS[i][1]+sinking.offsetY;
+        boat.rotation.z=(i%2?1:-1)*sinking.roll;
+      }else if(this.progress.boatHealth[i]>0){
+        boat.visible=true;
+        boat.position.y=BOAT_POSITIONS[i][1]+Math.sin(time*1.7+i)*.5;
+        boat.rotation.z=0;
+      }else boat.visible=false;
+    });
+    // Update at most nine transient fragments; no new meshes in the combat loop.
+    let debrisActive=false;
+    for(let i=0;i<BOAT_POSITIONS.length;i++){
+      const age=this.boatDebrisAges[i];
+      const nextAge=age===null?null:age+dt;
+      this.boatDebrisAges[i]=nextAge;
+      for(let k=0;k<3;k++){
+        const piece=nextAge===null?{visible:false}:shipDebrisStep(nextAge,k);
+        const dummy=this.debrisDummy;
+        if(piece.visible){
+          debrisActive=true;const [x,y,z]=BOAT_POSITIONS[i];
+          const angle=i*2.3+k*2.1;
+          dummy.position.set(x+Math.cos(angle)*piece.spread,y+piece.sink,z+Math.sin(angle)*piece.spread);
+          dummy.rotation.set(piece.spin*.35,piece.spin,angle);
+          dummy.scale.set(piece.scale,piece.scale,piece.scale);
+        }else dummy.scale.set(0,0,0);
+        dummy.updateMatrix();this.boatDebrisMesh.setMatrixAt(i*3+k,dummy.matrix);
+      }
+      if(nextAge!==null&&!shipDebrisStep(nextAge,0).visible)this.boatDebrisAges[i]=null;
+    }
+    this.boatDebrisMesh.visible=debrisActive;
+    if(debrisActive)this.boatDebrisMesh.instanceMatrix.needsUpdate=true;
     if(this.boss.visible){
-      this.boss.position.x=GIANT_DRAGON_POSITION.x+Math.sin(time*.35)*13;
-      this.boss.position.y=GIANT_DRAGON_POSITION.y+Math.cos(time*.7)*4;
+      const goal=bossMotionTarget(time,this.progress.bossHealth);
+      const position=bossMotionStep(this.boss.position,goal,dt,{
+        charging:this.bossWarningRing.visible,stagger:this.bossHitFlash});
+      this.boss.position.set(position.x,position.y,position.z);
+      this.boss.rotation.y=Math.sin(time*.22)*.19;
       for(const {pivot,side} of this.wings)pivot.rotation.z=side*(.25+Math.sin(time*2)*.25);
       if(this.bossWarningRing.visible)this.bossWarningRing.rotation.z+=dt*2.5;
     }

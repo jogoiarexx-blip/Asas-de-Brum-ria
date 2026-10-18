@@ -36,6 +36,7 @@ import {WildDragons} from '../entities/WildDragons.js';
 import {ExpeditionProgress,MOUNTAIN_PORTAL,MOUNTAIN_ENTRY,shouldLoadMountain,shouldEnterMountain,shouldExitMountain,shouldHoldMountainGate} from '../systems/ExpeditionRules.js';
 import {readGPUSettings,writeGPUSettings,chooseContextOptions,describeRenderer} from '../systems/GPUSettings.js';
 import {bossAttackStep,bossAttackPattern,bossShotDirections,bossPatternLabel} from '../systems/MountainCombat.js';
+import {contactBurstSize} from '../entities/FlightContact.js';
 import {bossAimPoint} from '../systems/AerialCombat.js';
 
 export class Game {
@@ -64,7 +65,7 @@ export class Game {
     this.graphics.resolutionScale=this.gpuPrefs.resolution;this.graphics.shadowsAllowed=this.gpuPrefs.shadows;this.graphics.apply();
     this.initGPUOptions();this.updateGraphicsLabel();
     this.saveSystem=new SaveSystem();this.savedData=this.saveSystem.read();
-    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this.bossAttackCount=0;this.bossWarnedPattern=null;this._bossVolleyVector=new THREE.Vector3();this._bossShotDirection=new THREE.Vector3();this._bossPredicted=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
+    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this.bossAttackCount=0;this.bossWarnedPattern=null;this._bossVolleyVector=new THREE.Vector3();this._bossShotDirection=new THREE.Vector3();this._bossPredicted=new THREE.Vector3();this._groundContactPosition=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
     this.portal=this.makeMountainPortal();
     this.progression=new Progression(this.savedData?.progression);this.autoSaveTime=0;this.lastSaveOk=null;
     this.world=new World(this.scene);
@@ -672,6 +673,7 @@ export class Game {
               if(segmentSphereHit(from,to,ship.position,11)){
                 const result=this.expedition.hitBoat(k);hit=result.hit;
                 this.effects.burst(ship.position,'impact',15);this.audio.play('hit');
+                this.mountain.notifyBoatHit(k,result);
                 this.mountain.refresh();this.ui.toast(result.sunk?`Barco afundado! ${this.expedition.boatsSunk}/3`: 'Barco atingido: acerte novamente!',4);
                 if(result.sunk&&this.expedition.phase==='boss')this.ui.toast('Os barcos caíram! Enfrente o dragão gigante!',6);
                 this.saveGame();break;
@@ -848,6 +850,16 @@ export class Game {
       if(this.ui.dialogueOpen)this.input.down.clear();
       this.dragon.setWind(this.weather.mode.wind);
       this.dragon.update(dt,this.input,this.elapsed);
+      if(this.dragon.contactPulse>0){
+        const d=this.dragon,p=d.group.position;
+        const count=contactBurstSize(d.contactKind,d.contactSpeed,
+          this.world.walkable(p.x,p.z),this.graphics.tier);
+        if(count){
+          this._groundContactPosition.set(p.x,this.world.groundHeightAt(p.x,p.z,1.15)+.3,p.z);
+          this.effects.burst(this._groundContactPosition,'impact',count);
+        }
+        d.contactPulse=0;d.contactKind=null;
+      }
       if(this.dragon.impactPulse>0){
         this.effects.burst(this.dragon.group.position,'impact',Math.min(10,Math.ceil(7*this.dragon.impactPulse)));
         this.audio.play('hit');

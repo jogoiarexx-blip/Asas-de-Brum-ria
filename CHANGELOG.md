@@ -1,3 +1,14 @@
+## v1.3.8 — Decolagem e aterrissagem, afundamento e patrulha do chefe
+
+- Adicionados FlightContact.js, ShipDamage.js e BossMotion.js com regras determinísticas, testáveis sem GPU.
+- Melhores movimentos das patas e asas ao encostar no solo e ao levantar voo; poeira opcional conforme qualidade e presença de chão.
+- Após dois ataques, o barco afunda visualmente enquanto três fragmentos giram e descem. Destroços renderizados em um lote instanciado para os três barcos.
+- O chefe movimenta-se em torno da fortaleza, altera a patrulha abaixo de 50% de vida e para durante o aviso de ataque.
+- Registros de missões, contratos e salvamentos antigos mantidos.
+- 378 testes passaram, nenhum erro; medição WebGL/FPS real pendente.
+
+---
+
 ## v1.3.7 — Pouso em terrenos inclinados, impacto e batalha variada
 
 - Introduzida inspeção de pouso com superfície caminhável, inclinação em oito pontos, velocidade e obstáculos; impede contato automático com oceano e bordas perigosas.

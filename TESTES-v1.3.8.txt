@@ -1,0 +1,7 @@
+Asas de Brumária v1.3.8
+
+Comando: npm run check
+Testes: 378 aprovados, 0 falhas (364 + 14).
+Inclusões: FlightContact.js, ShipDamage.js, BossMotion.js, gameplay-v138.test.js e integração com teste do mapa.
+Verificação de navegação real/WebGL em GPU ainda pendente.
+Windows: PowerShell HTTP local + navegador, não EXE nativo.

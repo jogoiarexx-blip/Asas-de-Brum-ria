@@ -1,3 +1,17 @@
+# Asas de Brumária v1.3.8 — Contato de voo, barcos e IA do dragão gigante
+
+## Novidades verificadas
+
+- **Decolagem e pouso:** corpo, asas e patas do dragão agora mostram uma breve compressão de contato com o chão. Os efeitos de poeira são pontuais, reaproveitam as partículas existentes e não aparecem sobre água. O custo diminui em gráficos LEVE.
+- **Destruição dos barcos:** após o primeiro golpe, a vela diminui e o mastro se inclina. Ao receber o segundo golpe, o casco aderna e afunda gradualmente, acompanhado por fragmentos de madeira. São **nove fragmentos em um único InstancedMesh**, reutilizando o material de madeira já carregado.
+- **Salvamentos:** apenas a vida do barco é salva, como antes. Reabrir uma partida após destruí-lo não repete o naufrágio. Não houve mudança de versão do esquema de save.
+- **Chefe das montanhas:** novo deslocamento suave de patrulha, com movimentos em X, Y e Z. Com metade da vida, a trajetória fica mais dinâmica; durante os avisos coloridos, o chefe interrompe o deslocamento para permitir uma esquiva clara. A velocidade é limitada para evitar teletransportes após pausas.
+- **Desempenho:** a malha dos destroços fica invisível fora do curto evento de destruição; sem luzes dinâmicas adicionais ou física pesada de fragmentos.
+
+**Validação:** 378 testes automatizados aprovados (364 anteriores + 14 novos), com execução de eventos de naufrágio, restauração do mapa, limites da trajetória do chefe e verificação de colisões existentes. O ganho de FPS na sua GPU ainda precisa de medição visual em navegador real.
+
+---
+
 # Asas de Brumária v1.3.7 — Pouso seguro, impactos e novos sopros do chefe
 
 ## Evolução da física
