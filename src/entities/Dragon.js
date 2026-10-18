@@ -194,7 +194,7 @@ export class Dragon {
     this.muzzleGlow=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),new THREE.MeshBasicMaterial({color:0xffa852,transparent:true,opacity:.8,depthWrite:false}));
     this.muzzleGlow.position.set(0,-.4,-1.52);this.headPivot.add(this.muzzleGlow);this.muzzleGlow.visible=false;
     // Luz de identificação leve
-    const light=new THREE.PointLight(0x69eee5,8,15,2);light.position.set(0,.65,-3.1);this.visual.add(light);
+    const light=new THREE.PointLight(0x69eee5,8,15,2);light.position.set(0,.65,-3.1);this.visual.add(light);this.accentLight=light;
   }
   addWing(side,wingMat,membrane) {
     // Three lightweight articulated joints instead of a single rigid triangular wing.

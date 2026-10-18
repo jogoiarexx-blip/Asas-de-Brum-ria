@@ -11,7 +11,7 @@ export const QUEST_DEFS = [
   {id:'crystals',title:'AS RUNAS PERDIDAS',desc:'Recolha três cristais de energia espalhados entre as ilhas.',total:3},
   {id:'targets',title:'DEFENSORES DE BRUMÁRIA',desc:'Use F para lançar fogo e destruir os três orbes sombrios.',total:3},
   {id:'battle',title:'SENTINELAS DA TORMENTA',desc:'Enfrente três dragões inimigos. Mire para a frente e lance fogo com F; evite os disparos!',total:3},
-  {id:'rescue',title:'FILHOTES PERDIDOS',desc:'Resgate três filhotes espalhados entre as ilhas. Voe até os sinais verdes.',total:3},
+  {id:'rescue',title:'FILHOTES PERDIDOS',desc:'Aproxime-se devagar, proteja cada filhote e transporte-o para o Refúgio.',total:3},
   {id:'training',title:'PROVA DO DOMADOR',desc:'Retorne à vila, abra o estábulo com T e complete um circuito de treinamento.',total:1}
 ];
 export const RING_POSITIONS = [[39,29,-65],[108,32,-17],[85,37,91],[-8,33,112],[-96,29,33]];

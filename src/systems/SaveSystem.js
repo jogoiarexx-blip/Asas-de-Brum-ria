@@ -13,7 +13,7 @@ export function normalizeSave(payload){
   const m=payload.mission;const p=payload.player??{};const stage=count(m.stage,7);
   return {
     version:1,
-    mission:{stage,progress:count(m.progress,MAX_PROGRESS[stage]),crystals:bools(m.crystals,3),targets:bools(m.targets,3),hatchlings:bools(m.hatchlings,3),enemies:Array.from({length:3},(_,i)=>finite(m.enemies?.[i],0,3,3))},
+    mission:{stage,progress:count(m.progress,MAX_PROGRESS[stage]),crystals:bools(m.crystals,3),targets:bools(m.targets,3),hatchlings:bools(m.hatchlings,3),carriedIndex:Number.isInteger(m.carriedIndex)&&m.carriedIndex>=0&&m.carriedIndex<3?m.carriedIndex:-1,rescueHold:finite(m.rescueHold,0,1.25),enemies:Array.from({length:3},(_,i)=>finite(m.enemies?.[i],0,3,3))},
     progression:payload.progression,
     contracts:isPlainObject(payload.contracts)?payload.contracts:null,
     weather:normalizeWeather(payload.weather),

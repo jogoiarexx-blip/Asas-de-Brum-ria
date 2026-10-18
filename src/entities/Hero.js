@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {moveWithCollisions,obstacleBlocks} from '../utils/collision.js';
 import {buildHero} from './heroVisual.js';
 import {walkIntent,poseForHero} from './heroMotion.js';
+import {groundFollow,terrainLean} from '../utils/groundPhysics.js';
 import {HERO_GLB_URL,HERO_MODEL_FACING_YAW} from './heroAssetConfig.js';
 import {loadOptionalHeroGLB,updateOptionalHeroGLB} from './heroAssetLoader.js';
 
@@ -11,10 +12,10 @@ export class Hero {
     this.group=buildHero();this.group.position.set(2,world.groundHeightAt(2,11,.52),11);scene.add(this.group);
     this.rider=buildHero();this.rider.position.set(0,.75,-.03);this.rider.rotation.y=0;
     this.rider.scale.setScalar(.78);dragon.visual.add(this.rider);this.rider.visible=false;
-    this.mounted=false;this.walkTime=0;this.moveSpeed=0;
+    this.mounted=false;this.walkTime=0;this.moveSpeed=0;this.fallVelocity=0;this.slopeClock=0;this.slope={pitch:0,roll:0};
     if(HERO_GLB_URL)loadOptionalHeroGLB(this,HERO_GLB_URL,{yaw:HERO_MODEL_FACING_YAW});
   }
-  setMounted(value){this.mounted=value;this.group.visible=!value;this.rider.visible=value;}
+  setMounted(value){this.mounted=value;this.group.visible=!value;this.rider.visible=value;this.fallVelocity=0;}
   animate(model,pose,dt,now,mounted=false){
     const {legs,arms,cape,body,head}=model.userData;
     legs.forEach((leg,i)=>{
@@ -60,8 +61,20 @@ export class Hero {
       this.walkTime+=dt*(slow?6.2:12.5)*intent.strength;
     } else this.moveSpeed=0;
     if(!moving)this.moveSpeed=0;
-    this.group.position.y=this.world.groundHeightAt(this.group.position.x,this.group.position.z,.52);
+    const targetGround=this.world.groundHeightAt(this.group.position.x,this.group.position.z,.52);
+    const contact=groundFollow({y:this.group.position.y,velocity:this.fallVelocity,target:targetGround,dt});
+    this.group.position.y=contact.y;this.fallVelocity=contact.velocity;
+    this.slopeClock+=dt;
+    if(this.slopeClock>=.12){
+      this.slopeClock=0;
+      this.slope=terrainLean(this.group.position.x,this.group.position.z,(x,z)=>this.world.groundHeightAt(x,z,.52));
+    }
+
     const pose=poseForHero(this.walkTime,moving?Math.min(1,this.moveSpeed/(slow?3.1:9)):0,false,!slow);
     this.animate(this.group,pose,dt,time);
+    // Small slope lean affects the visual root, not its collision capsule.
+    const root=this.group.userData.body;
+    root.rotation.x=THREE.MathUtils.damp(root.rotation.x,pose.bodyLean+this.slope.pitch,5,dt);
+    root.rotation.z=THREE.MathUtils.damp(root.rotation.z,pose.sway+this.slope.roll,5,dt);
   }
 }

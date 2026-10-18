@@ -69,12 +69,15 @@ export class Game {
     this.enemies=new EnemySquad(this.scene,this.world);
     this.effects=new Effects(this.scene);
     this.applySceneQuality();
-    this.contracts=new VillageContracts(this.savedData?.contracts);
+    this.contracts=new VillageContracts(this.savedData?.contracts,this.dayNight.state.day);
     this.villagers=new VillageNPCs(this.scene,this.world);
     this.wildDragons=new WildDragons(this.scene,this.world,this.wildBonds);
     this.villagers.refresh(this.contracts);
     this.missions=new Missions(this.scene,this.audio,()=>{if(this.missions)this.ui.updateQuest(this.missions);},this.enemies,
       stage=>{this.progression.grant(REWARDS[stage]??1);this.saveGame();this.ui.toast(`Missão concluída! +${REWARDS[stage]??1} ponto(s) de treino.`,4);});
+    this.missions.onCheckpoint=()=>this.saveGame();
+    // Position the refuge beacon just above the actual terrain surface.
+    this.missions.nest.position.y=this.world.groundHeightAt(0,0,1.65)+3.2;
     this.training=new Training(this.scene,()=>{},(mode,reward)=>{
       this.progression.grant(reward);this.progression.circuits++;
       if(mode==='basic')this.missions.trainingCompleted();
@@ -313,7 +316,7 @@ export class Game {
   }
   restoreSave(data){
     this.missions.restore(data.mission);
-    this.contracts.restore(data.contracts);this.villagers.refresh(this.contracts);
+    this.contracts.restore(data.contracts);this.contracts.syncDay(this.dayNight.state.day);this.villagers.refresh(this.contracts);
     const p=data.player;
     const dragonY=Math.max(p.y,this.world.groundHeightAt(p.x,p.z,1.65)+2.58);
     const dragonSpot=recoverFreePosition({x:p.x,z:p.z},1.65,this.world.obstacles,
@@ -336,6 +339,8 @@ export class Game {
     const tier=this.graphics.tier;
     this.effects?.setQuality(tier);this.weather?.setQuality(tier);this.world?.setDetailQuality(tier);
     if(this.world?.sun){this.world.sun.castShadow=tier!=='economy';}
+    if(this.world?.fireLight)this.world.fireLight.visible=tier!=='economy';
+    if(this.dragon?.accentLight)this.dragon.accentLight.visible=tier==='quality';
     // Shadows are fully disabled in economy. Never change map size on each shot.
   }
   updateGraphicsLabel(){document.getElementById('quality-toggle').textContent=`GRÁFICOS: ${this.graphics.label} · G`;}
@@ -402,7 +407,7 @@ export class Game {
           this.villagers.refresh(this.contracts);
           const state=this.contracts.state[key];
           const done=state.collected.filter(Boolean).length;
-          this.ui.toast(state.status==='ready'?`Objetivos completos! Retorne para ${key==='correio'?'Iara':'Lume'} receber sua recompensa.`:`${def.title}: ${done}/${def.points.length}`,4);
+          this.ui.toast(state.status==='ready'?`Objetivos completos! Retorne para ${this.villagers.npcs.find(n=>n.spec.id===def.npc)?.spec.name??def.npc} receber sua recompensa.`:`${def.title}: ${done}/${def.points.length}`,4);
           this.saveGame();break;
         }
       }
@@ -637,6 +642,9 @@ export class Game {
     if(this.started){
       const focus=this.dragon.riding?this.dragon.group.position:this.hero.group.position;
       this.dayNight.update(dt,focus);
+      if(this.contracts.syncDay(this.dayNight.state.day)){
+        this.villagers.refresh(this.contracts);this.ui.toast(`DIA ${this.dayNight.state.day}: novas tarefas diárias disponíveis na vila!`,5);this.saveGame();
+      }
       const weatherChanged=this.weather.update(dt,this.elapsed,focus,this.dayNight.state.phase);
       if(weatherChanged)this.ui.toast(`Clima mudou: ${this.weather.mode.label}`,4);
     }
@@ -648,7 +656,7 @@ export class Game {
       if(this.input.consume('g'))this.cycleGraphics();
       if(this.input.consume('f3'))this.toggleDiagnostics();
       if(this.input.consume('v')){this.cameraOrbit.reset();this.ui.toast('Câmera centralizada.');}
-      if(this.input.consume('n')){this.dayNight.jumpHours(3);this.saveGame();this.ui.toast(`Hora do mundo: ${this.dayNight.clock}`,3);}
+      if(this.input.consume('n')){this.dayNight.jumpHours(3);if(this.contracts.syncDay(this.dayNight.state.day))this.villagers.refresh(this.contracts);this.saveGame();this.ui.toast(`Dia ${this.dayNight.state.day} · Hora ${this.dayNight.clock}`,3);}
       if(!this.ui.stable.classList.contains('hidden')){
         if(this.input.consume('menuup')||this.input.consume('menuleft'))this.navigateStable(-1);
         if(this.input.consume('menudown')||this.input.consume('menuright'))this.navigateStable(1);

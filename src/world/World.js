@@ -259,7 +259,7 @@ export class World {
       const a=i*Math.PI/4;const stone=new THREE.Mesh(new THREE.DodecahedronGeometry(.65,0),new THREE.MeshLambertMaterial({color:0x777a6f}));stone.position.set(Math.cos(a)*2.1,.3,Math.sin(a)*2.1);fire.add(stone);
     }
     const flame=new THREE.Mesh(new THREE.ConeGeometry(.9,2.3,6),new THREE.MeshBasicMaterial({color:0xff9939}));flame.position.y=1.2;fire.add(flame);
-    const light=new THREE.PointLight(0xffad60,25,23,2);light.position.y=3;fire.add(light);this.fire=flame;this.scene.add(fire);
+    const light=new THREE.PointLight(0xffad60,25,23,2);light.position.y=3;fire.add(light);this.fireLight=light;this.fire=flame;this.scene.add(fire);
     this.addObstacle(-3,fire.position.y,0,2.2,2.8,'fire');
     const banner=new THREE.Group();banner.position.set(13,this.heightAt(13,-9),-9);
     const pole=new THREE.Mesh(new THREE.CylinderGeometry(.13,.18,9,6),brown);pole.position.y=4.5;banner.add(pole);

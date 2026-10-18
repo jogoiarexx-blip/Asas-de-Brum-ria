@@ -40,6 +40,15 @@ export class UI {
   }
   renderStable(game){
     const p=game.progression,atVillage=game.nearStable();
+    document.getElementById('daily-day').textContent=`DIA ${game.dayNight.state.day}`;
+    const board=document.getElementById('daily-board');board.replaceChildren();
+    for(const [key,def] of Object.entries(CONTRACTS)){
+      const state=game.contracts.state[key];
+      const row=document.createElement('div');row.className='daily-job';
+      const title=document.createElement('strong');title.textContent=def.title;
+      const status=document.createElement('span');status.textContent=state.status==='done'?'✓ CONCLUÍDO · AMANHÃ':state.status==='ready'?'VOLTE AO MORADOR':state.status==='active'?`${state.collected.filter(Boolean).length}/3 · EM ANDAMENTO`:`FALE COM ${def.npc.toUpperCase()} · +${def.reward} PT`;
+      row.append(title,status);board.append(row);
+    }
     document.getElementById('train-points').textContent=p.points;
     document.getElementById('discovery-list').textContent=`Marcos encontrados: ${game.discovery.total}/5 · Dragões selvagens: ${game.wildBonds.total}/3. Cada amizade rende +1 ponto.`;
     document.getElementById('train-circuits').textContent=p.circuits+' circuitos';
@@ -94,12 +103,15 @@ export class UI {
   hideDialogue(){this.dialogue.classList.add('hidden');this.dialogueOpen=false;}
   toast(text,secs=3){this.toastElement.textContent=text;this.toastElement.classList.add('visible');clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>this.toastElement.classList.remove('visible'),secs*1000);}
   updateQuest(missions){
-    if(this.lastStage===missions.stage && this.lastProgress===missions.progress)return;
+    const rescueHint=missions.rescueDescription?.()??'';
+    const rescueStep=missions.stage===5?`${missions.carriedIndex}:${Math.floor(missions.rescueHold*4)}`:'';
+    if(this.lastStage===missions.stage && this.lastProgress===missions.progress && this.lastRescueStep===rescueStep)return;
+    this.lastRescueStep=rescueStep;
     this.lastStage=missions.stage;this.lastProgress=missions.progress;
     const q=missions.quest;
     this.questIndex.textContent=missions.complete?'✓ COMPLETA':`${String(missions.stage+1).padStart(2,'0')} / ${String(QUEST_DEFS.length).padStart(2,'0')}`;
     this.questTitle.textContent=q?.title??'GUARDIÃO DOS CÉUS';
-    this.questDesc.textContent=q?.desc??'Todas as missões concluídas. Continue explorando Brumária!';
+    this.questDesc.textContent=rescueHint||q?.desc||'Todas as missões concluídas. Continue explorando Brumária!';
     this.questProgress.replaceChildren();
     const total=q?.total??1,progress=missions.complete?total:missions.progress;
     for(let i=0;i<total;i++){const el=document.createElement('div');el.className='quest-tick'+(i<progress?' done':'');this.questProgress.append(el);}
@@ -109,7 +121,7 @@ export class UI {
     const {dragon,hero,missions,world}=game;
     this.updateQuest(missions);
     this.weatherPill.textContent=game.weather.mode.label+(dragon.riding&&dragon.airborne&&dragon.windDrift>.1?` · RAJADAS ${dragon.windDrift.toFixed(1)}m/s`:``);
-    this.clockPill.textContent=game.dayNight.clock;
+    this.clockPill.textContent=`DIA ${game.dayNight.state.day} · ${game.dayNight.clock}`;
     this.expeditionStatus.textContent=`MARCOS ${game.discovery.total}/5 · AMIZADES ${game.wildBonds.total}/3`;
     const phase=dragon.pose==='takeoff'?'DECOLAGEM':dragon.pose==='landing'?'POUSO':dragon.airborne?'VOO LIVRE':'MONTADO';
     this.mode.textContent=dragon.riding?`${phase} · ${SPECIES[game.progression.species].name.toUpperCase()}`:'EXPLORAÇÃO';
@@ -162,8 +174,9 @@ export class UI {
     for(const island of ISLANDS){ctx.beginPath();ctx.arc(mx(island.x),my(island.z),island.r*s,0,Math.PI*2);ctx.fill();ctx.stroke();}
     ctx.strokeStyle='rgba(232,250,255,.13)';ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
     if(missions.stage===4){ctx.fillStyle='#f68bab';for(const e of enemies.alive){ctx.beginPath();ctx.arc(mx(e.position.x),my(e.position.z),3.5,0,Math.PI*2);ctx.fill();}}
-    if(missions.stage===5){ctx.fillStyle='#a0ffd2';for(const baby of missions.hatchlings.filter(b=>!b.userData.rescued)){ctx.beginPath();ctx.arc(mx(baby.position.x),my(baby.position.z),3.1,0,Math.PI*2);ctx.fill();}}
-    for(let i=0;i<LANDMARKS.length;i++){
+    if(missions.stage===5){ctx.fillStyle='#a0ffd2';for(const baby of missions.hatchlings.filter((b,i)=>!b.userData.rescued&&i!==missions.carriedIndex)){ctx.beginPath();ctx.arc(mx(baby.position.x),my(baby.position.z),3.1,0,Math.PI*2);ctx.fill();}}
+    if(missions.stage===5&&missions.carriedIndex>=0){const refuge=missions.nest.position;ctx.strokeStyle='#ffe38b';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(mx(refuge.x),my(refuge.z),6,0,Math.PI*2);ctx.stroke();}
+    for(let i=0;i<LANDMARKS.length;i++){ 
       if(discovery.found[i])continue;
       const lm=LANDMARKS[i];const x=mx(lm.x),y=my(lm.z);
       ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);ctx.fillStyle='#9df8e3';ctx.fillRect(-2.8,-2.8,5.6,5.6);ctx.restore();

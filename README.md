@@ -1,3 +1,28 @@
+# Asas de Brumária v1.3.3 — Física, resgate e missões diárias
+
+**Atualização incremental baseada na v1.3.2**: sem reiniciar a história nem modificar a chave de salvamento anterior.
+
+## Melhorias principais
+
+- **Resgate dos filhotes (missão 6):** cada filhote exige aproximação a menos de 9,5 m, voo estabilizado a no máximo 12 m/s por 1,25 segundo e **transporte individual de volta ao santuário da Ilha do Refúgio**. A entrega exige entrar no círculo com baixa velocidade. Os três transportes concedem uma única recompensa final. O filhote acompanha visualmente a montaria e o minimapa destaca o refúgio quando há filhote a bordo.
+- **Progresso retomável:** ao salvar enquanto carrega um filhote, a carga é restaurada; saves anteriores continuam no mesmo estágio, sem completar etapas automaticamente. Os estados novos são opcionais.
+- **Dias persistentes:** 1 dia no jogo = 12 minutos. O relógio mostra DIA e horário; a tecla N continua avançando três horas e pode passar para o dia seguinte.
+- **Quatro contratos diários:** Correio dos Céus (Iara), Ervas do Refúgio (Lume), Fragmentos da Forja (Borin) e Suprimentos de Emergência (Nara, nova moradora). Contratos concluídos reabrem no dia seguinte; os incompletos permanecem em andamento, inclusive após sair e retornar. Rotas diárias alternam posições de modo reprodutível; o quadro de tarefas aparece no estábulo.
+- **Física do personagem:** a descida ao caminhar por desníveis tem gravidade progressiva e limite de velocidade, em vez de encaixe vertical instantâneo. Pequenas inclinações do corpo acompanham o terreno sem afetar a cápsula de colisão.
+- **Gráficos leves:** luzes locais secundárias são desativadas em LEVE/EQUILIBRADO conforme o custo, preservando a iluminação global e os objetos; marcadores de missão utilizam geometria simples existente.
+
+## Como testar
+
+1. Atualize a página com Ctrl+F5 e continue sua partida.
+2. Abra o estábulo com **T** e veja **QUADRO DE MISSÕES**; fale com os quatro moradores para aceitar os contratos.
+3. Pressione **N** para avançar o relógio de três em três horas: após a virada do dia, contratos já concluídos estarão disponíveis novamente.
+4. Na missão **FILHOTES PERDIDOS**, aproxime-se com o dragão, reduza a velocidade e mantenha-se próximo até recolher. O destino será o santuário no Refúgio. Repita para os três filhotes.
+5. Para comparar desempenho, use **F3** (diagnóstico) e **B** (comparador de FPS).
+
+**Validação:** 292 testes automatizados passaram, incluindo simulação completa do resgate e retomada de save, testes do calendário diário e física do personagem. A execução visual em GPU real ainda precisa ser confirmada no navegador. A versão Windows é um inicializador de jogo web, não um EXE nativo; a primeira execução pode requerer internet para o Three.js.
+
+---
+
 # Asas de Brumária v1.3.2 — Combate otimizado e comparador real de FPS
 
 - **Fogo otimizado:** partículas de explosões e projéteis agora são criados previamente e reutilizados durante o combate. O pool evita alocações repetidas de vetores e malhas quando o jogador dispara muitas vezes.

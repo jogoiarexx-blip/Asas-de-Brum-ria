@@ -97,3 +97,11 @@ body:has(#controller-status.connected) .gamepad-help{opacity:.92}
 #benchmark-report{white-space:pre-wrap;overflow-wrap:anywhere;max-height:33vh;overflow:auto;
  font:11px/1.55 ui-monospace,Consolas,monospace;margin:9px 0 0;color:#dcf6e7}
 @media(max-width:800px){#benchmark-controls{right:6px;bottom:260px;padding:7px}#benchmark-report{font-size:9px;max-height:24vh}}
+
+/* v1.3.3: quadro diário leve, sem texturas adicionais ou draw calls WebGL. */
+.daily-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:9px 0 18px}
+.daily-job{border:1px solid #b2dfcc56;border-radius:9px;background:#0d313bf2;padding:12px;display:flex;flex-direction:column;gap:6px}
+.daily-job strong{font-size:11px;color:#f4dba0;letter-spacing:.5px}
+.daily-job span{font-size:10px;color:#bee9d9}
+.daily-board-note{font-size:11px;color:#b5dacf;line-height:1.5}
+@media(max-width:560px){.daily-board{grid-template-columns:1fr}}

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#071a25">
   <meta name="description" content="Asas de Brumária: explore ilhas, monte em seu dragão e complete missões.">
-  <title>Asas de Brumária v1.3.2 — Aventura de Dragões</title>
+  <title>Asas de Brumária v1.3.3 — Aventura de Dragões</title>
   <link rel="stylesheet" href="./src/ui/style.css">
 </head>
 <body>
@@ -45,6 +45,9 @@
       <div id="stable-village-note" class="stable-note"></div>
       <div class="stable-balance"><strong id="train-points">0</strong> PONTOS DE TREINAMENTO <span id="train-circuits">0 circuitos</span></div>
       <div id="discovery-list" class="discovery-list">Marcos encontrados: 0/5</div>
+      <h3>QUADRO DE MISSÕES · <span id="daily-day">DIA 1</span></h3>
+      <p class="daily-board-note">Fale com Iara, Lume, Borin ou Nara para aceitar tarefas. A cada novo dia surgem novas rotas e recompensas.</p>
+      <div id="daily-board" class="daily-board" aria-label="Missões diárias disponíveis"></div>
       <div id="wild-list" class="wild-list" aria-label="Dragões selvagens para amansar"></div>
       <div class="preview-panel"><canvas id="stable-preview-canvas" aria-label="Modelo 3D giratório do dragão selecionado"></canvas><div class="preview-info"><strong id="stable-preview-name">Nimbo · Asa da Névoa</strong><small id="stable-preview-caption">Arraste para girar · Visualização 3D dos dragões</small></div></div>
       <h3>SEUS DRAGÕES</h3><div id="species-list" class="species-list"></div>
@@ -54,7 +57,7 @@
       <p class="stable-tip">Complete missões para ganhar pontos. Troque de dragão e melhore atributos somente na vila. O progresso é salvo automaticamente.</p>
     </section>
   </div>
-  <div id="start-screen" class="modal-screen"><div class="start-art">✦ <span>✦</span> ✦</div><div class="modal-content"><div class="pretitle">UMA JORNADA ORIGINAL INSPIRADA EM AVENTURAS DE DRAGÕES</div><h1>ASAS DE<br><em>BRUMÁRIA</em></h1><p>Explore ilhas esquecidas, treine seu dragão, enfrente sentinelas inimigas , resgate filhotes perdidos e conquiste a confiança de dragões selvagens.</p><div class="features"><span>◈ Mundo 3D</span><span>◈ Voo livre</span><span>◈ 7 missões + 3 dragões selvagens</span><span>◈ Dia e noite dinâmicos</span></div><button id="start-btn">COMEÇAR A AVENTURA <span>→</span></button><button id="new-game-btn" class="new-game-btn hidden" type="button">CRIAR NOVA PARTIDA (APAGA O SAVE)</button><small>Teclado · Controle Xbox/PlayStation/USB/Bluetooth (Gamepad API) · Toque · Áudio opcional</small></div></div>
+  <div id="start-screen" class="modal-screen"><div class="start-art">✦ <span>✦</span> ✦</div><div class="modal-content"><div class="pretitle">UMA JORNADA ORIGINAL INSPIRADA EM AVENTURAS DE DRAGÕES</div><h1>ASAS DE<br><em>BRUMÁRIA</em></h1><p>Explore ilhas esquecidas, treine seu dragão, enfrente sentinelas inimigas , resgate filhotes perdidos e conquiste a confiança de dragões selvagens.</p><div class="features"><span>◈ Mundo 3D</span><span>◈ Voo livre</span><span>◈ 7 missões + contratos diários</span><span>◈ Dia e noite dinâmicos</span></div><button id="start-btn">COMEÇAR A AVENTURA <span>→</span></button><button id="new-game-btn" class="new-game-btn hidden" type="button">CRIAR NOVA PARTIDA (APAGA O SAVE)</button><small>Teclado · Controle Xbox/PlayStation/USB/Bluetooth (Gamepad API) · Toque · Áudio opcional</small></div></div>
   <div id="benchmark-controls" class="hidden" aria-label="Comparar desempenho dos gráficos">
     <button id="benchmark-toggle" type="button">COMPARAR FPS (B)</button>
     <button id="benchmark-copy" type="button" disabled>COPIAR RESULTADOS</button>

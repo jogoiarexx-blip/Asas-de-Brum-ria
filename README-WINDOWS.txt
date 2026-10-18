@@ -1,10 +1,10 @@
-ASAS DE BRUMÁRIA v1.3.1 — WINDOWS
+BRUMÁRIA 1.3.3 — MISSÕES DIÁRIAS E RESGATE
 
-Baixe o ZIP Windows e extraia em uma pasta. Execute JOGAR-WINDOWS.bat para iniciar o servidor local com o navegador.
-A versão Windows é um lançador para o jogo Three.js, não é um executável nativo de jogo.
-Requer navegador atualizado com WebGL2; pode precisar de internet para obter o Three.js na primeira execução.
-Para controle USB/Bluetooth, use controle reconhecido pela Gamepad API.
-G alterna perfis de qualidade, F3 mostra FPS, chamadas de GPU e quantidade de dragões simplificados.
-Testes automatizados locais: 252/252 aprovados. FPS real não medido em GPU de entrada.
+A versão Windows inicia um servidor local e abre o jogo no navegador; não é EXE nativo.
+A primeira execução requer conexão para obter o Three.js, depois utiliza o cache quando possível.
 
-V1.3.2: F3 abre diagnostico. Pressione B ou clique em COMPARAR FPS (B) para medir aproximadamente 15 segundos dos perfis LEVE, EQUILIBRADO e DETALHADO. O jogo pausa missões e combates durante o teste; depois restaura automaticamente a qualidade original. COPIAR RESULTADOS facilita compartilhar os números.
+Teclas: T estábulo e quadro diário · N avança 3 horas · F3 desempenho · B comparar FPS.
+Missão filhotes: voe lentamente e estabilize-se para recolher; leve cada um ao círculo no Refúgio.
+Dia do jogo: 12 minutos por ciclo. Contratos concluídos reabrem no dia seguinte.
+
+VERIFICAÇÃO: 292 testes automatizados sem falhas. Avaliação WebGL em hardware real pendente.

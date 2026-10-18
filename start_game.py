@@ -15,7 +15,7 @@ def cache_script(target,urls,min_size=500,max_size=160000):
     path.parent.mkdir(parents=True,exist_ok=True)
     for url in urls:
         try:
-            with urlopen(Request(url,headers={'User-Agent':'Brumaria-GLB/1.3.0'}),timeout=6) as response:
+            with urlopen(Request(url,headers={'User-Agent':'Brumaria-GLB/1.3.3'}),timeout=6) as response:
                 data=response.read(max_size+1)
             if min_size<len(data)<=max_size and b'import ' in data:
                 temp=path.with_suffix('.part');temp.write_bytes(data);temp.replace(path)
@@ -40,7 +40,7 @@ for candidate in ([port] if remote else range(port,port+20)):
     except OSError:continue
 if server is None:raise SystemExit('Nenhuma porta disponivel.')
 url=f'http://127.0.0.1:{port}/'
-print(f'Asas de Brumaria v1.3.1 em {url}',flush=True)
+print(f'Asas de Brumaria v1.3.3 em {url}',flush=True)
 if not remote:threading.Timer(1,lambda:webbrowser.open(url)).start()
 try:server.serve_forever()
 except KeyboardInterrupt:pass

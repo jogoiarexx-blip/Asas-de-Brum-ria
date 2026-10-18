@@ -6,7 +6,7 @@ import {SaveSystem,normalizeSave} from '../src/systems/SaveSystem.js';
 import {Progression} from '../src/systems/Progression.js';
 
 test('contratos oferecem duas atividades distintas com três objetivos e recompensa válida',()=>{
-  assert.deepEqual(Object.keys(CONTRACTS),['correio','ervas']);
+  assert.deepEqual(Object.keys(CONTRACTS),['correio','ervas','minérios','socorro']);
   assert.equal(CONTRACTS.correio.requiresMount,true);
   assert.equal(CONTRACTS.ervas.requiresMount,false);
   for(const contract of Object.values(CONTRACTS)){
@@ -44,7 +44,7 @@ test('estado de contratos inválido não concede prêmio nem desbloqueia missão
   const tasks=new VillageContracts({correio:{status:'hacked',collected:[true,true,true]},ervas:{status:'ready',collected:[]}});
   assert.equal(tasks.state.correio.status,'idle');
   assert.equal(tasks.talk('iara').action,'accepted');
-  assert.equal(tasks.talk('borin').action,'stable');
+  assert.equal(tasks.talk('borin').action,'accepted');
   assert.deepEqual(tasks.state.ervas.collected,[true,true,true]);
   assert.equal(tasks.talk('lume').reward,1);
 });

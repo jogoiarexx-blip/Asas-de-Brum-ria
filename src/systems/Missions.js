@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import { QUEST_DEFS,RING_POSITIONS,CRYSTAL_POSITIONS,TARGET_POSITIONS,HATCHLING_POSITIONS } from '../world/config.js';
+import {rescueApproach,deliveryReady,RESCUE_HOVER_SECONDS,RESCUE_NEST} from './RescueRules.js';
 export class Missions {
   constructor(scene,audio,onProgress,enemies=null,onAward=null) {
     this.scene=scene;this.audio=audio;this.onProgress=onProgress;this.enemies=enemies;this.onAward=onAward;
     this.stage=0;this.progress=0;this.rings=[];this.crystals=[];this.targets=[];this.hatchlings=[];
+    this.carriedIndex=-1;this.rescueHold=0;this.rescueLastHint=-1;
     this.build();this.refreshVisible();
   }
   get quest() { return QUEST_DEFS[this.stage]??null; }
@@ -62,12 +64,27 @@ export class Missions {
       const beam=new THREE.Mesh(new THREE.CylinderGeometry(.2,1.4,22,7,1,true),new THREE.MeshBasicMaterial({color:0x83ffc7,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=11;group.add(beam);
       group.userData.ring=ring;this.scene.add(group);this.hatchlings.push(group);
     }
+    // Santuário visível apenas durante a operação de transporte dos filhotes.
+    this.nest=new THREE.Group();this.nest.position.set(...RESCUE_NEST);
+    const nestMat=new THREE.MeshBasicMaterial({color:0xb4ffe2,side:THREE.DoubleSide});
+    const nestRing=new THREE.Mesh(new THREE.TorusGeometry(11,.32,7,36),nestMat);
+    nestRing.rotation.x=Math.PI/2;this.nest.add(nestRing);
+    const beacon=new THREE.Mesh(new THREE.CylinderGeometry(.15,1,18,6,1,true),
+      new THREE.MeshBasicMaterial({color:0x74ffd6,transparent:true,opacity:.22,depthWrite:false,side:THREE.DoubleSide}));
+    beacon.position.y=9;this.nest.add(beacon);this.scene.add(this.nest);
+  }
+  rescueDescription(){
+    if(this.stage!==5)return null;
+    if(this.carriedIndex>=0)return `FILHOTE A BORDO · Retorne ao círculo verde no Refúgio e reduza a velocidade para entregar (${this.progress}/3).`;
+    return this.rescueHold>0?`APROXIMAÇÃO DELICADA · Mantenha voo estável e lento: ${Math.round(100*this.rescueHold/RESCUE_HOVER_SECONDS)}%`: 
+      `Voe até o filhote, reduza para até 12 m/s e permaneça perto por 1,25 s. Depois leve-o ao Refúgio.`;
   }
   refreshVisible() {
     this.rings.forEach((g,i)=>g.visible=this.stage===1 && i===this.progress);
     this.crystals.forEach((g)=>g.visible=this.stage===2 && !g.userData.collected);
     this.targets.forEach((g)=>g.visible=this.stage===3 && !g.userData.destroyed);
-    this.hatchlings.forEach((g)=>g.visible=this.stage===5 && !g.userData.rescued);
+    this.hatchlings.forEach((g,i)=>g.visible=this.stage===5 && (!g.userData.rescued));
+    this.nest.visible=this.stage===5;
     this.enemies?.setActive(this.stage===4);
     this.onProgress?.();
   }
@@ -96,18 +113,20 @@ export class Missions {
     if(this.stage===2)return this.nearest(this.crystals.filter(g=>!g.userData.collected),dragon.group.position)?.position??null;
     if(this.stage===3)return this.nearest(this.targets.filter(g=>!g.userData.destroyed),dragon.group.position)?.position??null;
     if(this.stage===4)return this.enemies?.nearest(dragon.group.position)?.position??null;
-    if(this.stage===5)return this.nearest(this.hatchlings.filter(g=>!g.userData.rescued),dragon.group.position)?.position??null;
+    if(this.stage===5)return this.carriedIndex>=0?this.nest.position:this.nearest(this.hatchlings.filter(g=>!g.userData.rescued),dragon.group.position)?.position??null;
     return null;
   }
   snapshot(){
     return {stage:this.stage,progress:this.progress,
       crystals:this.crystals.map(g=>!!g.userData.collected),
       targets:this.targets.map(g=>!!g.userData.destroyed),
-      hatchlings:this.hatchlings.map(g=>!!g.userData.rescued),
+      hatchlings:this.hatchlings.map(g=>!!g.userData.rescued),carriedIndex:this.carriedIndex,rescueHold:this.rescueHold,
       enemies:this.enemies?.enemies.map(e=>e.health)??[3,3,3]};
   }
   restore(data){
     this.stage=Math.min(7,Math.max(0,data.stage));this.progress=data.progress;
+    this.carriedIndex=this.stage===5&&Number.isInteger(data.carriedIndex)&&data.carriedIndex>=0&&data.carriedIndex<this.hatchlings.length&&!data.hatchlings?.[data.carriedIndex]?data.carriedIndex:-1;
+    this.rescueHold=this.stage===5&&Number.isFinite(data.rescueHold)?Math.max(0,Math.min(RESCUE_HOVER_SECONDS,data.rescueHold)):0;
     this.crystals.forEach((g,i)=>g.userData.collected=!!data.crystals[i]);
     this.targets.forEach((g,i)=>g.userData.destroyed=!!data.targets[i]);
     this.hatchlings.forEach((g,i)=>g.userData.rescued=!!data.hatchlings[i]);
@@ -128,20 +147,35 @@ export class Missions {
         if(this.progress>=3){this.award();onToast('Sopro de fogo liberado! Use F.');}else this.refreshVisible();break;
       }
     }
-    if(this.stage===5 && dragon.riding){
-      for(const baby of this.hatchlings)if(!baby.userData.rescued && pos.distanceTo(baby.position)<9.5){
-        baby.userData.rescued=true;this.progress++;this.audio.play('rescue');onToast(`Filhote resgatado · ${this.progress}/3`);
-        if(this.progress>=3){this.award();onToast('Todos os filhotes salvos! Brumária está em paz.',6);}
-        else this.refreshVisible();
-        break;
-      }
+    if(this.stage===5){
+      if(this.carriedIndex>=0){
+        const carried=this.hatchlings[this.carriedIndex];
+        carried.position.set(pos.x+3,pos.y+2.5,pos.z+2);
+        if(deliveryReady({distance:pos.distanceTo(this.nest.position),speed:dragon.speed,riding:dragon.riding})){
+          carried.userData.rescued=true;carried.visible=false;this.carriedIndex=-1;this.rescueHold=0;
+          this.progress++;this.audio.play('rescue');onToast(`Filhote entregue em segurança · ${this.progress}/3`,5);
+          if(this.progress>=3){this.award();onToast('Todos os filhotes estão seguros no Refúgio! Retorne à vila.',6);}
+          else this.refreshVisible();
+          this.onProgress?.();this.onCheckpoint?.();
+        }
+      }else if(dragon.riding){
+        const baby=this.nearest(this.hatchlings.filter(g=>!g.userData.rescued),pos);
+        const distance=baby?pos.distanceTo(baby.position):Infinity;
+        this.rescueHold=rescueApproach({distance,speed:dragon.speed,riding:dragon.riding,dt,hold:this.rescueHold});
+        if(baby && this.rescueHold>=RESCUE_HOVER_SECONDS){
+          this.carriedIndex=this.hatchlings.indexOf(baby);this.rescueHold=0;
+          this.audio.play('pickup');onToast('Filhote protegido! Transporte-o até o círculo verde do Refúgio.',6);
+          this.onProgress?.();this.onCheckpoint?.();
+        }
+      }else this.rescueHold=0;
     }
     this.hatchlings.forEach((baby,i)=>{if(!baby.visible)return;
       baby.userData.ring.rotation.z+=dt*.5;
       baby.children[0].rotation.y=Math.sin(time*2+i)*.14;
       for(const {w,side} of baby.userData.wings)w.rotation.z=side*Math.sin(time*8+i)*.33;
-      baby.position.y=HATCHLING_POSITIONS[i][1]+Math.sin(time*2+i)*1.2;
+      if(i!==this.carriedIndex)baby.position.y=HATCHLING_POSITIONS[i][1]+Math.sin(time*2+i)*1.2;
     });
+    if(this.nest.visible)this.nest.children[0].rotation.z+=dt*.22;
     this.rings.forEach((ring,i)=>{if(ring.visible){ring.rotation.z+=dt*.16;ring.scale.setScalar(1+Math.sin(time*2.5)*.025);}});
     this.crystals.forEach((crystal,i)=>{if(crystal.visible){crystal.rotation.y+=dt*.5;crystal.children[0].rotation.z+=dt*.4;}});
     this.targets.forEach((target,i)=>{if(target.visible){target.rotation.y+=dt*.35;target.children[1].scale.setScalar(1+Math.sin(time*4+i)*.12);}});

@@ -3,12 +3,17 @@ export const DAY_SECONDS = 720;
 export const DEFAULT_PHASE = 0.43; // manhã avançada ao iniciar nova partida
 export function normalizeDayCycle(data){
   const phase=typeof data?.phase==='number'&&Number.isFinite(data.phase)?data.phase:DEFAULT_PHASE;
-  return {phase:Math.min(1-Number.EPSILON,Math.max(0,phase))};
+  const day=Number.isSafeInteger(data?.day)?Math.max(1,Math.min(1000000,data.day)):1;
+  return {phase:Math.min(1-Number.EPSILON,Math.max(0,phase)),day};
 }
 export function advanceDayCycle(data,seconds){
-  const phase=normalizeDayCycle(data).phase;
+  const current=normalizeDayCycle(data);
   const dt=Number.isFinite(seconds)?Math.max(0,seconds):0;
-  return {phase:(phase+(dt%DAY_SECONDS)/DAY_SECONDS)%1};
+  const elapsed=current.phase+dt/DAY_SECONDS;
+  return {phase:elapsed%1,day:Math.min(1000000,current.day+Math.floor(elapsed))};
+}
+export function advanceClockHours(state,hours=3){
+  return advanceDayCycle(state,Math.max(0,hours)*DAY_SECONDS/24);
 }
 export const clamp01=n=>Math.max(0,Math.min(1,n));
 export function daylight(phase){

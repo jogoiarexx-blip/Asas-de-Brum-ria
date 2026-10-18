@@ -21,10 +21,10 @@ test('ciclo atravessa meia-noite e preserva minutos excedentes',()=>{
   assert.equal(clockLabel(.75),'18:00');
 });
 test('ciclo ignora valores inválidos ou negativos para preservar saves',()=>{
-  assert.deepEqual(normalizeDayCycle(),{phase:DEFAULT_PHASE});
-  assert.deepEqual(normalizeDayCycle({phase:Infinity}),{phase:DEFAULT_PHASE});
-  assert.deepEqual(normalizeDayCycle({phase:-50}),{phase:0});
-  assert.deepEqual(advanceDayCycle({phase:.4},-8),{phase:.4});
+  assert.deepEqual(normalizeDayCycle(),{phase:DEFAULT_PHASE,day:1});
+  assert.deepEqual(normalizeDayCycle({phase:Infinity}),{phase:DEFAULT_PHASE,day:1});
+  assert.deepEqual(normalizeDayCycle({phase:-50}),{phase:0,day:1});
+  assert.deepEqual(advanceDayCycle({phase:.4,day:1},-8),{phase:.4,day:1});
 });
 test('altitude do sol muda entre manhã, tarde e noite',()=>{
   assert.ok(daylight(.5).sun>.95);
@@ -67,14 +67,14 @@ test('vento fraco desloca menos que tempestade nas mesmas condições',()=>{
 test('jogador antigo conserva missões e recebe relógio inicial sem perder progressão',()=>{
   const result=normalizeSave(minimal);
   assert.equal(result.mission.stage,4);
-  assert.deepEqual(result.dayNight,{phase:DEFAULT_PHASE});
+  assert.deepEqual(result.dayNight,{phase:DEFAULT_PHASE,day:1});
   assert.equal(result.progression.points,3);
 });
 test('horário salva e recupera a mesma chave da versão anterior',()=>{
   const db=new Map(),storage={getItem:k=>db.get(k)??null,setItem:(k,v)=>db.set(k,v)};
   const system=new SaveSystem(storage);
-  assert.equal(system.write({...minimal,dayNight:{phase:.82}}),true);
-  assert.deepEqual(system.read().dayNight,{phase:.82});
+  assert.equal(system.write({...minimal,dayNight:{phase:.82,day:1}}),true);
+  assert.deepEqual(system.read().dayNight,{phase:.82,day:1});
 });
 test('prévia 3D usa exatamente o mesmo Dragon e cada espécie sem compra automática',()=>{
   const preview=file('src/ui/StablePreview.js'),ui=file('src/ui/UI.js');

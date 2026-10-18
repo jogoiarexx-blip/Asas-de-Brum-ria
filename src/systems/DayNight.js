@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {advanceDayCycle,clockLabel,daylight,normalizeDayCycle} from './dayCycleMath.js';
+import {advanceDayCycle,advanceClockHours,clockLabel,daylight,normalizeDayCycle} from './dayCycleMath.js';
 
 /** Astros e estrelas usam primitivas locais, sem texturas ou rede. */
 export class DayNight {
@@ -21,7 +21,7 @@ export class DayNight {
   }
   snapshot(){return {...this.state};}
   // Avança a hora do céu sem confundir minutos de jogo com horas do relógio.
-  jumpHours(hours=3){this.state={phase:((this.state.phase+hours/24)%1+1)%1};this.clock=clockLabel(this.state.phase);}
+  jumpHours(hours=3){this.state=advanceClockHours(this.state,hours);this.clock=clockLabel(this.state.phase);}
   update(dt,focus){
     this.state=advanceDayCycle(this.state,dt);
     this.clock=clockLabel(this.state.phase);

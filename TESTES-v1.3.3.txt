@@ -1,0 +1,8 @@
+ASAS DE BRUMÁRIA v1.3.3 — VERIFICAÇÃO
+- npm run check: 292 testes automatizados aprovados; sem falhas.
+- Simulação da missão: três resgates e três entregas, recompensa uma vez, save durante transporte.
+- Calendário: virada diária, tecla N e compatibilidade com saves sem dia.
+- Contratos: quatro atividades, reset de concluídos, preservação de ativos e rotas diárias.
+- Física: descida gradual, subida segura e inclinação leve do personagem.
+- Distribuição: dois ZIPs separados (fonte e inicializador Windows web).
+- Limitação: renderização visual WebGL e FPS em GPU real ainda sem validação presencial.

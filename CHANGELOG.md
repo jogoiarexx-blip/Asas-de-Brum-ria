@@ -1,3 +1,17 @@
+## v1.3.3 — Novas missões, resgate e física
+
+- Novo ciclo de **dias numerados** persistidos sem perda de saves v1.
+- Quatro contratos repetíveis por dia, com reset somente de missões concluídas e preservação de tarefas ativas.
+- Nara é uma nova moradora; correio, ervas, fragmentos de minério e suprimentos contam com rotas alternadas a cada dia.
+- Missão de filhotes não é mais um simples voo por proximidade: aproximação lenta, estabilização, recolhimento, transporte ao santuário e entrega individual.
+- Filhote transportado e progresso de resgate persistem em save, inclusive após reinicialização.
+- Física de descida gradual e inclinação visual suave do personagem em terrenos irregulares.
+- Luzes locais não essenciais desligadas em gráficos LEVE/EQUILIBRADO para reduzir custo.
+- Quadro de missões diárias adicionado ao estábulo; minimapa mostra santuário durante transporte.
+- 292 testes automatizados aprovados, incluindo execução simulada completa da missão; renderização GPU não validada neste ambiente.
+
+---
+
 ## v1.3.2 — Evitar engasgos em explosões e medir FPS por perfil
 
 - Novo pool `ReusableSlots.js` e partículas pré-alocadas em `Effects.js`, mantendo renderização instanciada.
