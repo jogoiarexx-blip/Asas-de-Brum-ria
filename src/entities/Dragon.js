@@ -200,6 +200,18 @@ export class Dragon {
             armor.position.set(side*.43,.69-i*.07,-1.25+i*.77);armor.rotation.x=-.23;group.add(armor);
           }
         }
+      }else if(id==='furia_luz'){
+        // Smooth pale dorsal fins and characteristic swept-back ear fins.
+        for(const side of [-1,1]){
+          for(let i=0;i<4;i++){
+            const crest=new THREE.Mesh(new THREE.ConeGeometry(.16,.58-i*.07,5),mat);
+            crest.position.set(side*(.57+i*.12),.72-i*.11,-2.58+i*.69);
+            crest.rotation.z=-side*.83;crest.rotation.x=-.48;group.add(crest);
+          }
+          const ear=new THREE.Mesh(new THREE.ConeGeometry(.24,1.12,6),mat);
+          ear.position.set(side*.72,1.01,-2.76);
+          ear.rotation.z=-side*1.12;ear.rotation.x=-.48;group.add(ear);
+        }
       }else{
         for(const side of [-1,1]){
           for(let i=0;i<4;i++){
@@ -228,6 +240,12 @@ export class Dragon {
             plate.position.set(side*(.94+k*.09),.45,-.8+k*.8);
             group.add(plate);
           }
+        }else if(id==='furia_luz'){
+          for(let k=0;k<3;k++){
+            const fin=new THREE.Mesh(new THREE.ConeGeometry(.17,.57-k*.09,5),mat);
+            fin.position.set(side*(.72+k*.13),.57-k*.12,1.15+k*.56);
+            fin.rotation.z=-side*.8;fin.rotation.x=-.3;group.add(fin);
+          }
         }else{
           for(let k=0;k<3;k++){
             const blade=new THREE.Mesh(finGeo,mat);
@@ -240,7 +258,7 @@ export class Dragon {
       }
       group.visible=id==='nimbo';this.speciesOrnaments[id]=group;
     };
-    createAccents('nimbo',0x9de4c8);createAccents('brasa',0xffaf55);createAccents('raio',0xa7d9ff);
+    createAccents('nimbo',0x9de4c8);createAccents('brasa',0xffaf55);createAccents('raio',0xa7d9ff);createAccents('furia_luz',0xc3f1ff);
     this.muzzleGlow=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),new THREE.MeshBasicMaterial({color:0xffa852,transparent:true,opacity:.8,depthWrite:false}));
     this.muzzleGlow.position.set(0,-.4,-1.52);this.headPivot.add(this.muzzleGlow);this.muzzleGlow.visible=false;
     // Luz de identificação leve
@@ -294,14 +312,16 @@ export class Dragon {
   setSpecies(id,preset){
     this.speciesId=id;
     for(const [kind,group] of Object.entries(this.speciesOrnaments))group.visible=(kind===id);
-    this.muzzleGlow.material.color.setHex(id==='raio'?0x94dfff:id==='brasa'?0xff7438:0x95ffe0);
+    this.muzzleGlow.material.color.setHex(id==='furia_luz'?0xc7f7ff:id==='raio'?0x94dfff:id==='brasa'?0xff7438:0x95ffe0);
     const colors=preset.colors;
     [this.colorMaterials.dark,this.colorMaterials.bodyMat,this.colorMaterials.belly,this.colorMaterials.wingMat,this.colorMaterials.membrane,this.colorMaterials.horn].forEach((mat,i)=>mat.color.setHex(colors[i]));
-    this.wings.forEach(({wing})=>wing.scale.set(id==='raio'?1.17:id==='brasa'?.97:1,1,id==='brasa'?1.13:1));
-    this.tailFin.scale.setScalar(id==='raio'?1.25:id==='brasa'?1.5:1);
-    this.headPivot.scale.setScalar(id==='brasa'?1.12:id==='raio'?.93:1);
+    this.wings.forEach(({wing})=>wing.scale.set(id==='furia_luz'?1.11:id==='raio'?1.17:id==='brasa'?.97:1,1,id==='furia_luz'?1.09:id==='brasa'?1.13:1));
+    this.tailFin.scale.setScalar(id==='furia_luz'?.89:id==='raio'?1.25:id==='brasa'?1.5:1);
+    this.headPivot.scale.setScalar(id==='furia_luz'?.88:id==='brasa'?1.12:id==='raio'?.93:1);
     this.colorMaterials.scaleMat.color.setHex(colors[1]).multiplyScalar(1.25);
     this.colorMaterials.spotMat.color.setHex(colors[5]).lerp(new THREE.Color(colors[1]),.45);
+    this.accentLight.color.setHex(id==='furia_luz'?0xb9ebff:id==='brasa'?0xffa35d:id==='raio'?0x87c8ff:0x69eee5);
+    this.accentLight.intensity=id==='furia_luz'?6:8;
   }
   setStats(stats){
     const previous=this.stats?.maxEnergy??100;
