@@ -1,3 +1,13 @@
+# Asas de Brumária v1.4.5 — Fúria da Luz
+
+- **Novo dragão jogável:** Fúria da Luz, de tons branco-azulados, barbatanas arredondadas, chifres menores e brilho frio, disponível por **4 pontos de treinamento** no estábulo.
+- **Integrado:** seleção e prévia 3D usam o mecanismo atual de `SPECIES` e `Dragon.setSpecies`; voo, fogo, controles, câmera e upgrades continuam compartilhados com as outras espécies.
+- **Compatibilidade de saves:** o novo identificador `furia_luz` é reconhecido pelo carregamento anterior sem alterar o esquema de salvamento. Um save antigo permanece na espécie selecionada anteriormente.
+- **Testes acrescentados:** arquivo `tests/light-fury.test.js` verifica cores, atributos, desbloqueio, compra, restauração e compatibilidade com partidas antigas.
+- **Execução de testes:** o workflow de `npm run check` já está configurado em `.github/workflows/validate.yml`, mas não há resultado de execução confirmado no GitHub neste momento. O teste visual WebGL, FPS, combate e transições de missões ainda precisa ser validado no navegador.
+
+---
+
 # Asas de Brumária v1.4.4 — Dragões mais expressivos e florestas variadas
 
 ## Evolução visual desta versão
