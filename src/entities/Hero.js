@@ -28,7 +28,18 @@ export class Hero {
       arm.shoulder.rotation.x=THREE.MathUtils.damp(arm.shoulder.rotation.x,mounted?-.7:pose.arm*phase,11,dt);
       arm.elbow.rotation.x=THREE.MathUtils.damp(arm.elbow.rotation.x,mounted?-.64:-.18,10,dt);
     });
-    body.rotation.z=THREE.MathUtils.damp(body.rotation.z,mounted?Math.sin(now*2)*.015:pose.sway,7,dt);
+    // Balanço secundário: deslocamento de peso, mãos e cotovelos.
+    // Somente pivôs existentes; compatível com o modelo GLB opcional.
+    const motion=mounted?Math.min(1,Math.abs(this.dragon?.speed||0)/28):Math.min(1,this.moveSpeed/9);
+    arms.forEach((arm,i)=>{
+      const side=i===0?-1:1;
+      arm.shoulder.rotation.z=THREE.MathUtils.damp(arm.shoulder.rotation.z,
+        mounted?side*(-.12-.08*motion):side*(.07+.07*motion),9,dt);
+      arm.elbow.rotation.z=THREE.MathUtils.damp(arm.elbow.rotation.z,mounted?side*.09:side*.035,9,dt);
+    });
+    head.rotation.z=THREE.MathUtils.damp(head.rotation.z,
+      mounted?-this.dragon.bank*.22:pose.sway*.13,5,dt);
+    body.rotation.z=THREE.MathUtils.damp(body.rotation.z,mounted?-this.dragon.bank*.26+Math.sin(now*2)*.015:pose.sway,7,dt);
     body.scale.y=THREE.MathUtils.damp(body.scale.y,1+pose.breath,4,dt);
     head.rotation.y=THREE.MathUtils.damp(head.rotation.y,pose.headTurn,3,dt);
     body.rotation.x=THREE.MathUtils.damp(body.rotation.x,pose.bodyLean,7,dt);
