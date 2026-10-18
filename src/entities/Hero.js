@@ -41,7 +41,17 @@ export class Hero {
       mounted?-this.dragon.bank*.22:pose.sway*.13,5,dt);
     body.rotation.z=THREE.MathUtils.damp(body.rotation.z,mounted?-this.dragon.bank*.26+Math.sin(now*2)*.015:pose.sway,7,dt);
     body.scale.y=THREE.MathUtils.damp(body.scale.y,1+pose.breath,4,dt);
-    head.rotation.y=THREE.MathUtils.damp(head.rotation.y,pose.headTurn,3,dt);
+    const steer=mounted?(this.dragon?.turnAxis||0):0;
+    head.rotation.y=THREE.MathUtils.damp(head.rotation.y,pose.headTurn-steer*.22,3,dt);
+    // Rider anticipates maneuvers, but stays attached to the existing saddle rig.
+    if(mounted){
+      const climb=THREE.MathUtils.clamp((this.dragon?.verticalVelocity||0)/22,-1,1);
+      const speed=THREE.MathUtils.clamp((this.dragon?.speed||0)/45,0,1);
+      body.rotation.x=THREE.MathUtils.damp(body.rotation.x,.08-climb*.13+speed*.08,7,dt);
+      cape.rotation.z=THREE.MathUtils.damp(cape.rotation.z,-(this.dragon?.bank||0)*.22,6,dt);
+    }else{
+      cape.rotation.z=THREE.MathUtils.damp(cape.rotation.z,pose.sway*.42,6,dt);
+    }
     body.rotation.x=THREE.MathUtils.damp(body.rotation.x,pose.bodyLean,7,dt);
     cape.rotation.x=THREE.MathUtils.damp(cape.rotation.x,pose.cape+Math.sin(now*(mounted?6:9))*.04,5,dt);
   }
