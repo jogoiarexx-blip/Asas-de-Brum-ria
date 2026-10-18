@@ -264,6 +264,20 @@ export class World {
       for(let k=0;k<3;k++)addBatch(crowns[k],crownMaterial,trees,
         (t,d)=>{d.position.set(t.x,t.y+(3.1+k*.85)*t.size,t.z);d.scale.setScalar(t.size);},
         t=>leafPalette[t.palette],k===0,island.name);
+      // Sub-bosque instanciado: samambaias de duas tonalidades nas bordas das árvores.
+      // Sem hitboxes novas, sem sombras extras e com descarte por ilha já existente.
+      const fernGeo=this._fernGeo??(this._fernGeo=new THREE.ConeGeometry(.72,1.42,5));
+      const fernMat=this._fernMat??(this._fernMat=new THREE.MeshLambertMaterial({color:0xffffff,side:THREE.DoubleSide}));
+      for(let layer=0;layer<2;layer++){
+        addBatch(fernGeo,fernMat,trees,
+          (t,d)=>{
+            const angle=t.palette*1.57+layer*2.4;
+            d.position.set(t.x+Math.cos(angle)*t.size*1.22,t.y+.40*t.size,t.z+Math.sin(angle)*t.size*1.22);
+            d.rotation.y=angle;d.rotation.z=(layer===0?-.18:.2);
+            d.scale.set(.75*t.size,.64*t.size,.82*t.size);
+          },
+          t=>layer===0?0x377b56:leafPalette[t.palette],false,island.name);
+      }
       addBatch(stoneGeometry,stoneMaterial,rocks,
         (r,d)=>{d.position.set(r.x,r.y+r.size*.45,r.z);d.rotation.y=r.rotation;d.scale.set(1.35*r.size,.67*r.size,.95*r.size);},
         r=>r.palette,true,island.name);
