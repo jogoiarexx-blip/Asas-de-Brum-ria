@@ -1,3 +1,27 @@
+# Asas de Brumária v1.3.6 — Combate aéreo, esquiva e dragão gigante
+
+Esta etapa aprimora a jogabilidade sem alterar o formato dos salvamentos, missões, mapas ou recompensas.
+
+## Esquiva aérea
+- Em voo e montado, pressione **Q** (teclado), **R3** (analógico direito pressionado, controle padrão) ou **ESQUIVA** no celular.
+- Use **A/D** ou o analógico esquerdo para escolher o lado da esquiva; sem direção, alterna o lado automaticamente.
+- A manobra desloca o dragão **lateralmente por 0,34 segundo**, consome **18 de energia** e tem **2,25 segundos de recarga**.
+- Ataques inimigos não causam dano durante a curta manobra. A esquiva **não atravessa objetos**: paredes, rochas, barcos e outras colisões continuam ativos; ao bater, a manobra termina.
+- O HUD informa **ESQUIVA PRONTA / ESQUIVANDO / tempo de recarga**.
+
+## Inimigos e dragão gigante
+- As sentinelas passam a **flanquear o jogador em trajetórias laterais suaves** durante a perseguição; regras de combate próximo e missões são preservadas.
+- O dragão gigante antecipa moderadamente a direção do jogador antes de disparar (até **12 metros**), mas o projétil não o persegue depois do disparo. O anel vermelho de aviso permanece.
+- O chefe mostra **três marcas luminosas de dano** e brilho crescente conforme perde vida; os detalhes já aparecem corretamente ao carregar um salvamento antigo com o chefe danificado.
+- As marcas compartilham geometria e material, evitando luzes dinâmicas ou partículas permanentes adicionais.
+
+## Validação
+**338 testes aprovados (320 anteriores + 18 novos).** Testes de movimentação lateral, colisão, duração, recarga, controle, dano progressivo e recuperação do progresso. 
+
+**Limitação:** a renderização visual e o FPS real ainda precisam de teste em navegador com GPU/WebGL. A versão Windows utiliza inicializador local e navegador, não executável nativo.
+
+---
+
 # Asas de Brumária v1.3.5 — Estabilidade da expansão e chefe melhorado
 
 ## Atualização

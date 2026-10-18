@@ -54,5 +54,5 @@ test('controle inválido não impede o jogo com teclado',()=>{
 });
 test('códigos de menu e início permanecem independentes de ação',()=>{
  const state=readStandardPad(pad({pressed:[8,9,10,11]}));
- for(const key of ['p','start','shift','v'])assert.ok(state.held.has(key));
+ for(const key of ['p','start','shift','q'])assert.ok(state.held.has(key));
 });

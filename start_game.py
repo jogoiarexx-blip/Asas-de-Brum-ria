@@ -22,7 +22,7 @@ def cache_three():
     ]
     for url in urls:
         try:
-            request = Request(url, headers={'User-Agent': 'Brumaria-1.3.5/1.0'})
+            request = Request(url, headers={'User-Agent': 'Brumaria-1.3.6/1.0'})
             with urlopen(request, timeout=5) as handle:
                 data = handle.read(1_500_001)
             if 100_000 < len(data) < 1_500_000 and b'export' in data:
@@ -49,7 +49,7 @@ def cache_glb_addons():
         for provider in ('https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/',
                          'https://unpkg.com/three@0.180.0/examples/jsm/'):
             try:
-                request=Request(provider+name,headers={'User-Agent':'Brumaria-GLB/1.3.5'})
+                request=Request(provider+name,headers={'User-Agent':'Brumaria-GLB/1.3.6'})
                 with urlopen(request,timeout=6) as response: data=response.read(160_001)
                 if 500 < len(data) < 160_000 and b'import ' in data:
                     tmp=target.with_suffix('.part');tmp.write_bytes(data);tmp.replace(target)
@@ -72,7 +72,7 @@ for candidate in ([port] if remote else range(port, port + 20)):
 if server is None:
     raise SystemExit(f'Nao foi possivel iniciar o servidor na porta {port}.')
 url = f'http://127.0.0.1:{port}/'
-print(f'\nASAS DE BRUMARIA v1.3.5 - JOGO THREE.JS\nServidor na porta {port}.\nPressione Ctrl+C para encerrar.\n', flush=True)
+print(f'\nASAS DE BRUMARIA v1.3.6 - JOGO THREE.JS\nServidor na porta {port}.\nPressione Ctrl+C para encerrar.\n', flush=True)
 if not remote:
     print(f'Acesse: {url}\n', flush=True)
     threading.Timer(1, lambda: webbrowser.open(url)).start()

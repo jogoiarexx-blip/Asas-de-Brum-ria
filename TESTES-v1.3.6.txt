@@ -1,0 +1,8 @@
+Asas de Brumária v1.3.6 — Verificação técnica
+
+- npm run check: 338/338 testes aprovados, 0 falhas.
+- 320 testes anteriores + 18 novos sobre esquiva, colisões, controle R3, boss aim/dano, salvamento e HUD.
+- Novo módulo src/systems/AerialCombat.js com cálculos determinísticos e sem dependência de Three.js.
+- Saves, missão das montanhas e contratos diários não foram alterados.
+- Integração WebGL real e FPS de GPU dedicada/integrada não comprovados neste ambiente.
+- Windows: inicializador PowerShell abre servidor local e navegador; depende de internet na primeira execução para Three.js.

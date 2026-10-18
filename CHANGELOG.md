@@ -1,3 +1,14 @@
+## v1.3.6 — Esquivas, combate tático e chefe danificado
+
+- Esquiva aérea lateral com Q/R3/toque, recarga, custo de energia, tempo de invulnerabilidade e colisão mantida.
+- Sentinelas com aproximação lateral limitada e previsível em vez de perseguição sempre em linha direta.
+- Mira antecipatória limitada do dragão gigante: sem mísseis teleguiados, com aviso de sopro preservado.
+- Três marcas luminosas e efeito de impacto no chefe conforme a resistência cai; progresso da missão continua compatível com saves antigos.
+- HUD apresenta estado da esquiva e recarga.
+- 18 testes de regressão novos (338 no total), sem alterar os dados salvos nem os recursos do mapa.
+
+---
+
 ## v1.3.5 — Transição robusta e chefe sinalizado
 
 - Regressão corrigida: chegada ao portal antes de concluir o carregamento dinâmico não deixa o jogador atravessar para uma região vazia.

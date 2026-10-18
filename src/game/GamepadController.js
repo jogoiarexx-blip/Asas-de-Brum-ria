@@ -16,7 +16,7 @@ export function readStandardPad(pad){
   const state=EMPTY();if(!pad?.connected||pad.mapping!=='standard')return state;
   state.connected=true;state.id=pad.id||'Controle';
   const held=state.held;
-  const bindings={0:'e',1:'escape',2:'f',3:'t',4:'ctrl',5:'space',8:'p',9:'start',10:'shift',11:'v',12:'w',13:'s',14:'a',15:'d'};
+  const bindings={0:'e',1:'escape',2:'f',3:'t',4:'ctrl',5:'space',8:'p',9:'start',10:'shift',11:'q',12:'w',13:'s',14:'a',15:'d'};
   for(const [button,key] of Object.entries(bindings))if(pressed(pad,+button))held.add(key);
   state.throttle=value(pad,7);state.brake=value(pad,6);
   if(state.throttle>.2)held.add('w');

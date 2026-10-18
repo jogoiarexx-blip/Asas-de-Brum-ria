@@ -27,8 +27,10 @@ function stubThree(){
 async function moduleWithThree(stub){
  const url=new URL('../src/world/MountainRegion.js',import.meta.url);
  const rules=new URL('../src/systems/ExpeditionRules.js',import.meta.url).href;
+ const aerial=new URL('../src/systems/AerialCombat.js',import.meta.url).href;
  let code=readFileSync(url,'utf8').replace("import * as THREE from 'three';",'const THREE=globalThis.__brumariaMockThree;');
  code=code.replace("from '../systems/ExpeditionRules.js'",`from '${rules}'`);
+ code=code.replace("from '../systems/AerialCombat.js'",`from '${aerial}'`);
  globalThis.__brumariaMockThree=stub;
  try{return await import('data:text/javascript,'+encodeURIComponent(code));}finally{delete globalThis.__brumariaMockThree;}
 }

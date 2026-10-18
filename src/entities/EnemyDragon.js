@@ -3,6 +3,7 @@ import {limitedTurn,pursuitYaw,shortestAngle} from '../systems/combatMath.js';
 import {approach,clamp} from '../utils/math.js';
 import {actorVisualLevel,shouldAnimateActor,enemySimulationStep} from '../systems/ActorLOD.js';
 import {dragonMeshVisibility} from '../systems/DragonMeshLOD.js';
+import {enemyFlank} from '../systems/AerialCombat.js';
 import {buildDragonProxy} from './DragonProxy.js';
 
 // Malha leve e original, com asas de duas juntas, cauda articulada e cabeça animada.
@@ -96,6 +97,8 @@ export class EnemyDragon {
       const avoid=distance<26;
       const direction=this.scratchDirection.subVectors(p,origin).normalize();
       destination.copy(p).addScaledVector(direction,avoid?-32:-2);
+      const flank=enemyFlank(distance,time,this.index);
+      destination.x-=direction.z*flank;destination.z+=direction.x*flank;
       destination.y=p.y+Math.sin(time*1.1+this.phase)*6+(this.index-1)*4;
     } else {
       const a=time*.23+this.phase;

@@ -5,6 +5,7 @@ import {moveFlightWithCollisions} from '../utils/spatialSweep.js';
 import {flightPhase, liftBlend} from './flightMath.js';
 import {wingPose} from './wingPose.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
+import {startDodge,advanceDodge,dodgeImpulse} from '../systems/AerialCombat.js';
 import {steeringRate,bankTarget,flightPitch,tailYaw,landingDescent,smoothedTurn} from './flightHandling.js';
 const scaleMesh = (geometry,material,x,y,z,sx=1,sy=1,sz=1) => {
   const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);mesh.castShadow=true;return mesh;
@@ -40,7 +41,7 @@ export class Dragon {
     this.group.position.set(8,world.groundHeightAt(8,7,1.65)+2.55,7);
     this.yaw=-.5;this.speed=0;this.airborne=false;this.riding=false;this.energy=100;this.fireCooldown=0;
     this.wings=[];this.tail=[];this.legs=[];this.forelegs=[];this.windStrength=0;this.windDrift=0;this.speciesId='nimbo';this.stats=null;
-    this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.createModel();
+    this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.dodgeRemaining=0;this.dodgeCooldown=0;this.dodgeSide=1;this.createModel();
   }
   createModel() {
     const dark=new THREE.MeshStandardMaterial({color:0x172e3c,roughness:.7,metalness:.1});
@@ -260,10 +261,25 @@ export class Dragon {
   }
   forward() { const {x,z}=forwardFromYaw(this.yaw);return new THREE.Vector3(x,0,z); }
   setWind(strength){this.windStrength=clamp(Number.isFinite(strength)?strength:0,0,1);}
+  tryDodge(axis=0){
+    const attempt=startDodge({riding:this.riding,airborne:this.airborne,
+      energy:this.energy,cooldown:this.dodgeCooldown,axis,previousSide:this.dodgeSide});
+    if(!attempt.ok)return false;
+    this.energy-=attempt.cost;
+    this.dodgeRemaining=attempt.duration;
+    this.dodgeCooldown=attempt.cooldown;
+    this.dodgeSide=attempt.side;
+    return true;
+  }
   mount() { this.riding=true;this.speed=0;this.steerInput=0;this.turnAxis=0; }
-  dismount() { this.riding=false;this.speed=0;this.airborne=false;this.verticalVelocity=0;this.takeoffTime=0;this.bank=0;this.steerInput=0;this.turnAxis=0; }
+  dismount() { this.riding=false;this.dodgeRemaining=0;this.speed=0;this.airborne=false;this.verticalVelocity=0;this.takeoffTime=0;this.bank=0;this.steerInput=0;this.turnAxis=0; }
   update(dt,input,time) {
     this.fireCooldown=Math.max(0,this.fireCooldown-dt);
+    const activeDodge=this.dodgeRemaining;
+    const dodgeStep=activeDodge>0||this.dodgeCooldown>0
+      ?advanceDodge({remaining:activeDodge,cooldown:this.dodgeCooldown},dt)
+      :{remaining:0,cooldown:0};
+    this.dodgeCooldown=dodgeStep.cooldown;
     this.attackTime=Math.max(0,this.attackTime-dt);this.hurtTime=Math.max(0,this.hurtTime-dt);
     if(this.riding) {
       const travel=input.axis?.('w','s')??((input.isDown('s','arrowdown')?1:0)-(input.isDown('w','arrowup')?1:0));
@@ -281,7 +297,8 @@ export class Dragon {
       if(up&&!this.airborne){this.airborne=true;this.takeoffTime=0;this.landingTimer=0;}
       const gust=this.airborne?windDisplacement(this.windStrength,time,dt,this.group.position.y-this.world.heightAt(this.group.position.x,this.group.position.z)): {x:0,z:0};
       this.windDrift=Math.hypot(gust.x,gust.z)/Math.max(dt,.001);
-      const horizontal={x:forward.x*this.speed*dt+gust.x,z:forward.z*this.speed*dt+gust.z};
+      const strafe=this.airborne?dodgeImpulse(this.yaw,this.dodgeSide,dt,activeDodge):{x:0,z:0};
+      const horizontal={x:forward.x*this.speed*dt+gust.x+strafe.x,z:forward.z*this.speed*dt+gust.z+strafe.z};
       if(this.airborne){
         // Sweep vertical and horizontal motion together. Testing only the old Y
         // let a dragon enter the column while climbing or diving in one frame.
@@ -294,7 +311,8 @@ export class Dragon {
           this.world.obstacles,(x,z)=>this.world.groundHeightAt(x,z,1.15));
         this.group.position.set(moved.x,moved.y,moved.z);
         if(moved.blockedVertical)this.verticalVelocity=0;
-        if(moved.blockedHorizontal)this.speed=Math.min(this.speed,8);
+        if(moved.blockedHorizontal){this.speed=Math.min(this.speed,8);this.dodgeRemaining=0;}
+        else this.dodgeRemaining=dodgeStep.remaining;
         const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58;
         if(this.group.position.y<=floor+.015){
           this.group.position.y=floor;
@@ -304,6 +322,7 @@ export class Dragon {
           }
         }
       } else {
+        this.dodgeRemaining=0;
         const moved=moveWithCollisions(this.group.position,horizontal,1.65,this.world.obstacles,
           (x,z)=>this.world.walkable(x,z),
           o=>obstacleBlocks(o,this.group.position.y,1.65),
@@ -316,10 +335,12 @@ export class Dragon {
       this.group.position.y=clamp(this.group.position.y,
         Math.max(2.7,this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58),110);
       if(boost){this.energy=Math.max(0,this.energy-(this.stats?.drain??17)*dt);}else{this.energy=Math.min(this.stats?.maxEnergy??100,this.energy+(this.stats?.regen??12)*dt);}
-      this.bank=THREE.MathUtils.damp(this.bank,bankTarget(this.turnAxis,this.speed,this.airborne,gust.x),4.2,dt);
+      const bankGoal=bankTarget(this.turnAxis,this.speed,this.airborne,gust.x)+(this.dodgeRemaining>0?this.dodgeSide*.26:0);
+      this.bank=THREE.MathUtils.damp(this.bank,bankGoal,4.2,dt);
       this.visual.rotation.z=THREE.MathUtils.damp(this.visual.rotation.z,this.bank,5.5,dt);
       this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,flightPitch(this.verticalVelocity,this.airborne)+(up?-.075:down?.05:0),3.7,dt);
     } else {
+      this.dodgeRemaining=0;
       this.windDrift=0;this.steerInput=0;this.turnAxis=smoothedTurn(this.turnAxis,0,dt);this.bank=THREE.MathUtils.damp(this.bank,0,3,dt);
       const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.65)+2.58;
       this.group.position.y=THREE.MathUtils.damp(this.group.position.y,Math.max(2.7,floor),3,dt);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {BOAT_POSITIONS,GIANT_DRAGON_POSITION} from '../systems/ExpeditionRules.js';
+import {bossDamageStage} from '../systems/AerialCombat.js';
 
 // This entire module is dynamically imported ONLY while flying toward the gate.
 // Its scene resources and collision volumes are released when leaving the zone.
@@ -7,7 +8,7 @@ export class MountainRegion {
   constructor(scene,world,progress){
     this.scene=scene;this.world=world;this.progress=progress;
     this.root=new THREE.Group();this.root.name='MAPA_MONTANHAS_SOMBRA';scene.add(this.root);
-    this.obstacles=[];this.boats=[];this.boatSails=[];this.boatObstacles=[];this.boss=null;this.elapsed=0;this.attackClock=0;
+    this.obstacles=[];this.boats=[];this.boatSails=[];this.boatObstacles=[];this.boss=null;this.elapsed=0;this.attackClock=0;this.bossHitFlash=0;
     this.buildTerrain();this.buildShips();this.buildBoss();this.refresh();
     world.obstacles.push(...this.obstacles);
   }
@@ -80,7 +81,8 @@ export class MountainRegion {
   }
   buildBoss(){
     const group=new THREE.Group();group.position.set(GIANT_DRAGON_POSITION.x,GIANT_DRAGON_POSITION.y,GIANT_DRAGON_POSITION.z);
-    const scales=new THREE.MeshStandardMaterial({color:0x402744,metalness:.12,roughness:.75,flatShading:true});
+    const scales=new THREE.MeshStandardMaterial({color:0x402744,metalness:.12,roughness:.75,flatShading:true,emissive:0x8f223f,emissiveIntensity:.02});
+    this.bossScales=scales;
     const wingMat=new THREE.MeshLambertMaterial({color:0x8a3969,side:THREE.DoubleSide});
     const gold=new THREE.MeshBasicMaterial({color:0xf9a848});
     const body=new THREE.Mesh(new THREE.IcosahedronGeometry(12,1),scales);body.scale.set(1.5,.8,2.2);group.add(body);
@@ -99,6 +101,16 @@ export class MountainRegion {
     }
     const tail=new THREE.Mesh(new THREE.ConeGeometry(4,27,6),scales);tail.rotation.x=Math.PI/2;tail.position.z=20;group.add(tail);
     const crown=new THREE.Mesh(new THREE.TorusGeometry(14,.45,7,32),gold);crown.rotation.x=Math.PI/2;group.add(crown);
+    // Three low-poly glowing scars share one geometry/material and appear
+    // progressively as the boss loses health. No particles or lights added.
+    this.bossDamageMarks=[];
+    const scarGeometry=new THREE.BoxGeometry(9,.38,1.9);
+    const scarMaterial=new THREE.MeshBasicMaterial({color:0xff805d});
+    for(const [i,x,y,z] of [[0,-9,7,-2],[1,2,9,4],[2,10,6,10]]){
+      const scar=new THREE.Mesh(scarGeometry,scarMaterial);
+      scar.position.set(x,y,z);scar.rotation.y=i*.7;scar.rotation.z=i*.35-.25;
+      scar.visible=false;group.add(scar);this.bossDamageMarks.push(scar);
+    }
     const warningMaterial=new THREE.MeshBasicMaterial({color:0xff5c33,transparent:true,opacity:.86,depthWrite:false});
     const warning=new THREE.Mesh(new THREE.TorusGeometry(20,.65,6,48),warningMaterial);
     warning.rotation.x=Math.PI/2;warning.position.y=17;warning.visible=false;group.add(warning);
@@ -114,12 +126,18 @@ export class MountainRegion {
       const hull=this.boatObstacles[i];if(hull){hull.top=exists?17:2;hull.bottom=exists?2:2;}
     });
     this.boss.visible=this.progress.phase==='boss';
+    const stage=bossDamageStage(this.progress.bossHealth);
+    for(let i=0;i<this.bossDamageMarks.length;i++)this.bossDamageMarks[i].visible=i<stage;
+    this.bossScales.emissiveIntensity=.02+stage*.06;
   }
+  flashBossHit(){this.bossHitFlash=.36;}
   setBossWarning(active){
     if(this.bossWarningRing)this.bossWarningRing.visible=Boolean(active)&&this.boss.visible;
   }
   update(dt,time){
     this.elapsed+=dt;
+    this.bossHitFlash=Math.max(0,this.bossHitFlash-dt);
+    if(this.bossScales)this.bossScales.emissiveIntensity=.02+bossDamageStage(this.progress.bossHealth)*.06+this.bossHitFlash*1.1;
     this.boats.forEach((boat,i)=>{if(boat.visible)boat.position.y=BOAT_POSITIONS[i][1]+Math.sin(time*1.7+i)*.5;});
     if(this.boss.visible){
       this.boss.position.x=GIANT_DRAGON_POSITION.x+Math.sin(time*.35)*13;

@@ -36,6 +36,7 @@ import {WildDragons} from '../entities/WildDragons.js';
 import {ExpeditionProgress,MOUNTAIN_PORTAL,MOUNTAIN_ENTRY,shouldLoadMountain,shouldEnterMountain,shouldExitMountain,shouldHoldMountainGate} from '../systems/ExpeditionRules.js';
 import {readGPUSettings,writeGPUSettings,chooseContextOptions,describeRenderer} from '../systems/GPUSettings.js';
 import {bossAttackStep} from '../systems/MountainCombat.js';
+import {bossAimPoint} from '../systems/AerialCombat.js';
 
 export class Game {
   constructor() {
@@ -63,7 +64,7 @@ export class Game {
     this.graphics.resolutionScale=this.gpuPrefs.resolution;this.graphics.shadowsAllowed=this.gpuPrefs.shadows;this.graphics.apply();
     this.initGPUOptions();this.updateGraphicsLabel();
     this.saveSystem=new SaveSystem();this.savedData=this.saveSystem.read();
-    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this._bossShotDirection=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
+    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this._bossShotDirection=new THREE.Vector3();this._bossPredicted=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
     this.portal=this.makeMountainPortal();
     this.progression=new Progression(this.savedData?.progression);this.autoSaveTime=0;this.lastSaveOk=null;
     this.world=new World(this.scene);
@@ -457,7 +458,8 @@ export class Game {
     this.mountain?.setBossWarning(attack.charging);
     if(attack.warn)this.ui.toast('⚠ DRAGÃO GIGANTE PREPARANDO FOGO! DESVIE!',2.4);
     if(attack.fire&&boss){
-      const direction=this._bossShotDirection.copy(this.dragon.group.position).sub(boss.position).normalize();
+      const ahead=bossAimPoint(boss.position,this.dragon.group.position,this.dragon.forward(),this.dragon.speed);
+      const direction=this._bossShotDirection.copy(this._bossPredicted.set(ahead.x,ahead.y,ahead.z)).sub(boss.position).normalize();
       this.spawnProjectile(boss.position,direction,'enemy');
     }
     this.updateExpeditionUI();
@@ -623,7 +625,9 @@ export class Game {
     }
   }
   takeDamage(amount){
-    if(!this.dragon.riding||this.hurtImmunity>0)return false;
+    // The short lateral evasive window avoids a projectile, even if its
+    // swept sphere intersects the player on this frame.
+    if(!this.dragon.riding||this.hurtImmunity>0||this.dragon.dodgeRemaining>0)return false;
     this.hurtImmunity=.9;this.hitFlash=.5;this.health=Math.max(0,this.health-amount);
     this.dragon.triggerHurt();
     this.audio.play('hurt');
@@ -663,7 +667,7 @@ export class Game {
             }
           }else if(this.expedition.phase==='boss'&&segmentSphereHit(from,to,this.mountain.boss.position,16)){
             const result=this.expedition.hitBoss();hit=result.hit;this.effects.burst(this.mountain.boss.position,'fire',17);
-            this.audio.play('hit');this.mountain.refresh();
+            this.audio.play('hit');this.mountain.flashBossHit();this.mountain.refresh();
             this.ui.toast(result.defeated?'Dragão gigante derrotado! Volte a oeste pelo portal.':`Dragão gigante: ${this.expedition.bossHealth}/12`,4);
             this.saveGame();
           }
@@ -818,6 +822,14 @@ export class Game {
       } else {
       if(this.input.consume('e')){if(this.ui.dialogueOpen)this.ui.hideDialogue();else if(!this.interactVillager()&&!this.interactWildDragon())this.mountOrDismount();}
       if(this.input.consume('f'))this.fire();
+      if(!this.ui.dialogueOpen&&this.input.consume('q')){
+        const sideways=this.input.axis('a','d');
+        if(this.dragon.tryDodge(sideways)){
+          this.ui.toast('ESQUIVA! ✦ Ataques evitados por um instante.',1.2);
+        }else if(this.dragon.riding&&this.dragon.airborne){
+          this.ui.toast('Esquiva indisponível: aguarde a recarga ou recupere energia.',2);
+        }
+      }
       if(this.input.consume('r'))this.resetPosition();
       if(this.input.consume('m')){this.audio.muted=!this.audio.muted;this.ui.toast(this.audio.muted?'Áudio desativado':'Áudio ativado');}
       }
