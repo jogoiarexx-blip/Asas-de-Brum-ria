@@ -3,6 +3,20 @@ import {WEATHER_MODES,weatherMode,normalizeWeather,advanceWeather,nextWeather} f
 import {skyLighting} from './dayCycleMath.js';
 import {weatherParticleLimit} from './PerformanceBudget.js';
 
+/** Transparent rain streaks replace visible white square sprites in flight. */
+export function makeRainStreakTexture(){
+  const canvas=document.createElement('canvas');canvas.width=16;canvas.height=64;
+  const ctx=canvas.getContext('2d');
+  const alpha=ctx.createLinearGradient(0,0,0,64);
+  alpha.addColorStop(0,'rgba(218,239,252,0)');
+  alpha.addColorStop(.26,'rgba(218,239,252,.18)');
+  alpha.addColorStop(.85,'rgba(227,248,255,.8)');
+  alpha.addColorStop(1,'rgba(227,248,255,0)');
+  ctx.strokeStyle=alpha;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(9,4);ctx.lineTo(7,61);ctx.stroke();
+  const texture=new THREE.CanvasTexture(canvas);texture.magFilter=THREE.LinearFilter;
+  return texture;
+}
+
 /** Chuva e relâmpagos exclusivamente locais, sem texturas externas ou partículas infinitas. */
 export class Weather {
   constructor(scene,world,camera,initial){
@@ -14,7 +28,8 @@ export class Weather {
     this.speed=new Float32Array(this.count);
     this.reseed();
     this.geometry=new THREE.BufferGeometry();this.geometry.setAttribute('position',new THREE.BufferAttribute(this.positions,3));
-    this.material=new THREE.PointsMaterial({color:0xb4d9ee,size:.7,transparent:true,opacity:.70,depthWrite:false,fog:true,sizeAttenuation:true});
+    this.rainTexture=makeRainStreakTexture();
+    this.material=new THREE.PointsMaterial({color:0xc2e9f3,size:1.35,map:this.rainTexture,transparent:true,opacity:.78,depthWrite:false,fog:true,sizeAttenuation:true,alphaTest:.015});
     this.rain=new THREE.Points(this.geometry,this.material);this.rain.frustumCulled=false;
     this.rain.visible=false;scene.add(this.rain);
     this.activeCount=this.count;
@@ -70,5 +85,5 @@ export class Weather {
     this.flash.intensity=this.flashTime>0?15*this.flashTime/.17:0;
     return previous!==this.state.mode;
   }
-  dispose(){this.scene.remove(this.rain,this.flash);this.geometry.dispose();this.material.dispose();}
+  dispose(){this.scene.remove(this.rain,this.flash);this.geometry.dispose();this.material.dispose();this.rainTexture.dispose();}
 }

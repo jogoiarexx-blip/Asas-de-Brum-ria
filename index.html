@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#071a25">
   <meta name="description" content="Asas de Brumária: explore ilhas, monte em seu dragão e complete missões.">
-  <title>Asas de Brumária v1.4.0 — Aventura de Dragões</title>
+  <title>Asas de Brumária v1.4.1 — Aventura de Dragões</title>
   <link rel="stylesheet" href="./src/ui/style.css">
 </head>
 <body>
@@ -17,6 +17,10 @@
     </div>
     <div class="mission-card"><div class="eyebrow"><span class="pulse"></span> MISSÃO ATIVA <span id="quest-index">01 / 04</span></div><h2 id="quest-title">A PRIMEIRA CONEXÃO</h2><p id="quest-desc">Aproxime-se do dragão e monte nele.</p><div id="quest-progress"></div></div>
     <div class="map-panel"><div class="map-head"><span>MAPA DAS ILHAS</span><span class="map-north">N ↑</span></div><canvas id="mini-map" width="160" height="160" aria-label="Minimapa"></canvas><div class="map-footer" id="waypoint">OBJETIVO A 0m</div></div>
+    <div id="mission-compass" class="mission-compass hidden" role="status" aria-live="off">
+      <span id="mission-compass-arrow" aria-hidden="true">↑</span>
+      <div><strong id="mission-compass-title">PRÓXIMO OBJETIVO</strong><small id="mission-compass-distance">150 m · FRENTE</small></div>
+    </div>
     <div id="toast" aria-live="polite"></div>
     <button id="stable-toggle" class="stable-toggle" type="button" aria-label="Abrir estábulo de dragões">🐉 ESTÁBULO <span>T</span></button>
     <div id="expedition-status" class="expedition-status">MARCOS 0/5 · AMIZADES 0/3</div>
@@ -58,7 +62,7 @@
       <div class="stable-balance"><strong id="train-points">0</strong> PONTOS DE TREINAMENTO <span id="train-circuits">0 circuitos</span></div>
       <div id="discovery-list" class="discovery-list">Marcos encontrados: 0/5</div>
       <h3>QUADRO DE MISSÕES · <span id="daily-day">DIA 1</span></h3>
-      <p class="daily-board-note">Fale com Iara, Lume, Borin ou Nara para aceitar tarefas. A cada novo dia surgem novas rotas e recompensas.</p>
+      <p class="daily-board-note">Fale com Iara, Lume, Borin, Nara ou Tavi para aceitar tarefas. A cada novo dia surgem novas rotas e recompensas.</p>
       <div id="daily-board" class="daily-board" aria-label="Missões diárias disponíveis"></div>
       <div id="wild-list" class="wild-list" aria-label="Dragões selvagens para amansar"></div>
       <div class="preview-panel"><canvas id="stable-preview-canvas" aria-label="Modelo 3D giratório do dragão selecionado"></canvas><div class="preview-info"><strong id="stable-preview-name">Nimbo · Asa da Névoa</strong><small id="stable-preview-caption">Arraste para girar · Visualização 3D dos dragões</small></div></div>

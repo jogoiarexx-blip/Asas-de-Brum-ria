@@ -3,6 +3,7 @@ import { ISLANDS } from './config.js';
 import { seededRandom, clamp } from '../utils/math.js';
 import { obstacleCeiling } from '../utils/collision.js';
 import { surfaceHeightAt,flattenVillageGround } from '../utils/surfaces.js';
+import {terrainPalette} from './TerrainPalette.js';
 import {applyIslandVisibility,shouldRefreshClouds,wrappedCloudX} from './VisibilityBudget.js';
 const brown = new THREE.MeshLambertMaterial({color:0x855b37});
 const leafPalette = [0x245d49,0x2b7355,0x398565,0x31735c];
@@ -57,7 +58,7 @@ export class World {
     sunOrb.position.set(-400,270,-520); scene.add(sunOrb);this.sunOrb=sunOrb;
     const waterTexture = this.makeWaterTexture();
     this.waterTexture=waterTexture;
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),new THREE.MeshPhongMaterial({color:0x2b9ab9,shininess:100,specular:0x86d8ee,map:waterTexture,transparent:true,opacity:.95}));
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(1800,1800),new THREE.MeshPhongMaterial({color:0x287da2,shininess:115,specular:0xb6ebed,map:waterTexture,bumpMap:waterTexture,bumpScale:.095,transparent:false}));
     water.rotation.x=-Math.PI/2; water.position.y=-.9; water.receiveShadow=true;scene.add(water);
     for (const island of ISLANDS) this.buildIsland(island);
     this.flushFoliage();
@@ -74,16 +75,19 @@ export class World {
   }
   buildIsland(island) {
     const N=84,R=27,pos=[],colors=[],indices=[];
-    const sand=new THREE.Color(0xbcb584), grass=new THREE.Color(0x477f53), high=new THREE.Color(0x648a65), rock=new THREE.Color(0x657b70);
+    // Subtle patches and steep-edge rock blending add definition using existing vertex colors.
     for(let ring=0;ring<=R;ring++) {
       const rr=ring/R*island.r;
       for(let j=0;j<=N;j++){
         const a=j/N*Math.PI*2,x=island.x+Math.cos(a)*rr,z=island.z+Math.sin(a)*rr;
         const y=this.islandHeight(island,x,z);
         pos.push(x,y,z);
-        const c = y<2?sand.clone():y<12?grass.clone():high.clone().lerp(rock,clamp((y-18)/14,0,.75));
-        const tint=(Math.sin(x*.15)*Math.cos(z*.1)+1)*.045;
-        c.offsetHSL(0,0,tint-.045);colors.push(c.r,c.g,c.b);
+        const dx=(this.islandHeight(island,x+1.1,z)-this.islandHeight(island,x-1.1,z))*.45;
+        const dz=(this.islandHeight(island,x,z+1.1)-this.islandHeight(island,x,z-1.1))*.45;
+        const slope=clamp(Math.hypot(dx,dz)/3.2,0,1);
+        const detail=Math.sin(x*.17+island.seed)*Math.cos(z*.13-island.seed);
+        const c=terrainPalette(y,slope,detail);
+        colors.push(c[0],c[1],c[2]);
       }
     }
     for(let ring=0;ring<R;ring++)for(let j=0;j<N;j++){

@@ -1,3 +1,14 @@
+## v1.4.1 — Missões mais claras e gráficos mais detalhados
+
+- Bússola contextual com direção, distância, altitude e nome do objetivo, inclusive sentinelas e santuário dos filhotes.
+- Tavi e missão aérea diária Vigília dos Horizontes (três balizas, retorno ao NPC, recompensa); reaberta no dia seguinte sem perder progresso.
+- TerrainPalette: areia/grama/rocha em transições suaves por altura e encosta; materiais de água aprimorados sem malhas extras.
+- Chuva com textura de filete transparente, em vez de sprites quadrados.
+- Correção de sobreposição do aviso do portal no minimapa e indicação da vila na última missão.
+- Sem novos downloads de modelos ou texturas externos.
+
+---
+
 ## v1.4.0 — Contra-ataque, IA evasiva e física de voo
 
 - Abertura pós-sopro do dragão gigante: dano dobrado com janela de 1,05/1,30 s, com aviso no HUD, interrupção de ataque e reação visual de cambalear.

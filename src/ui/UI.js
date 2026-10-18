@@ -5,6 +5,7 @@ import {CONTRACTS} from '../systems/VillageContracts.js';
 import {CIRCUITS} from '../systems/Training.js';
 import {LANDMARKS} from '../systems/Discovery.js';
 import {WILD_DRAGON_DEFS} from '../systems/WildBonds.js';
+import {objectiveGuidance,missionObjectiveName} from '../systems/ObjectiveGuidance.js';
 export class UI {
   constructor(){
     this.mode=document.getElementById('mode-pill');this.fps=document.getElementById('fps-pill');
@@ -16,6 +17,8 @@ export class UI {
     this.healthLabel=document.getElementById('health-label');
     this.hitOverlay=document.getElementById('hurt-overlay');this.targetLock=document.getElementById('target-lock');
     this.waypoint=document.getElementById('waypoint');this.toastElement=document.getElementById('toast');
+    this.compass=document.getElementById('mission-compass');this.compassArrow=document.getElementById('mission-compass-arrow');
+    this.compassTitle=document.getElementById('mission-compass-title');this.compassDistance=document.getElementById('mission-compass-distance');
     this.interaction=document.getElementById('interaction');this.mini=document.getElementById('mini-map');this.ctx=this.mini.getContext('2d');
     this.lastStage=-1;this.lastProgress=-1;this.toastTimer=null;this.uiClock=0;
     this.stable=document.getElementById('stable');this.trainingStatus=document.getElementById('training-status');
@@ -160,6 +163,16 @@ export class UI {
     const target=mountainTarget??game.training.waypoint??contractTarget??missions.waypoint(dragon);
     const dist=target?Math.round(position.distanceTo(target)):0;
     this.waypoint.textContent=game.inMountain?`EXPEDIÇÃO: ALVO A ${dist} m`:game.training.active?`TREINO: ${dist} m`:contractTarget?`CONTRATO A ${dist} m`:missions.complete?'ARQUIPÉLAGO LIBERADO':missions.stage===6?'VOLTE À VILA · TECLA T':`OBJETIVO A ${dist} m`;
+    const yaw=dragon.riding?dragon.yaw:hero.group.rotation.y;
+    const guide=objectiveGuidance(position,target,yaw);
+    this.compass.classList.toggle('hidden',!guide);
+    if(guide){
+      this.compassArrow.textContent=guide.near?'◆':guide.arrow;
+      const name=game.training.active?'PRÓXIMO ARO':contractTarget?contract.title:
+        missionObjectiveName(missions.stage,missions.carriedIndex>=0,game.inMountain,game.expedition.phase);
+      this.compassTitle.textContent=name;
+      this.compassDistance.textContent=guide.near?'ALVO PRÓXIMO':`${guide.distance} m · ${guide.direction}${guide.altitudeHint?' · '+guide.altitudeHint:''}`;
+    }
     this.contractStatus.classList.toggle('hidden',!activeContract);
     if(activeContract)this.contractStatus.textContent=`${contract.title} · ${state.collected.filter(Boolean).length}/${contract.points.length}${state.status==='ready'?' · VOLTE AO NPC':''}`;
     this.trainingStatus.classList.toggle('hidden',!game.training.active);

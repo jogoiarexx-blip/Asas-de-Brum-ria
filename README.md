@@ -1,3 +1,17 @@
+# Asas de Brumária v1.4.1 — Orientação de missões e melhorias visuais
+
+- **Bússola de objetivos no HUD:** seta indica a direção relativa ao jogador, distância real até o alvo, instrução para subir ou descer e nome do objetivo. Funciona para sentinelas, aros, filhotes, contratos, treinamento, barcos e chefe. A missão final agora aponta para a vila.
+- **Nova missão diária:** Tavi, o Vigia dos Horizontes, oferece a **Vigília dos Horizontes**: voe por três balizas espalhadas pelo arquipélago e retorne a ele para receber dois pontos de treinamento. O contrato pode ser repetido a cada dia de jogo, com pequenas mudanças na rota. As quatro missões diárias anteriores continuam funcionando e os saves antigos são compatíveis.
+- **Terreno:** cores por altura e inclinação produzem transições entre praia, vegetação e afloramentos rochosos com o mesmo número de malhas de terreno.
+- **Água:** reflexos especulares e mapa de relevo (bump) reutilizam a textura gerada no próprio jogo, sem downloads nem objetos extras.
+- **Chuva:** as partículas deixam de parecer quadrados brancos e passam a usar um pequeno traço texturizado e transparente, mantendo um único draw call.
+- **HUD:** cartão do novo mapa não sobrepõe mais o minimapa, e o guia de missões se adapta a telas menores.
+- **Compatibilidade:** regras de combate, salvamentos, missões anteriores e perfis GPU preservados.
+
+**Validação:** execute `npm run check`. Os testes automatizados não substituem um teste visual em GPU real. No Windows, a distribuição continua sendo um jogo para navegador com inicializador PowerShell, não um executável nativo independente.
+
+---
+
 # Asas de Brumária v1.4.0 — Voo aerodinâmico, sentinelas reativas e contra-ataque no chefe
 
 ## Principais melhorias

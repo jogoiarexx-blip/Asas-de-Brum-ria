@@ -1,0 +1,6 @@
+Asas de Brumária v1.4.1 — Verificação
+
+Novidades: orientação por objetivo, nova missão diária, cores do terreno, água e chuva.
+Testes: executar npm run check (Node.js 22).
+A publicação online deve ser confirmada separadamente pelo workflow do GitHub Pages.
+Teste visual WebGL e FPS real dependem de GPU/browser.

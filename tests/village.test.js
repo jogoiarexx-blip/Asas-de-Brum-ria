@@ -6,7 +6,7 @@ import {SaveSystem,normalizeSave} from '../src/systems/SaveSystem.js';
 import {Progression} from '../src/systems/Progression.js';
 
 test('contratos oferecem duas atividades distintas com três objetivos e recompensa válida',()=>{
-  assert.deepEqual(Object.keys(CONTRACTS),['correio','ervas','minérios','socorro']);
+  assert.deepEqual(Object.keys(CONTRACTS),['correio','ervas','minérios','socorro','patrulha']);
   assert.equal(CONTRACTS.correio.requiresMount,true);
   assert.equal(CONTRACTS.ervas.requiresMount,false);
   for(const contract of Object.values(CONTRACTS)){

@@ -114,6 +114,7 @@ export class Missions {
     if(this.stage===3)return this.nearest(this.targets.filter(g=>!g.userData.destroyed),dragon.group.position)?.position??null;
     if(this.stage===4)return this.enemies?.nearest(dragon.group.position)?.position??null;
     if(this.stage===5)return this.carriedIndex>=0?this.nest.position:this.nearest(this.hatchlings.filter(g=>!g.userData.rescued),dragon.group.position)?.position??null;
+    if(this.stage===6)return new THREE.Vector3(8,dragon.world.groundHeightAt(8,7,1.65)+4,7);
     return null;
   }
   snapshot(){

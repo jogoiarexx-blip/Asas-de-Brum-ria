@@ -12,7 +12,10 @@ export const CONTRACTS=Object.freeze({
     points:[[-29,0,-39],[41,0,40],[-39,0,14]]},
   socorro:{title:'SUPRIMENTOS DE EMERGÊNCIA',npc:'nara',reward:2,requiresMount:true,
     description:'Leve três caixas de suprimentos às ilhas afastadas e retorne para Nara.',
-    points:[[-182,30,-123],[168,35,104],[196,32,-160]]}
+    points:[[-182,30,-123],[168,35,104],[196,32,-160]]},
+  patrulha:{title:'VIGÍLIA DOS HORIZONTES',npc:'tavi',reward:2,requiresMount:true,
+    description:'Sobrevoe três balizas de patrulha entre as ilhas e informe Tavi ao regressar.',
+    points:[[-115,42,79],[121,44,32],[174,38,-110]]}
 });
 const safeStatus=value=>['idle','active','ready','done'].includes(value)?value:'idle';
 const dayNumber=value=>Number.isSafeInteger(value)?Math.min(1000000,Math.max(1,value)):1;
