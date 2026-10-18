@@ -16,9 +16,9 @@ function stubThree(){
   class Mesh extends Obj{constructor(geometry,material){super();this.geometry=geometry;this.material=material;}}
   class Instanced extends Mesh{constructor(geometry,material,max){super(geometry,material);this.maxCount=max;this.instanceMatrix={needsUpdate:false};this.count=max;this.matrices=[];}
     setMatrixAt(index,matrix){this.matrices[index]=matrix;}}
-  class Material{constructor(options){Object.assign(this,options);}dispose(){disposed++;}}
+  class Material{constructor(options){Object.assign(this,options);if(typeof options?.color==='number')this.color=new Color(options.color);}dispose(){disposed++;}}
   class Attribute{constructor(buffer,count){this.buffer=buffer;this.count=count;}}
-  class Color{constructor(hex){this.r=((hex>>16)&255)/255;this.g=((hex>>8)&255)/255;this.b=(hex&255)/255;}}
+  class Color{constructor(hex){this.setHex(hex);}setHex(hex){this.r=((hex>>16)&255)/255;this.g=((hex>>8)&255)/255;this.b=(hex&255)/255;return this;}}
   return {THREE:{Group:Obj,Object3D:Obj,Mesh,InstancedMesh:Instanced,BufferGeometry:Geometry,Float32BufferAttribute:Attribute,Color,
     MeshLambertMaterial:Material,MeshStandardMaterial:Material,MeshBasicMaterial:Material,
     ConeGeometry:Geometry,CylinderGeometry:Geometry,BoxGeometry:Geometry,IcosahedronGeometry:Geometry,

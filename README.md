@@ -1,3 +1,31 @@
+# Asas de Brumária v1.3.7 — Pouso seguro, impactos e novos sopros do chefe
+
+## Evolução da física
+
+- O dragão só aterrissa quando há **superfície firme e caminhável**, espaço livre, inclinação moderada e velocidades controladas. Não aterrissa automaticamente sobre o mar ou junto de encostas perigosas.
+- A validação amostra oito pontos em volta das patas, além do centro, para evitar ficar preso em bordas de ilha e terrenos inclinados.
+- Se chegar ao solo em alta velocidade, o voo continua até reduzir a velocidade e encontrar terreno seguro; para pousar solte CTRL, freie com S/LT e escolha local plano.
+- Nas colisões fortes, o dragão perde velocidade e recebe uma pequena inclinação de impacto. Os estilhaços reutilizam as partículas instanciadas existentes (sem luzes novas).
+- Mantida a varredura de colisão 3D para esquiva e turbo, sem atravessar estruturas.
+
+## Dragão gigante — novos padrões
+
+- **Sopro direcionado:** projétil único com mira preditiva (já existente, reforçado).
+- **Leque de fogo:** três projéteis abertos na horizontal, com anel laranja.
+- **Chamas em alturas diferentes:** três projéteis com inclinações verticais, com anel azul, disponível quando a vida do chefe chega à segunda fase.
+- Os avisos textuais e a cor da aura identificam o ataque antes do disparo. Mudanças de fase durante o aviso não trocam o golpe anunciado; janela mínima de 0,95 s preservada.
+- Máximo de três projéteis por ciclo, usando o pool do combate; efeitos de sopro compartilham as malhas instanciadas. O HUD mostra aviso de sopro iminente.
+
+## Compatibilidade e validação
+
+Os salvamentos, missões diárias, transporte de filhotes, expansão das montanhas, controles, GLB e configurações de GPU não foram alterados. Código-fonte e versão Windows são dois ZIPs independentes. A versão Windows usa inicializador de navegador, não EXE nativo.
+
+**364/364 testes automatizados aprovados** (338 anteriores + 26 novos). Os testes incluem o comportamento de pouso, colisão, velocidades, três padrões de ataque, contagem limitada e manutenção do aviso durante uma troca de fase.
+
+**Limitação:** ainda falta testar visualmente o jogo em um navegador com GPU/WebGL e medir a taxa de quadros em hardware de entrada. O número de testes não prova desempenho real.
+
+---
+
 # Asas de Brumária v1.3.6 — Combate aéreo, esquiva e dragão gigante
 
 Esta etapa aprimora a jogabilidade sem alterar o formato dos salvamentos, missões, mapas ou recompensas.

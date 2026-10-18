@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { approach, clamp, forwardFromYaw, seededRandom } from '../utils/math.js';
 import {moveWithCollisions, obstacleBlocks} from '../utils/collision.js';
 import {moveFlightWithCollisions} from '../utils/spatialSweep.js';
+import {inspectLanding,flightCollisionResponse} from './LandingPhysics.js';
 import {flightPhase, liftBlend} from './flightMath.js';
 import {wingPose} from './wingPose.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
@@ -41,7 +42,7 @@ export class Dragon {
     this.group.position.set(8,world.groundHeightAt(8,7,1.65)+2.55,7);
     this.yaw=-.5;this.speed=0;this.airborne=false;this.riding=false;this.energy=100;this.fireCooldown=0;
     this.wings=[];this.tail=[];this.legs=[];this.forelegs=[];this.windStrength=0;this.windDrift=0;this.speciesId='nimbo';this.stats=null;
-    this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.dodgeRemaining=0;this.dodgeCooldown=0;this.dodgeSide=1;this.createModel();
+    this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.dodgeRemaining=0;this.dodgeCooldown=0;this.dodgeSide=1;this.impactCooldown=0;this.impactPulse=0;this.impactKick=0;this.createModel();
   }
   createModel() {
     const dark=new THREE.MeshStandardMaterial({color:0x172e3c,roughness:.7,metalness:.1});
@@ -275,6 +276,8 @@ export class Dragon {
   dismount() { this.riding=false;this.dodgeRemaining=0;this.speed=0;this.airborne=false;this.verticalVelocity=0;this.takeoffTime=0;this.bank=0;this.steerInput=0;this.turnAxis=0; }
   update(dt,input,time) {
     this.fireCooldown=Math.max(0,this.fireCooldown-dt);
+    this.impactCooldown=Math.max(0,this.impactCooldown-dt);
+    this.impactKick=Math.max(0,this.impactKick-dt*2.6);
     const activeDodge=this.dodgeRemaining;
     const dodgeStep=activeDodge>0||this.dodgeCooldown>0
       ?advanceDodge({remaining:activeDodge,cooldown:this.dodgeCooldown},dt)
@@ -306,19 +309,37 @@ export class Dragon {
         const floorBefore=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58;
         const desired=landingDescent({airborne:true,speed:this.speed,height:this.group.position.y-floorBefore,up,down});
         this.verticalVelocity=approach(this.verticalVelocity,desired,dt*(up?69:down?64:48));
+        const attemptedVertical=this.verticalVelocity;
         const moved=moveFlightWithCollisions(this.group.position,
           {x:horizontal.x,y:this.verticalVelocity*dt,z:horizontal.z},1.15,1.65,
           this.world.obstacles,(x,z)=>this.world.groundHeightAt(x,z,1.15));
         this.group.position.set(moved.x,moved.y,moved.z);
+        const impact=flightCollisionResponse({speed:this.speed,
+          blockedHorizontal:moved.blockedHorizontal,blockedVertical:moved.blockedVertical,
+          verticalSpeed:this.verticalVelocity});
         if(moved.blockedVertical)this.verticalVelocity=0;
-        if(moved.blockedHorizontal){this.speed=Math.min(this.speed,8);this.dodgeRemaining=0;}
+        if(moved.blockedHorizontal){this.speed=impact.speed;this.dodgeRemaining=0;}
+        if(impact.intensity>.16&&this.impactCooldown<=0&&
+           (moved.blockedHorizontal||this.world.walkable(this.group.position.x,this.group.position.z))){
+          this.impactPulse=impact.intensity;this.impactKick=impact.intensity;
+          this.impactCooldown=.55;
+        }
         else this.dodgeRemaining=dodgeStep.remaining;
         const floor=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58;
         if(this.group.position.y<=floor+.015){
           this.group.position.y=floor;
-          const obstruction=this.world.clearanceAt(this.group.position.x,this.group.position.z,1.15);
-          if(!up&&!Number.isFinite(obstruction)){
+          const landing=inspectLanding({x:this.group.position.x,z:this.group.position.z,
+            radius:1.15,speed:this.speed,verticalSpeed:attemptedVertical,
+            groundAt:(x,z)=>this.world.groundHeightAt(x,z,1.15),
+            walkable:(x,z)=>this.world.walkable(x,z),
+            clearanceAt:(x,z,r)=>this.world.clearanceAt(x,z,r)});
+          if(!up&&landing.safe){
             this.airborne=false;this.takeoffTime=0;this.verticalVelocity=0;this.landingTimer=.52;
+          }else if(this.airborne){
+            // Skim over unsafe surfaces until the pilot reduces speed or
+            // finds a flat island; never land on water or a cliff edge.
+            this.verticalVelocity=Math.max(0,this.verticalVelocity);
+            this.group.position.y=Math.max(this.group.position.y,floor+.06);
           }
         }
       } else {
@@ -338,7 +359,7 @@ export class Dragon {
       const bankGoal=bankTarget(this.turnAxis,this.speed,this.airborne,gust.x)+(this.dodgeRemaining>0?this.dodgeSide*.26:0);
       this.bank=THREE.MathUtils.damp(this.bank,bankGoal,4.2,dt);
       this.visual.rotation.z=THREE.MathUtils.damp(this.visual.rotation.z,this.bank,5.5,dt);
-      this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,flightPitch(this.verticalVelocity,this.airborne)+(up?-.075:down?.05:0),3.7,dt);
+      this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,flightPitch(this.verticalVelocity,this.airborne)+(up?-.075:down?.05:0)-this.impactKick*.12,3.7,dt);
     } else {
       this.dodgeRemaining=0;
       this.windDrift=0;this.steerInput=0;this.turnAxis=smoothedTurn(this.turnAxis,0,dt);this.bank=THREE.MathUtils.damp(this.bank,0,3,dt);

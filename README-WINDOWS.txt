@@ -1,14 +1,19 @@
-NOVO v1.3.6: Q no teclado, R3 no gamepad ou ESQUIVA no toque. A/D escolhe o lado. Requer voo e 18 de energia; recarga de 2,25 segundos. O dragão gigante fica marcado por danos progressivos.
+ASAS DE BRUMÁRIA v1.3.7 — NOVAS MANOBRAS E DRAGÃO GIGANTE
 
-NOVO V1.3.6: O portal aguarda o novo mapa terminar de carregar. O dragão gigante sinaliza sopro de fogo com um anel vermelho antes de disparar; rochas e efeitos otimizados.
+Ao pousar: solte CTRL, reduza a velocidade (S/LT) e procure uma ilha ou plataforma plana. Água, encostas muito inclinadas e bordas não permitem aterrissagem.
+Na batalha: observe o aviso colorido do chefe. Vermelho: direcionado. Laranja: leque. Azul: tiros em alturas diferentes. Esquiva: Q / R3 / botão ESQUIVA.
 
-BRUMÁRIA 1.3.6 — NOVO MAPA E OPÇÕES DE GPU
+NOVO v1.3.7: Q no teclado, R3 no gamepad ou ESQUIVA no toque. A/D escolhe o lado. Requer voo e 18 de energia; recarga de 2,25 segundos. O dragão gigante fica marcado por danos progressivos.
+
+NOVO V1.3.7: O portal aguarda o novo mapa terminar de carregar. O dragão gigante sinaliza sopro de fogo com um anel vermelho antes de disparar; rochas e efeitos otimizados.
+
+BRUMÁRIA 1.3.7 — NOVO MAPA E OPÇÕES DE GPU
 
 O novo cenário só carrega ao voar para LESTE até o portal azul (X≈328, Z≈35), após desbloquear fogo. Destrua os três barcos, derrote o dragão gigante e retorne para receber recompensa.
 
 ⚙ GPU abre opções de alto desempenho/baixo consumo (preferência WebGL, não seleção garantida de placa), resolução de 50/75/100%, sombras e antialias. Reinicie para aplicar. F3 diagnostica desempenho.
 
-BRUMÁRIA 1.3.6 — MISSÕES DIÁRIAS E RESGATE
+BRUMÁRIA 1.3.7 — MISSÕES DIÁRIAS E RESGATE
 
 A versão Windows inicia um servidor local e abre o jogo no navegador; não é EXE nativo.
 A primeira execução requer conexão para obter o Three.js, depois utiliza o cache quando possível.
@@ -17,11 +22,11 @@ Teclas: T estábulo e quadro diário · N avança 3 horas · F3 desempenho · B 
 Missão filhotes: voe lentamente e estabilize-se para recolher; leve cada um ao círculo no Refúgio.
 Dia do jogo: 12 minutos por ciclo. Contratos concluídos reabrem no dia seguinte.
 
-VERIFICAÇÃO: 338 testes automatizados sem falhas. Avaliação WebGL em hardware real pendente.
+VERIFICAÇÃO: 364 testes automatizados sem falhas. Avaliação WebGL em hardware real pendente.
 
 ---
 
-ASAS DE BRUMARIA 1.3.6 - WINDOWS (sem Python)
+ASAS DE BRUMARIA 1.3.7 - WINDOWS (sem Python)
 
 1. Extraia TODOS os arquivos do ZIP para uma pasta.
 2. Clique duas vezes em JOGAR-WINDOWS.bat.
@@ -51,4 +56,4 @@ LOD V1.3.0: personagens e inimigos distantes usam animacao economica; no modo LE
 
 Asas de Brumária v1.3.1: dragões distantes usam malhas mais leves, herói com animações aprimoradas. F3 mostra a quantidade de proxies.
 
-V1.3.6: F3 abre diagnostico. Pressione B ou clique em COMPARAR FPS (B) para medir aproximadamente 15 segundos dos perfis LEVE, EQUILIBRADO e DETALHADO. O jogo pausa missões e combates durante o teste; depois restaura automaticamente a qualidade original. COPIAR RESULTADOS facilita compartilhar os números.
+V1.3.7: F3 abre diagnostico. Pressione B ou clique em COMPARAR FPS (B) para medir aproximadamente 15 segundos dos perfis LEVE, EQUILIBRADO e DETALHADO. O jogo pausa missões e combates durante o teste; depois restaura automaticamente a qualidade original. COPIAR RESULTADOS facilita compartilhar os números.

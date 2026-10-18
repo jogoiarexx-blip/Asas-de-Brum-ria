@@ -1,3 +1,14 @@
+## v1.3.7 — Pouso em terrenos inclinados, impacto e batalha variada
+
+- Introduzida inspeção de pouso com superfície caminhável, inclinação em oito pontos, velocidade e obstáculos; impede contato automático com oceano e bordas perigosas.
+- Corrigida checagem da velocidade vertical: utiliza valor anterior ao bloqueio físico para não aceitar descida excessiva.
+- Impulso visual em colisões fortes e estilhaços instanciados com cooldown, sem novas luzes ou objetos gráficos permanentes.
+- Dragão gigante alterna disparos direcionados, leque e alturas diferentes, limitado a três projéteis por ciclo.
+- Alertas específicos, cores diferentes do anel e janela de aviso de 0,95 s preservada quando a vida cai para a segunda fase.
+- Total: 364 testes automatizados aprovados (26 novos), sem alterações nos salvamentos.
+
+---
+
 ## v1.3.6 — Esquivas, combate tático e chefe danificado
 
 - Esquiva aérea lateral com Q/R3/toque, recarga, custo de energia, tempo de invulnerabilidade e colisão mantida.

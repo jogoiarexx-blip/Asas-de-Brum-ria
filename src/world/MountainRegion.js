@@ -131,8 +131,13 @@ export class MountainRegion {
     this.bossScales.emissiveIntensity=.02+stage*.06;
   }
   flashBossHit(){this.bossHitFlash=.36;}
-  setBossWarning(active){
-    if(this.bossWarningRing)this.bossWarningRing.visible=Boolean(active)&&this.boss.visible;
+  setBossWarning(active,pattern='aimed'){
+    if(!this.bossWarningRing)return;
+    this.bossWarningRing.visible=Boolean(active)&&this.boss.visible;
+    if(this.bossWarningRing.visible){
+      const hex=pattern==='fan'?0xffb547:pattern==='vertical'?0x99caff:0xff5c33;
+      this.bossWarningRing.material.color.setHex(hex);
+    }
   }
   update(dt,time){
     this.elapsed+=dt;

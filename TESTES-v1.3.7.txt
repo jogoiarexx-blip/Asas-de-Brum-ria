@@ -1,0 +1,7 @@
+Asas de Brumária v1.3.7 — Resultado de verificações
+
+node tests/check-project.mjs + node --test tests/*.test.js
+TOTAL: 364 testes aprovados, 0 falhas (338 + 26 novos).
+Cobertura nova: segurança do pouso, mar, encosta, velocidade, obstáculos, colisões com esquiva; ataque do chefe em três padrões, aviso mínimo e limite de projéteis.
+Servidor local HTTP, integridade ZIP e publicação GitHub Pages devem ser validados separadamente.
+Sem teste visual WebGL real nem FPS de GPU validado neste ambiente.

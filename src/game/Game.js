@@ -35,7 +35,7 @@ import {WildBonds} from '../systems/WildBonds.js';
 import {WildDragons} from '../entities/WildDragons.js';
 import {ExpeditionProgress,MOUNTAIN_PORTAL,MOUNTAIN_ENTRY,shouldLoadMountain,shouldEnterMountain,shouldExitMountain,shouldHoldMountainGate} from '../systems/ExpeditionRules.js';
 import {readGPUSettings,writeGPUSettings,chooseContextOptions,describeRenderer} from '../systems/GPUSettings.js';
-import {bossAttackStep} from '../systems/MountainCombat.js';
+import {bossAttackStep,bossAttackPattern,bossShotDirections,bossPatternLabel} from '../systems/MountainCombat.js';
 import {bossAimPoint} from '../systems/AerialCombat.js';
 
 export class Game {
@@ -64,7 +64,7 @@ export class Game {
     this.graphics.resolutionScale=this.gpuPrefs.resolution;this.graphics.shadowsAllowed=this.gpuPrefs.shadows;this.graphics.apply();
     this.initGPUOptions();this.updateGraphicsLabel();
     this.saveSystem=new SaveSystem();this.savedData=this.saveSystem.read();
-    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this._bossShotDirection=new THREE.Vector3();this._bossPredicted=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
+    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this.bossAttackCount=0;this.bossWarnedPattern=null;this._bossVolleyVector=new THREE.Vector3();this._bossShotDirection=new THREE.Vector3();this._bossPredicted=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
     this.portal=this.makeMountainPortal();
     this.progression=new Progression(this.savedData?.progression);this.autoSaveTime=0;this.lastSaveOk=null;
     this.world=new World(this.scene);
@@ -455,12 +455,24 @@ export class Game {
     const active=this.inMountain&&this.expedition.phase==='boss'&&riding&&bossDistance>19&&bossDistance<230;
     const attack=bossAttackStep(this.bossAttackState,dt,{active,health:this.expedition.bossHealth});
     this.bossAttackState=attack.state;
-    this.mountain?.setBossWarning(attack.charging);
-    if(attack.warn)this.ui.toast('⚠ DRAGÃO GIGANTE PREPARANDO FOGO! DESVIE!',2.4);
+    const plannedPattern=bossAttackPattern(this.bossAttackCount,this.expedition.bossHealth);
+    if(attack.warn)this.bossWarnedPattern=plannedPattern;
+    if(!active)this.bossWarnedPattern=null;
+    // If the boss loses enough health during an active tell, don't change the
+    // projectile pattern after the player already chose an evasive route.
+    const attackPattern=this.bossWarnedPattern??plannedPattern;
+    this.mountain?.setBossWarning(attack.charging,attackPattern);
+    if(attack.warn)this.ui.toast('⚠ '+bossPatternLabel(attackPattern),2.6);
     if(attack.fire&&boss){
       const ahead=bossAimPoint(boss.position,this.dragon.group.position,this.dragon.forward(),this.dragon.speed);
       const direction=this._bossShotDirection.copy(this._bossPredicted.set(ahead.x,ahead.y,ahead.z)).sub(boss.position).normalize();
-      this.spawnProjectile(boss.position,direction,'enemy');
+      // Up to 3 pooled bullets; no new point lights, geometry or materials.
+      for(const aim of bossShotDirections(direction,attackPattern)){
+        this._bossVolleyVector.set(aim.x,aim.y,aim.z);
+        this.spawnProjectile(boss.position,this._bossVolleyVector,'enemy');
+      }
+      this.effects.burst(boss.position,'enemy',8);
+      this.bossAttackCount++;this.bossWarnedPattern=null;
     }
     this.updateExpeditionUI();
   }
@@ -836,6 +848,11 @@ export class Game {
       if(this.ui.dialogueOpen)this.input.down.clear();
       this.dragon.setWind(this.weather.mode.wind);
       this.dragon.update(dt,this.input,this.elapsed);
+      if(this.dragon.impactPulse>0){
+        this.effects.burst(this.dragon.group.position,'impact',Math.min(10,Math.ceil(7*this.dragon.impactPulse)));
+        this.audio.play('hit');
+        this.dragon.impactPulse=0;
+      }
       this.hero.update(dt,this.input,this.elapsed);
       this.missions.update(dt,this.elapsed,this.dragon,text=>this.ui.toast(text));
       this.updateContracts();
