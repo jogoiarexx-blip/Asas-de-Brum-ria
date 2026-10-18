@@ -117,6 +117,24 @@ export class Dragon {
       this.visual.add(hind);this.legs.push({leg:hind,side});
       this.addWing(side,wingMat,membrane);
     }
+    // REV visual: placas ósseas ventrais e pontas de chifre integradas ao rig.
+    // Cada detalhe segue o pivô existente sem gerar geometria a cada quadro.
+    const armorPlate=new THREE.SphereGeometry(1,8,6);
+    const hornTip=new THREE.ConeGeometry(.12,.49,6);
+    for(let i=0;i<8;i++){
+      const z=-1.54+i*.46;
+      const curve=Math.sqrt(Math.max(.12,1-Math.pow((z-.22)/2.65,2)));
+      const plate=scaleMesh(armorPlate,belly,0,-.73*curve-.19,z,.62*curve,.095,.19);
+      plate.rotation.x=-.1;this.visual.add(plate);
+    }
+    for(const side of [-1,1]){
+      const tip=scaleMesh(hornTip,horn,side*.49,1.84,.22,.76,1,.76);
+      tip.rotation.z=-side*.36;this.headPivot.add(tip);
+      for(let i=0;i<5;i++){
+        const ridge=scaleMesh(armorPlate,scaleMat,side*(.76+.065*Math.sin(i)),.34, -.8+i*.68,.23,.12,.27);
+        ridge.rotation.z=side*.31;this.visual.add(ridge);
+      }
+    }
     // Escamas em fileiras de baixo relevo: acompanham a curvatura do dorso.
     this.scales=[];
     for(let row=0;row<6;row++)for(let col=-2;col<=2;col++) {
