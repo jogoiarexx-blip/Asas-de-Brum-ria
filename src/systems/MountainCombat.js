@@ -26,10 +26,11 @@ export function bossAttackStep(state,dt,{active=false,health=12}={}){
 export function bossAttackPattern(count=0,health=12){
  const cycle=Math.max(0,Math.floor(Number.isFinite(count)?count:0));
  if(health>6)return cycle%2===0?'aimed':'fan';
- return ['aimed','fan','vertical'][cycle%3];
+ return ['aimed','fan','vertical','sweep'][cycle%4];
 }
 export function bossPatternLabel(pattern){
- return pattern==='fan'?'LEQUE DE FOGO — ESQUIVE ENTRE OS TIROS':
+ return pattern==='sweep'?'VARREDURA DE FOGO — DESVIE NA DIAGONAL':
+   pattern==='fan'?'LEQUE DE FOGO — ESQUIVE ENTRE OS TIROS':
    pattern==='vertical'?'CHAMAS EM ALTURAS DIFERENTES — MUDE A ALTITUDE':
    'SOPRO DIRECIONADO — ESQUIVA LATERAL';
 }
@@ -45,11 +46,11 @@ export function bossShotDirections(aim,pattern='aimed'){
  x/=length;y/=length;z/=length;
  const sideLength=Math.max(.001,Math.hypot(x,z));
  const rightX=-z/sideLength,rightZ=x/sideLength;
- const offsets=pattern==='fan'?[-.27,0,.27]:pattern==='vertical'?[-.22,0,.22]:[0];
+ const offsets=pattern==='fan'?[-.27,0,.27]:pattern==='vertical'?[-.22,0,.22]:pattern==='sweep'?[-.18,0,.18]:[0];
  return offsets.map(amount=>{
-   const vx=x+(pattern==='fan'?rightX*amount:0);
-   const vy=y+(pattern==='vertical'?amount:0);
-   const vz=z+(pattern==='fan'?rightZ*amount:0);
+   const vx=x+(['fan','sweep'].includes(pattern)?rightX*amount:0);
+   const vy=y+(['vertical','sweep'].includes(pattern)?amount:0);
+   const vz=z+(['fan','sweep'].includes(pattern)?rightZ*amount:0);
    const magnitude=Math.hypot(vx,vy,vz);
    return {x:vx/magnitude,y:vy/magnitude,z:vz/magnitude};
  });

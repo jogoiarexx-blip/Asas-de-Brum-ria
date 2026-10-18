@@ -81,7 +81,8 @@ test('marcas de dano aparecem na malha do chefe e acompanham golpes',()=>{
 test('sentinelas usam flanco e o chefe usa mira preditiva',()=>{
   const ai=readFileSync(new URL('../src/entities/EnemyDragon.js',import.meta.url),'utf8');
   const game=readFileSync(new URL('../src/game/Game.js',import.meta.url),'utf8');
-  assert.match(ai,/enemyFlank\(/);
+  assert.match(ai,/enemyCombatPlan\(/);
+  assert.match(readFileSync(new URL('../src/systems/EnemyTactics.js',import.meta.url),'utf8'),/enemyFlank\(/);
   assert.match(game,/bossAimPoint\(/);
 });
 

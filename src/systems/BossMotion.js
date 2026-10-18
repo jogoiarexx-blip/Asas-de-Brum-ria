@@ -17,7 +17,7 @@ export function bossMotionStep(current,target,dt,{charging=false,stagger=0}={}){
  const dx=target.x-pos.x,dy=target.y-pos.y,dz=target.z-pos.z;
  const distance=Math.hypot(dx,dy,dz);
  if(!Number.isFinite(distance)||distance<1e-8)return pos;
- const max=(stagger>0?18:11)*dt;
+ const max=(stagger>0?3.6:11)*dt;
  const fraction=Math.min(1,max/distance);
  return {x:pos.x+dx*fraction,y:pos.y+dy*fraction,z:pos.z+dz*fraction};
 }

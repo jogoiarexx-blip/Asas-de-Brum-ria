@@ -22,7 +22,8 @@ test('calma é calculada com velocidade real do jogador antes da interação',()
 test('melhorias de manobra e pouso ligadas ao modelo sem trocar controles',()=>{
   const dragon=read('src/entities/Dragon.js');
   assert.match(dragon,/smoothedTurn\(this\.turnAxis,turn,dt\)/);
-  assert.match(dragon,/landingDescent\(/);
+  assert.match(dragon,/airflowTarget\(/);
+  assert.match(read('src/entities/Airflow.js'),/height<14/);
   assert.match(dragon,/input\.isDown\('space'\)/);
   assert.match(dragon,/input\.isDown\('ctrl'\)/);
 });

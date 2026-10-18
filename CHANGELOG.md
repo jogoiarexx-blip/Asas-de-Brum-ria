@@ -1,3 +1,16 @@
+## v1.4.0 — Contra-ataque, IA evasiva e física de voo
+
+- Abertura pós-sopro do dragão gigante: dano dobrado com janela de 1,05/1,30 s, com aviso no HUD, interrupção de ataque e reação visual de cambalear.
+- Ataque adicional de varredura diagonal, anunciado por anel roxo na segunda fase; até 3 projéteis de trajetória fixa.
+- Sentinelas alteram rota após sofrer dano e combinam recuo e flanqueamento conforme distância e resistência.
+- Suporte aerodinâmico de voo: descida suave em baixa velocidade, impulso moderado ao mergulhar e arrasto ao subir; sem modificar colisões ou progressão.
+- Correção de velocidade da reação de cambalear do dragão gigante.
+- Novos módulos puros: BossCounter.js, EnemyTactics.js e Airflow.js.
+- 410/410 testes automatizados aprovados; alterações compatíveis com os salvamentos anteriores.
+- Sem benchmark de GPU real; desempenho visual ainda exige confirmação prática.
+
+---
+
 ## v1.3.9 — Física de contato e táticas do chefe
 
 - Corrigido bug em que `visual.position.y` era atualizado duas vezes e escondia o efeito de contato após decolar ou pousar.

@@ -38,6 +38,7 @@ import {readGPUSettings,writeGPUSettings,chooseContextOptions,describeRenderer} 
 import {bossAttackStep,bossAttackPattern,bossShotDirections,bossPatternLabel} from '../systems/MountainCombat.js';
 import {contactBurstSize} from '../entities/FlightContact.js';
 import {bossAimPoint} from '../systems/AerialCombat.js';
+import {counterOpportunity,counterStrike} from '../systems/BossCounter.js';
 
 export class Game {
   constructor() {
@@ -65,7 +66,7 @@ export class Game {
     this.graphics.resolutionScale=this.gpuPrefs.resolution;this.graphics.shadowsAllowed=this.gpuPrefs.shadows;this.graphics.apply();
     this.initGPUOptions();this.updateGraphicsLabel();
     this.saveSystem=new SaveSystem();this.savedData=this.saveSystem.read();
-    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this.bossAttackCount=0;this.bossWarnedPattern=null;this._bossVolleyVector=new THREE.Vector3();this._bossShotDirection=new THREE.Vector3();this._bossPredicted=new THREE.Vector3();this._groundContactPosition=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
+    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.bossAttackState={elapsed:0,warned:false};this.bossAttackCount=0;this.bossWarnedPattern=null;this.bossCounterTime=0;this._bossVolleyVector=new THREE.Vector3();this._bossShotDirection=new THREE.Vector3();this._bossPredicted=new THREE.Vector3();this._groundContactPosition=new THREE.Vector3();this.gateLoadingWarned=false;this.gateWarned=false;this.mountainRetryUntil=0;
     this.portal=this.makeMountainPortal();
     this.progression=new Progression(this.savedData?.progression);this.autoSaveTime=0;this.lastSaveOk=null;
     this.world=new World(this.scene);
@@ -451,6 +452,7 @@ export class Game {
       // writes on every frame while exploring the streaming region.
       this.mountain.update(dt,this.elapsed,this.dragon.group.position);
     }
+    this.bossCounterTime=Math.max(0,this.bossCounterTime-dt);
     const boss=this.mountain?.boss;
     const bossDistance=boss?boss.position.distanceTo(this.dragon.group.position):Infinity;
     const active=this.inMountain&&this.expedition.phase==='boss'&&riding&&bossDistance>19&&bossDistance<230;
@@ -458,7 +460,7 @@ export class Game {
     this.bossAttackState=attack.state;
     const plannedPattern=bossAttackPattern(this.bossAttackCount,this.expedition.bossHealth);
     if(attack.warn)this.bossWarnedPattern=plannedPattern;
-    if(!active)this.bossWarnedPattern=null;
+    if(!active){this.bossWarnedPattern=null;this.bossCounterTime=0;}
     // If the boss loses enough health during an active tell, don't change the
     // projectile pattern after the player already chose an evasive route.
     const attackPattern=this.bossWarnedPattern??plannedPattern;
@@ -473,6 +475,7 @@ export class Game {
         this.spawnProjectile(boss.position,this._bossVolleyVector,'enemy');
       }
       this.effects.burst(boss.position,'enemy',8);
+      this.bossCounterTime=counterOpportunity({volleyFired:true,health:this.expedition.bossHealth});
       this.bossAttackCount++;this.bossWarnedPattern=null;
     }
     this.updateExpeditionUI();
@@ -482,7 +485,7 @@ export class Game {
     if(this.inMountain){
       const p=this.expedition;
       el.textContent=p.phase==='boats'?`🏔 MONTANHAS · DESTRUIR BARCOS ${p.boatsSunk}/3`:
-        p.phase==='boss'?`🐉 DRAGÃO GIGANTE · VIDA ${p.bossHealth}/12${this.bossAttackState.warned?' · ⚠ SOPRO IMINENTE!':''}`:
+        p.phase==='boss'?`🐉 DRAGÃO GIGANTE · VIDA ${p.bossHealth}/12${this.bossAttackState.warned?' · ⚠ SOPRO IMINENTE!':this.bossCounterTime>0?' · ✦ CONTRA-ATAQUE!':''}`:
         p.phase==='return'?'✅ CHEFE DERROTADO · RETORNE PELO PORTAL A OESTE':
         '🏔 EXPEDIÇÃO CONCLUÍDA';
     }else el.textContent=this.expedition.phase==='complete'?'🏆 MONTANHAS LIBERTADAS':
@@ -680,7 +683,12 @@ export class Game {
               }
             }
           }else if(this.expedition.phase==='boss'&&segmentSphereHit(from,to,this.mountain.boss.position,16)){
-            const result=this.expedition.hitBoss();hit=result.hit;this.effects.burst(this.mountain.boss.position,'fire',17);
+            const counter=counterStrike(this.bossCounterTime);
+            const result=this.expedition.hitBoss(counter.damage);hit=result.hit;this.effects.burst(this.mountain.boss.position,'fire',17);
+            if(counter.bonus&&result.hit){
+              this.bossCounterTime=0;this.bossAttackState={elapsed:0,warned:false};this.bossWarnedPattern=null;this.mountain.setBossWarning(false);
+              this.ui.toast('✦ CONTRA-ATAQUE! O dragão gigante cambaleou! DANO DUPLO.',3);
+            }
             this.audio.play('hit');this.mountain.flashBossHit();this.mountain.refresh();
             this.ui.toast(result.defeated?'Dragão gigante derrotado! Volte a oeste pelo portal.':`Dragão gigante: ${this.expedition.bossHealth}/12`,4);
             this.saveGame();

@@ -167,7 +167,7 @@ export class MountainRegion {
     if(!this.bossWarningRing)return;
     this.bossWarningRing.visible=Boolean(active)&&this.boss.visible;
     if(this.bossWarningRing.visible){
-      const hex=pattern==='fan'?0xffb547:pattern==='vertical'?0x99caff:0xff5c33;
+      const hex=pattern==='sweep'?0xd18aff:pattern==='fan'?0xffb547:pattern==='vertical'?0x99caff:0xff5c33;
       this.bossWarningRing.material.color.setHex(hex);
     }
   }

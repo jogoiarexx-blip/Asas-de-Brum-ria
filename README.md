@@ -1,3 +1,22 @@
+# Asas de Brumária v1.4.0 — Voo aerodinâmico, sentinelas reativas e contra-ataque no chefe
+
+## Principais melhorias
+
+- **Contra-ataque tático no dragão gigante:** após um sopro, o chefe fica brevemente vulnerável. Acerte-o em até 1,05 s na primeira fase ou 1,30 s na segunda para aplicar 2 pontos de dano e interromper a preparação do próximo sopro. Um golpe normal ainda tira 1 ponto. O HUD informa **✦ CONTRA-ATAQUE!** e uma mensagem confirma o acerto. Não há mudança na estrutura dos salvamentos.
+- **Quarto padrão do chefe:** abaixo de metade da vida, o dragão alterna também a **VARREDURA DE FOGO**, anunciada por um anel roxo, com no máximo 3 projéteis em trajetórias diagonais fixas. O aviso de 0,95 segundo e os limites do pool permanecem.
+- **Reação ao dano:** o dragão gigante diminui de velocidade quando cambaleia, corrigindo a reação anterior, que aumentava acidentalmente sua velocidade.
+- **Sentinelas evasivas:** os inimigos agora desviam de forma lateral por um curto período depois de serem atingidos, flanqueiam e recuam quando o jogador chega muito perto. Mantida a perseguição e o ataque sem teletransporte.
+- **Voo mais expressivo:** ao reduzir demais a velocidade em voo o dragão entra em descida suave; mergulhos dão um pequeno impulso horizontal e subidas têm arrasto. Os controles manuais têm prioridade, o pouso continua dependendo de terreno seguro e o movimento mantém a varredura 3D contra obstáculos.
+- **Desempenho:** não foram incluídas novas luzes, materiais caros, partículas por quadro ou modelos 3D pesados. LOD, pooling, missões diárias, GLB e regiões em streaming permanecem disponíveis.
+
+### Testar a nova batalha
+
+Voe até o mapa das Montanhas da Sombra, destrua os três navios e enfrente o chefe. Esquive-se do aviso, aguarde o sopro, alinhe seu dragão e **acerte durante a mensagem de CONTRA-ATAQUE**. O golpe bem cronometrado causa dano dobrado e deixa o chefe cambaleante. No ar, experimente soltar a aceleração para perceber a descida suave e usar CTRL para mergulhar.
+
+**Testes automatizados:** 410 de 410 passaram, sem falhas (391 da v1.3.9 + 19 novos). Testes WebGL visuais, controle físico e benchmark real de FPS ainda precisam ser feitos num computador com GPU. O inicializador Windows abre o navegador e não é um EXE nativo.
+
+---
+
 # Asas de Brumária v1.3.9 — Chefe tático, contato com terreno e ondas de naufrágio
 
 ## Melhorias implementadas

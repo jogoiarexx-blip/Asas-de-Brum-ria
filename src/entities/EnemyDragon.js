@@ -3,7 +3,7 @@ import {limitedTurn,pursuitYaw,shortestAngle} from '../systems/combatMath.js';
 import {approach,clamp} from '../utils/math.js';
 import {actorVisualLevel,shouldAnimateActor,enemySimulationStep} from '../systems/ActorLOD.js';
 import {dragonMeshVisibility} from '../systems/DragonMeshLOD.js';
-import {enemyFlank} from '../systems/AerialCombat.js';
+import {enemyCombatPlan} from '../systems/EnemyTactics.js';
 import {buildDragonProxy} from './DragonProxy.js';
 
 // Malha leve e original, com asas de duas juntas, cauda articulada e cabeça animada.
@@ -69,7 +69,7 @@ export class EnemyDragon {
     this.yaw=index*2.0;this.group.rotation.y=this.yaw;
     this.speed=16;this.health=3;this.maxHealth=3;this.alive=true;this.active=false;
     this.state='patrol';this.phase=index*2.3;this.fireCooldown=2+index*.55;
-    this.hurtPulse=0;this.decisionTimer=0;this.visualClock=0;this.visualLevel='full';this.simulationCarry=0;
+    this.hurtPulse=0;this.evadeTime=0;this.tactic='patrol';this.decisionTimer=0;this.visualClock=0;this.visualLevel='full';this.simulationCarry=0;
   }
   setActive(value){this.active=value;this.group.visible=value&&this.alive&&this.visualLevel!=='hidden';}
   setDetail(observer,tier,camera,forward){
@@ -81,7 +81,7 @@ export class EnemyDragon {
   }
   takeHit(amount=1){
     if(!this.active||!this.alive)return false;
-    this.health=Math.max(0,this.health-Math.max(0,amount));this.hurtPulse=.28;
+    this.health=Math.max(0,this.health-Math.max(0,amount));this.hurtPulse=.28;this.evadeTime=.9;
     if(this.health<=0){this.alive=false;this.group.visible=false;return true;}
     return false;
   }
@@ -89,16 +89,17 @@ export class EnemyDragon {
   update(dt,time,player,onShot){
     if(!this.active||!this.alive)return;
     this.fireCooldown-=dt;this.hurtPulse=Math.max(0,this.hurtPulse-dt);
+    this.evadeTime=Math.max(0,this.evadeTime-dt);
     const origin=this.group.position,p=player.group.position;
     const distance=origin.distanceTo(p);
     this.state=player.riding&&distance<153?'chase':'patrol';
+    const plan=enemyCombatPlan({distance:this.state==='chase'?distance:Infinity,health:this.health,evadeTime:this.evadeTime,index:this.index,time});
+    this.tactic=plan.mode;
     const destination=this.scratchDestination;
     if(this.state==='chase'){
-      const avoid=distance<26;
       const direction=this.scratchDirection.subVectors(p,origin).normalize();
-      destination.copy(p).addScaledVector(direction,avoid?-32:-2);
-      const flank=enemyFlank(distance,time,this.index);
-      destination.x-=direction.z*flank;destination.z+=direction.x*flank;
+      destination.copy(p).addScaledVector(direction,-plan.retreat);
+      destination.x-=direction.z*plan.flank;destination.z+=direction.x*plan.flank;
       destination.y=p.y+Math.sin(time*1.1+this.phase)*6+(this.index-1)*4;
     } else {
       const a=time*.23+this.phase;
@@ -107,7 +108,7 @@ export class EnemyDragon {
     const intendedYaw=pursuitYaw(origin,destination);
     this.yaw=limitedTurn(this.yaw,intendedYaw,dt*(this.state==='chase'?1.2:.76));
     this.group.rotation.y=this.yaw;
-    const desiredSpeed=this.state==='chase'?(distance<22?13:25):16;
+    const desiredSpeed=this.state==='chase'?plan.speed:16;
     this.speed=approach(this.speed,desiredSpeed,dt*9);
     origin.x=clamp(origin.x-Math.sin(this.yaw)*this.speed*dt,-398,398);
     origin.z=clamp(origin.z-Math.cos(this.yaw)*this.speed*dt,-398,398);

@@ -1,0 +1,7 @@
+ASAS DE BRUMÁRIA 1.4.0 — VALIDAÇÃO
+
+Base: 391 testes na 1.3.9.
+Novos: 19 testes cobrindo contra-ataque, dano duplo, padrões do chefe, IA e física aérea.
+Total: 410 de 410 testes automatizados aprovados.
+Os resultados validam JS, imports e regras de jogo; não comprovam FPS/WebGL em hardware físico.
+Windows: inicializador PowerShell/HTTP local + navegador, não EXE nativo.

@@ -6,6 +6,7 @@ import {inspectLanding,flightCollisionResponse} from './LandingPhysics.js';
 import {flightContactPose} from './FlightContact.js';
 import {terrainAttitude,terrainTraction,visualContactHeight} from './TerrainResponse.js';
 import {flightPhase, liftBlend} from './flightMath.js';
+import {airflowTarget,airflowSpeed} from './Airflow.js';
 import {wingPose} from './wingPose.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
 import {startDodge,advanceDodge,dodgeImpulse} from '../systems/AerialCombat.js';
@@ -319,7 +320,7 @@ export class Dragon {
         // let a dragon enter the column while climbing or diving in one frame.
         this.takeoffTime+=dt;
         const floorBefore=this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58;
-        const desired=landingDescent({airborne:true,speed:this.speed,height:this.group.position.y-floorBefore,up,down});
+        const desired=airflowTarget({airborne:true,speed:this.speed,height:this.group.position.y-floorBefore,up,down});
         this.verticalVelocity=approach(this.verticalVelocity,desired,dt*(up?69:down?64:48));
         const attemptedVertical=this.verticalVelocity;
         const moved=moveFlightWithCollisions(this.group.position,
@@ -331,6 +332,7 @@ export class Dragon {
           verticalSpeed:this.verticalVelocity});
         if(moved.blockedVertical)this.verticalVelocity=0;
         if(moved.blockedHorizontal){this.speed=impact.speed;this.dodgeRemaining=0;}
+        else this.speed=airflowSpeed(this.speed,this.verticalVelocity,dt,maxSpeed);
         if(impact.intensity>.16&&this.impactCooldown<=0&&
            (moved.blockedHorizontal||this.world.walkable(this.group.position.x,this.group.position.z))){
           this.impactPulse=impact.intensity;this.impactKick=impact.intensity;

@@ -20,9 +20,10 @@ export class ExpeditionProgress {
    if(this.boatsSunk===3)this.phase='boss';
    return {hit:true,sunk,phase:this.phase};
  }
- hitBoss(){
+ hitBoss(amount=1){
    if(this.phase!=='boss')return {hit:false,defeated:false};
-   this.bossHealth--;const defeated=this.bossHealth<=0;
+   const damage=Number.isFinite(amount)?Math.max(1,Math.min(2,Math.floor(amount))):1;
+   this.bossHealth=Math.max(0,this.bossHealth-damage);const defeated=this.bossHealth<=0;
    if(defeated)this.phase='return';
    return {hit:true,defeated,phase:this.phase};
  }
