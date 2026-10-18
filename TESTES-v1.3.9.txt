@@ -1,0 +1,9 @@
+Asas de Brumária v1.3.9
+Base: 378 testes. Novos: 13 testes. Total: 391 aprovados.
+Suites: node tests/check-project.mjs && node --test tests/*.test.js
+Novo: testes/gameplay-v139.test.js (11), testes/mountain-stream-v134.test.js (+2).
+Reproduzido bug de altura do dragão sobrescrita; corrigido e testado.
+Chefe: limites de arena, perseguição, recuo, ataque sinalizado.
+Navios: onda instanciável apenas durante naufrágio; restauração do save sem reexibição.
+Integração: mapa sob demanda, unload de recursos e compatibilidade dos testes antigos.
+Não equivale a benchmark GPU real, nem validação visual WebGL.

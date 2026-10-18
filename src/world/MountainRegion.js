@@ -3,6 +3,8 @@ import {BOAT_POSITIONS,GIANT_DRAGON_POSITION} from '../systems/ExpeditionRules.j
 import {bossDamageStage} from '../systems/AerialCombat.js';
 import {shipDamageAppearance,shipDebrisStep,shipSinkingPose} from '../systems/ShipDamage.js';
 import {bossMotionTarget,bossMotionStep} from '../systems/BossMotion.js';
+import {bossBattleDestination} from '../systems/BossTactics.js';
+import {shipWaterSplash,SHIP_SPLASH_START,SHIP_SPLASH_DURATION} from '../systems/ShipSplash.js';
 
 // This entire module is dynamically imported ONLY while flying toward the gate.
 // Its scene resources and collision volumes are released when leaving the zone.
@@ -10,7 +12,7 @@ export class MountainRegion {
   constructor(scene,world,progress){
     this.scene=scene;this.world=world;this.progress=progress;
     this.root=new THREE.Group();this.root.name='MAPA_MONTANHAS_SOMBRA';scene.add(this.root);
-    this.obstacles=[];this.boats=[];this.boatSails=[];this.boatMasts=[];this.boatDecks=[];this.boatObstacles=[];this.boatDebrisAges=Array(BOAT_POSITIONS.length).fill(null);this.boss=null;this.elapsed=0;this.attackClock=0;this.bossHitFlash=0;
+    this.obstacles=[];this.boats=[];this.boatSails=[];this.boatMasts=[];this.boatDecks=[];this.boatObstacles=[];this.boatDebrisAges=Array(BOAT_POSITIONS.length).fill(null);this.boatRippleAges=Array(BOAT_POSITIONS.length).fill(null);this.boss=null;this.elapsed=0;this.attackClock=0;this.bossHitFlash=0;
     this.buildTerrain();this.buildShips();this.buildBoss();this.refresh();
     world.obstacles.push(...this.obstacles);
   }
@@ -91,6 +93,16 @@ export class MountainRegion {
       this.boatDebrisMesh.setMatrixAt(i,this.debrisDummy.matrix);
     }
     this.root.add(this.boatDebrisMesh);
+    // Three pooled transparent rings, allocated once with the streamed region.
+    const rippleGeometry=new THREE.TorusGeometry(1,.035,4,32);
+    this.boatRipples=[];
+    for(let i=0;i<BOAT_POSITIONS.length;i++){
+      const material=new THREE.MeshBasicMaterial({color:0x9ae7f7,transparent:true,opacity:0,depthWrite:false});
+      const ring=new THREE.Mesh(rippleGeometry,material);
+      ring.position.set(BOAT_POSITIONS[i][0],-1.96,BOAT_POSITIONS[i][2]);
+      ring.rotation.x=-Math.PI/2;ring.visible=false;
+      this.root.add(ring);this.boatRipples.push(ring);
+    }
   }
   buildBoss(){
     const group=new THREE.Group();group.position.set(GIANT_DRAGON_POSITION.x,GIANT_DRAGON_POSITION.y,GIANT_DRAGON_POSITION.z);
@@ -148,7 +160,7 @@ export class MountainRegion {
   }
   notifyBoatHit(index,result){
     if(result?.hit&&result.sunk&&index>=0&&index<this.boatDebrisAges.length)
-      this.boatDebrisAges[index]=0;
+      {this.boatDebrisAges[index]=0;this.boatRippleAges[index]=0;}
   }
   flashBossHit(){this.bossHitFlash=.36;}
   setBossWarning(active,pattern='aimed'){
@@ -159,7 +171,7 @@ export class MountainRegion {
       this.bossWarningRing.material.color.setHex(hex);
     }
   }
-  update(dt,time){
+  update(dt,time,playerPosition=null){
     this.elapsed+=dt;
     this.bossHitFlash=Math.max(0,this.bossHitFlash-dt);
     if(this.bossScales)this.bossScales.emissiveIntensity=.02+bossDamageStage(this.progress.bossHealth)*.06+this.bossHitFlash*1.1;
@@ -196,10 +208,23 @@ export class MountainRegion {
       }
       if(nextAge!==null&&!shipDebrisStep(nextAge,0).visible)this.boatDebrisAges[i]=null;
     }
+    // An age-based wave can outlive the collapsing hull; no save changes.
+    for(let i=0;i<this.boatRipples.length;i++){
+      let age=this.boatRippleAges[i];
+      const ripple=this.boatRipples[i];
+      if(age===null){ripple.visible=false;continue;}
+      age+=dt;const appearance=shipWaterSplash(age);
+      ripple.visible=appearance.visible;
+      if(appearance.visible){
+        ripple.scale.setScalar(appearance.radius);
+        ripple.material.opacity=appearance.opacity;
+      }
+      this.boatRippleAges[i]=age>SHIP_SPLASH_START+SHIP_SPLASH_DURATION?null:age;
+    }
     this.boatDebrisMesh.visible=debrisActive;
     if(debrisActive)this.boatDebrisMesh.instanceMatrix.needsUpdate=true;
     if(this.boss.visible){
-      const goal=bossMotionTarget(time,this.progress.bossHealth);
+      const goal=playerPosition?bossBattleDestination(time,this.progress.bossHealth,playerPosition):bossMotionTarget(time,this.progress.bossHealth);
       const position=bossMotionStep(this.boss.position,goal,dt,{
         charging:this.bossWarningRing.visible,stagger:this.bossHitFlash});
       this.boss.position.set(position.x,position.y,position.z);

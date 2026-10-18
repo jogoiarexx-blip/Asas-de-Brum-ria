@@ -1,3 +1,14 @@
+## v1.3.9 — Física de contato e táticas do chefe
+
+- Corrigido bug em que `visual.position.y` era atualizado duas vezes e escondia o efeito de contato após decolar ou pousar.
+- Incluído `TerrainResponse.js`: amostragem de inclinação, flexão do dragão em encostas e tração reduzida quando caminha em terrenos inclinados.
+- Incluído `BossTactics.js`: patrulha reativa à posição do jogador, com aproximação, recuo e perseguição controlada na fase avançada. Movimento limitado à arena; aviso de ataques preservado.
+- Incluído `ShipSplash.js`: ondas temporárias de naufrágio de baixo custo. Somente três malhas e nenhuma luz dinâmica nova; partículas de destroços existentes preservadas.
+- Carregamento/descarregamento de mapa limpa corretamente os recursos visuais. Saves e controles anteriores mantidos.
+- Total de 391 testes automatizados aprovados, incluindo 13 novos. Nenhum benchmark GPU foi executado.
+
+---
+
 ## v1.3.8 — Decolagem e aterrissagem, afundamento e patrulha do chefe
 
 - Adicionados FlightContact.js, ShipDamage.js e BossMotion.js com regras determinísticas, testáveis sem GPU.

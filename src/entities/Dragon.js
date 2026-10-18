@@ -4,6 +4,7 @@ import {moveWithCollisions, obstacleBlocks} from '../utils/collision.js';
 import {moveFlightWithCollisions} from '../utils/spatialSweep.js';
 import {inspectLanding,flightCollisionResponse} from './LandingPhysics.js';
 import {flightContactPose} from './FlightContact.js';
+import {terrainAttitude,terrainTraction,visualContactHeight} from './TerrainResponse.js';
 import {flightPhase, liftBlend} from './flightMath.js';
 import {wingPose} from './wingPose.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
@@ -308,6 +309,11 @@ export class Dragon {
       this.windDrift=Math.hypot(gust.x,gust.z)/Math.max(dt,.001);
       const strafe=this.airborne?dodgeImpulse(this.yaw,this.dodgeSide,dt,activeDodge):{x:0,z:0};
       const horizontal={x:forward.x*this.speed*dt+gust.x+strafe.x,z:forward.z*this.speed*dt+gust.z+strafe.z};
+      // Sample a small footprint when grounded. Slopes reduce traction but not flight speed.
+      const groundPose=this.airborne?null:terrainAttitude(
+        (x,z)=>this.world.groundHeightAt(x,z,1.65),
+        this.group.position.x,this.group.position.z,this.yaw,1.35);
+      if(groundPose){const grip=terrainTraction(groundPose);horizontal.x*=grip;horizontal.z*=grip;}
       if(this.airborne){
         // Sweep vertical and horizontal motion together. Testing only the old Y
         // let a dragon enter the column while climbing or diving in one frame.
@@ -363,10 +369,10 @@ export class Dragon {
       this.group.position.y=clamp(this.group.position.y,
         Math.max(2.7,this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.15)+2.58),110);
       if(boost){this.energy=Math.max(0,this.energy-(this.stats?.drain??17)*dt);}else{this.energy=Math.min(this.stats?.maxEnergy??100,this.energy+(this.stats?.regen??12)*dt);}
-      const bankGoal=bankTarget(this.turnAxis,this.speed,this.airborne,gust.x)+(this.dodgeRemaining>0?this.dodgeSide*.26:0);
+      const bankGoal=bankTarget(this.turnAxis,this.speed,this.airborne,gust.x)+(this.dodgeRemaining>0?this.dodgeSide*.26:0)+(groundPose?.roll??0);
       this.bank=THREE.MathUtils.damp(this.bank,bankGoal,4.2,dt);
       this.visual.rotation.z=THREE.MathUtils.damp(this.visual.rotation.z,this.bank,5.5,dt);
-      this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,flightPitch(this.verticalVelocity,this.airborne)+(up?-.075:down?.05:0)-this.impactKick*.12,3.7,dt);
+      this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,flightPitch(this.verticalVelocity,this.airborne)+(up?-.075:down?.05:0)-this.impactKick*.12+(groundPose?.pitch??0),3.7,dt);
     } else {
       this.dodgeRemaining=0;
       this.windDrift=0;this.steerInput=0;this.turnAxis=smoothedTurn(this.turnAxis,0,dt);this.bank=THREE.MathUtils.damp(this.bank,0,3,dt);
@@ -374,15 +380,19 @@ export class Dragon {
       this.group.position.y=THREE.MathUtils.damp(this.group.position.y,Math.max(2.7,floor),3,dt);
       this.energy=Math.min(this.stats?.maxEnergy??100,this.energy+(this.stats?.regen??12)*dt);
       this.landingTimer=Math.max(0,this.landingTimer-dt);
-      this.visual.rotation.z=THREE.MathUtils.damp(this.visual.rotation.z,0,3,dt);
-      this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,0,3,dt);
+      // Even an unmounted dragon follows the safe ground's shallow slopes.
+      const groundPose=terrainAttitude((x,z)=>this.world.groundHeightAt(x,z,1.65),
+        this.group.position.x,this.group.position.z,this.yaw,1.35);
+      this.visual.rotation.z=THREE.MathUtils.damp(this.visual.rotation.z,groundPose.roll,3,dt);
+      this.visual.rotation.x=THREE.MathUtils.damp(this.visual.rotation.x,groundPose.pitch,3,dt);
     }
     this.group.rotation.y=this.yaw;
     const floorNow=Math.max(2.7,this.world.groundHeightAt(this.group.position.x,this.group.position.z,1.65)+2.58);
     this.pose=flightPhase(this.airborne,this.takeoffTime,this.group.position.y-floorNow,this.verticalVelocity<-.8,this.landingTimer);
     const wingLift=liftBlend(this.airborne,this.takeoffTime,this.landingTimer);
     const contact=flightContactPose({phase:this.pose,takeoffTime:this.takeoffTime,landingTimer:this.landingTimer});
-    this.visual.position.y=THREE.MathUtils.damp(this.visual.position.y,contact.offsetY,12,dt);
+    // Apply squash *and* gait bob once at the end; a second assignment previously erased it.
+    const bob=this.riding?Math.sin(time*(3+this.speed*.07))*(this.airborne?.11:.025):Math.sin(time*2)*.09;
     for(const {wing,elbow,tip,side} of this.wings){
       const pose=wingPose({time,side,phase:this.pose,speed:this.speed,bank:this.bank,wingLift,climbing:this.verticalVelocity});
       wing.rotation.z=THREE.MathUtils.damp(wing.rotation.z,pose.shoulder-side*contact.wingFold,7,dt);
@@ -412,7 +422,6 @@ export class Dragon {
     this.visual.rotation.y=Math.sin(time*34)*this.hurtTime*.12;
     const blink=Math.sin(time*.65)**18;
     for(const eye of this.eyeBlink)eye.scale.y=Math.max(.065,1-.93*blink);
-    if(!this.riding)this.visual.position.y=Math.sin(time*2)*.09;
-    else this.visual.position.y=Math.sin(time*(3+this.speed*.07))*(this.airborne?.11:.025);
+    this.visual.position.y=THREE.MathUtils.damp(this.visual.position.y,visualContactHeight(contact.offsetY,bob),12,dt);
   }
 }

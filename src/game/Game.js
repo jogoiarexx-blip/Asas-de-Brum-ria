@@ -449,7 +449,7 @@ export class Game {
     if(this.mountain){
       // refresh() is called only when progression changes; no repeated scene
       // writes on every frame while exploring the streaming region.
-      this.mountain.update(dt,this.elapsed);
+      this.mountain.update(dt,this.elapsed,this.dragon.group.position);
     }
     const boss=this.mountain?.boss;
     const bossDistance=boss?boss.position.distanceTo(this.dragon.group.position):Infinity;

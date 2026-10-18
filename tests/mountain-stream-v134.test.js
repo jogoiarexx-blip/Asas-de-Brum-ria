@@ -7,7 +7,7 @@ import {readGPUSettings,writeGPUSettings,chooseContextOptions} from '../src/syst
 
 function stubThree(){
   let disposed=0;
-  class Obj{constructor(){this.children=[];this.userData={};this.position={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;}};this.rotation={set(x,y,z){this.x=x;this.y=y;this.z=z;}};this.scale={set(){}};this.parent=null;}
+  class Obj{constructor(){this.children=[];this.userData={};this.position={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;}};this.rotation={set(x,y,z){this.x=x;this.y=y;this.z=z;}};this.scale={set(){},setScalar(v){this.x=v;this.y=v;this.z=v;}};this.parent=null;}
     updateMatrix(){this.matrix={};}
     add(object){object.parent=this;this.children.push(object);}
     remove(object){this.children=this.children.filter(x=>x!==object);object.parent=null;}
@@ -30,11 +30,15 @@ async function moduleWithThree(stub){
  const aerial=new URL('../src/systems/AerialCombat.js',import.meta.url).href;
  const shipDamage=new URL('../src/systems/ShipDamage.js',import.meta.url).href;
  const bossMotion=new URL('../src/systems/BossMotion.js',import.meta.url).href;
+ const bossTactics=new URL('../src/systems/BossTactics.js',import.meta.url).href;
+ const shipSplash=new URL('../src/systems/ShipSplash.js',import.meta.url).href;
  let code=readFileSync(url,'utf8').replace("import * as THREE from 'three';",'const THREE=globalThis.__brumariaMockThree;');
  code=code.replace("from '../systems/ExpeditionRules.js'",`from '${rules}'`);
  code=code.replace("from '../systems/AerialCombat.js'",`from '${aerial}'`);
  code=code.replace("from '../systems/ShipDamage.js'",`from '${shipDamage}'`);
  code=code.replace("from '../systems/BossMotion.js'",`from '${bossMotion}'`);
+ code=code.replace("from '../systems/BossTactics.js'",`from '${bossTactics}'`);
+ code=code.replace("from '../systems/ShipSplash.js'",`from '${shipSplash}'`);
  globalThis.__brumariaMockThree=stub;
  try{return await import('data:text/javascript,'+encodeURIComponent(code));}finally{delete globalThis.__brumariaMockThree;}
 }
@@ -168,4 +172,30 @@ test('um barco destruído afunda durante a batalha e não reaparece após recarr
  assert.equal(region.boats[0].visible,false);
  assert.equal(region.boatDebrisMesh.visible,false,'partida carregada não repete destroços');
  region.unload();
+});
+
+test('naufrágio mostra uma onda na água e libera os recursos no unload',async()=>{
+ const mock=stubThree(),{MountainRegion}=await moduleWithThree(mock.THREE);
+ const scene=new mock.THREE.Group(),world={obstacles:[],mountainRegion:null};
+ const progress=new ExpeditionProgress(),region=new MountainRegion(scene,world,progress);
+ assert.equal(region.boatRipples.length,3);
+ assert.equal(region.boatRipples.some(w=>w.visible),false);
+ progress.hitBoat(1);const sunk=progress.hitBoat(1);
+ region.notifyBoatHit(1,sunk);region.refresh();
+ for(let t=0;t<55;t++)region.update(.05,3+t*.05,{x:1060,y:83,z:65});
+ assert.equal(region.boatRipples[1].visible,true,'a onda deve aparecer na água após afundamento');
+ assert.ok(region.boatRipples[1].material.opacity>0);
+ for(let t=0;t<36;t++)region.update(.05,6+t*.05,{x:1070,y:83,z:65});
+ assert.equal(region.boatRipples[1].visible,false,'onda é temporária');
+ region.unload();assert.equal(scene.children.length,0);assert.equal(world.obstacles.length,0);
+});
+
+test('partidas salvas com barcos destruídos não reativam ondas',async()=>{
+ const mock=stubThree(),{MountainRegion}=await moduleWithThree(mock.THREE);
+ const progress=new ExpeditionProgress({boatHealth:[0,2,0],bossHealth:12});
+ const level=new MountainRegion(new mock.THREE.Group(),{obstacles:[],mountainRegion:null},progress);
+ for(let i=0;i<90;i++)level.update(.05,i*.05);
+ assert.ok(level.boatRippleAges.every(v=>v===null));
+ assert.ok(level.boatRipples.every(v=>v.visible===false));
+ level.unload();
 });

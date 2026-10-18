@@ -1,3 +1,18 @@
+# Asas de Brumária v1.3.9 — Chefe tático, contato com terreno e ondas de naufrágio
+
+## Melhorias implementadas
+
+- **Corrigida a animação de pouso:** a compressão do corpo do dragão estava sendo sobrescrita pelo balanço de caminhada/voo no mesmo quadro. Agora as duas componentes são combinadas com uma única interpolação, deixando as patas flexionarem visualmente durante o contato com o solo.
+- **Terreno e tração:** o dragão amostra a elevação em quatro pontos e inclina o corpo suavemente em encostas; caminhando, a tração reduz moderadamente em terrenos íngremes. O sistema não altera o voo nem permite atravessar construções; pousos continuam dependendo da validação de inclinação da v1.3.7.
+- **Dragão gigante mais estratégico:** adapta a rota à posição e altitude do jogador. Aproxima-se quando há distância, recua se o jogador se aproxima demais e executa trajetórias mais agressivas abaixo da metade da vida. Toda a movimentação permanece dentro de limites da arena, e o chefe ainda para durante os avisos de sopro.
+- **Naufrágios visuais:** ondas circulares aparecem sobre o mar enquanto os navios afundam, com raio crescente e transparência gradual. São três malhas recicláveis de baixa complexidade, carregadas somente com o mapa das montanhas e descartadas ao sair.
+- **Sem alterações de progresso:** os saves continuam armazenando apenas a vida dos barcos e do chefe, sem replay dos naufrágios após recarregar.
+- **Testes:** 391 testes automatizados aprovados (378 anteriores + 13 novos), incluindo a construção/destruição real da região com objetos Three.js simulados, ciclo completo de onda na água e regressões anteriores.
+
+**Limitações:** desempenho, aparência final dos efeitos e movimentação de combate precisam de teste visual com uma GPU real. Os testes de código não comprovam um FPS específico em hardware fraco.
+
+---
+
 # Asas de Brumária v1.3.8 — Contato de voo, barcos e IA do dragão gigante
 
 ## Novidades verificadas
