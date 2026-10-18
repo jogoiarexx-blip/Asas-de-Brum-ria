@@ -69,5 +69,5 @@ test('dragão usa textura procedural com UVs, juntas das asas e animação da ma
   assert.match(code,/CanvasTexture/);
   assert.match(code,/tip\.rotation\.z=/);
   assert.match(code,/jawPivot\.rotation\.x=/);
-  assert.match(code,/new THREE\.Float32BufferAttribute\(uvs,2\)/);
+  assert.match(code,/geo\.setAttribute\('uv',new THREE\.Float32BufferAttribute\(/);
 });

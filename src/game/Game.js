@@ -633,6 +633,18 @@ export class Game {
       const dot=(direction.x*dx+direction.y*dy+direction.z*dz)/distance;
       if(dot>bestDot){this._aimBest.set(dx/distance,dy/distance,dz/distance);bestFound=true;bestDot=dot;}
     }
+    // Short-range aim assist for active fire beacons; never target completed ones.
+    if(!this.inMountain&&this.missions.stage>=3){
+      for(const marker of this.villagers.markers){
+        if(marker.id!=='brasas'||!marker.group.visible)continue;
+        const target=marker.group.position;
+        const dx=target.x-shooter.x,dy=target.y-shooter.y,dz=target.z-shooter.z;
+        const distance=Math.hypot(dx,dy,dz);
+        if(distance<.001||distance>=164)continue;
+        const dot=(direction.x*dx+direction.y*dy+direction.z*dz)/distance;
+        if(dot>bestDot){this._aimBest.set(dx/distance,dy/distance,dz/distance);bestFound=true;bestDot=dot;}
+      }
+    }
     if(bestFound)direction.lerp(this._aimBest,.86).normalize();
     const start=this.dragon.group.localToWorld(this._fireStart.set(0,.48,-4.4));
     if(this.spawnProjectile(start,direction,'player')){
@@ -692,6 +704,18 @@ export class Game {
             this.audio.play('hit');this.mountain.flashBossHit();this.mountain.refresh();
             this.ui.toast(result.defeated?'Dragão gigante derrotado! Volte a oeste pelo portal.':`Dragão gigante: ${this.expedition.bossHealth}/12`,4);
             this.saveGame();
+          }
+        }
+        if(!hit&&!this.inMountain&&this.missions.stage>=3){
+          for(const marker of this.villagers.markers){
+            if(marker.id!=='brasas'||!marker.group.visible)continue;
+            if(segmentSphereHit(from,to,marker.group.position,5.4)&&this.contracts.ignite(marker.id,marker.index)){
+              hit=true;this.effects.burst(marker.group.position,'fire',10);
+              this.audio.play('complete');this.villagers.refresh(this.contracts);
+              const state=this.contracts.state.brasas;
+              this.ui.toast(state.status==='ready'?'Três faróis acesos! Volte para Suri.':`Farol aceso! ${state.collected.filter(Boolean).length}/3`,4);
+              this.saveGame();break;
+            }
           }
         }
         if(!hit&&!this.inMountain&&this.missions.stage===3){
