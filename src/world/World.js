@@ -4,6 +4,7 @@ import { seededRandom, clamp } from '../utils/math.js';
 import { obstacleCeiling } from '../utils/collision.js';
 import { surfaceHeightAt,flattenVillageGround } from '../utils/surfaces.js';
 import {terrainPalette} from './TerrainPalette.js';
+import {treeVariant,treeCrownPose} from './TreeVariation.js';
 import {applyIslandVisibility,shouldRefreshClouds,wrappedCloudX} from './VisibilityBudget.js';
 const brown = new THREE.MeshLambertMaterial({color:0x855b37});
 const leafPalette = [0x245d49,0x2b7355,0x398565,0x31735c];
@@ -238,7 +239,8 @@ export class World {
     for(const r of this.forestRocks)buckets.get(nearest(r)).rocks.push(r);
     const woodGeometry=new THREE.CylinderGeometry(.2,.38,2.4,6);
     const crownMaterial=new THREE.MeshLambertMaterial({color:0xffffff});
-    const crowns=Array.from({length:3},(_,k)=>new THREE.ConeGeometry(1.65-k*.22,3.2-k*.4,7));
+    const coniferCrowns=[new THREE.ConeGeometry(1.65,3.2,7),new THREE.ConeGeometry(1.37,2.85,7)];
+    const broadleafCrowns=[new THREE.IcosahedronGeometry(1.4,0),new THREE.IcosahedronGeometry(1.1,0)];
     const stoneGeometry=new THREE.DodecahedronGeometry(1,0);
     const stoneMaterial=new THREE.MeshLambertMaterial({color:0xffffff,flatShading:true});
     const addBatch=(geometry,material,items,place,colorOf,shadows,islandName)=>{
@@ -261,9 +263,22 @@ export class World {
       this.foliageByIsland.set(island.name,[]);
       addBatch(woodGeometry,brown,trees,
         (t,d)=>{d.position.set(t.x,t.y+1.2*t.size,t.z);d.scale.setScalar(t.size);},null,true,island.name);
-      for(let k=0;k<3;k++)addBatch(crowns[k],crownMaterial,trees,
-        (t,d)=>{d.position.set(t.x,t.y+(3.1+k*.85)*t.size,t.z);d.scale.setScalar(t.size);},
-        t=>leafPalette[t.palette],k===0,island.name);
+      // Keep one trunk + two canopy layers, but use two distinct silhouettes.
+      // Matrices and colors are uploaded once; render uses existing island visibility.
+      const conifers=trees.filter(t=>treeVariant(t).kind==='conifer');
+      const broadleaf=trees.filter(t=>treeVariant(t).kind==='broadleaf');
+      for(let k=0;k<2;k++){
+        const placeCrown=(t,d)=>{
+          const pose=treeCrownPose(t,k);
+          d.position.set(t.x+pose.dx*t.size,t.y+pose.y*t.size,t.z+pose.dz*t.size);
+          d.rotation.y=pose.yaw;
+          d.scale.set(pose.sx*t.size,pose.sy*t.size,pose.sz*t.size);
+        };
+        addBatch(coniferCrowns[k],crownMaterial,conifers,placeCrown,
+          t=>leafPalette[(t.palette+k)%leafPalette.length],k===0,island.name);
+        addBatch(broadleafCrowns[k],crownMaterial,broadleaf,placeCrown,
+          t=>leafPalette[(t.palette+k+1)%leafPalette.length],k===0,island.name);
+      }
       // Sub-bosque instanciado: samambaias de duas tonalidades nas bordas das árvores.
       // Sem hitboxes novas, sem sombras extras e com descarte por ilha já existente.
       const fernGeo=this._fernGeo??(this._fernGeo=new THREE.ConeGeometry(.72,1.42,5));
