@@ -1,3 +1,25 @@
+# Asas de Brumária v1.3.4 — Expedição às Montanhas da Sombra
+
+A nova campanha paralela começa em uma **passagem azul a leste do arquipélago**, aproximadamente em X=328, Z=35. Monte no dragão, desbloqueie a habilidade de fogo na história principal e **voe na direção do portal** (aproxime-se acima de 14 m de altitude). A geometria da nova região é carregada dinamicamente ao aproximar-se — não é construída durante o início do jogo. Após cruzar o portal, você chegará ao cenário com ilhas montanhosas, barcos de saqueadores e um dragão gigante.
+
+## Objetivos da expedição
+
+1. **A frota dos saqueadores:** acerte cada um dos 3 barcos inimigos duas vezes com fogo. Os barcos afundados desaparecem, deixam de bloquear o voo e permanecem derrotados se você salvar e sair.
+2. **O dragão colossal:** quando a frota cair, um dragão gigante aparece. Acerte-o 12 vezes enquanto desvia de seus projéteis. O chefe não pode ser atingido antes dos barcos.
+3. **Volta ao Refúgio:** retorne voando pelo portal a oeste da região (siga X decrescente). Só então a campanha é concluída e concede **+3 pontos de treinamento, uma única vez**.
+
+O combate é independente das 7 missões principais e dos contratos diários existentes. O progresso é salvo no navegador e é retomado ao retornar ao portal. Se fechar a página durante a expedição, o dragão reaparecerá **próximo ao portal principal**, com os alvos já destruídos mantidos (não no mapa remoto, que precisa ser carregado novamente). Morra ou retorne antes do chefe e o objetivo não será apagado.
+
+## Configurar gráficos e preferência de GPU
+
+Clique em **⚙ GPU** no HUD para escolher: automático, *preferir alto desempenho* ou *preferir baixo consumo*; resolução interna de 50%, 75% ou 100%; sombras; antialias. Clique em **SALVAR, APLICAR E REINICIAR** para aplicar. A configuração gráfica anterior (AUTO/LEVE/EQUILIBRADO/DETALHADO, tecla G) continua disponível. O painel informa a GPU exposta pelo navegador quando houver autorização.
+
+**Importante:** WebGL permite informar ao navegador uma *preferência*, mas **não escolher/forçar qual placa física executará o jogo**. Para selecionar GPU dedicada em notebooks com duas placas, configure Chrome/Edge em Configurações do Windows > Sistema > Tela > Elementos gráficos > Opções > Alto desempenho (o nome pode variar). Reinicie o navegador se necessário. Informação da GPU também pode ficar oculta por privacidade.
+
+O modo LEVE é recomendado para PCs fracos; desligar antialias e sombras e reduzir resolução também ajuda. O ambiente de teste automatizado não executa o WebGL na GPU real do usuário: os ganhos de FPS e o funcionamento visual devem ser verificados no navegador.
+
+---
+
 # Asas de Brumária v1.3.3 — Física, resgate e missões diárias
 
 **Atualização incremental baseada na v1.3.2**: sem reiniciar a história nem modificar a chave de salvamento anterior.
@@ -23,17 +45,28 @@
 
 ---
 
-# Asas de Brumária v1.3.2 — Combate otimizado e comparador real de FPS
+# Asas de Brumária v1.3.2 — Combate otimizado + comparador real de FPS
 
-- **Fogo otimizado:** partículas de explosões e projéteis agora são criados previamente e reutilizados durante o combate. O pool evita alocações repetidas de vetores e malhas quando o jogador dispara muitas vezes.
-- **Comparação no seu hardware:** pressione **F3**, depois **B** (ou clique em **COMPARAR FPS**). O jogo mostra LEVE, EQUILIBRADO e DETALHADO, com 0,8 s de aquecimento e 4 s de medição por perfil (aproximadamente 15 segundos no total).
-- **Cena estável:** durante a comparação, o jogo pausa movimentação, inimigos, missões e temporizadores, sem alterar os salvamentos ou a preferência gráfica do jogador. Finalizado/cancelado o teste, o perfil original é restaurado.
-- **Relatório:** FPS médio, 1% low, p95 (milissegundos), quadros acima de 50 ms, chamadas de renderização e triângulos; botão **COPIAR RESULTADOS**.
-- **Segurança:** pressionar B novamente, trocar gráficos, abrir o estábulo, perder o foco da aba ou perder o contexto WebGL cancela e restaura a qualidade gráfica.
+**Foco:** reduzir pequenas pausas ao soltar fogo e medir o desempenho dos três perfis gráficos **no navegador do próprio jogador**.
 
-A medição acontece **no navegador do próprio dispositivo**, não é um benchmark já executado pelo ChatGPT nem um número garantido de FPS. Para resultados comparáveis, mantenha a câmera e a posição fixas. Mede um quadro congelado de renderização, e não todas as tarefas de uma partida dinâmica.
+## Principais mudanças
 
-Validação local: **269 testes automatizados aprovados**, sem falhas. Não houve validação de FPS com uma GPU física de baixa potência neste ambiente. A jogabilidade, os controles USB/Bluetooth, as missões e os saves permanecem compatíveis.
+- **Partículas reutilizadas:** explosões e efeitos agora usam pools fixos de partículas já criadas no carregamento. Cada tipo reutiliza posição, velocidade e estado de animação; a quantidade ativa permanece limitada pelo orçamento de qualidade. Evita gerar centenas de objetos temporários durante longas batalhas.
+- **Projéteis totalmente reutilizados:** o jogo pré-cria até 28 projéteis com malhas, materiais compartilhados e vetores de velocidade e recicla o registro completo durante o combate. Também remove alocações de vetores/listas desnecessárias durante a mira automática.
+- **Comparação FPS no próprio hardware:** durante o jogo, pressione **F3** para abrir diagnósticos e **B** (ou o botão **COMPARAR FPS**) para iniciar a medição. O jogo mantém a **mesma cena congelada**, sem avançar missões, ataques ou física, e mede **LEVE → EQUILIBRADO → DETALHADO**, com 0,8 segundo de aquecimento e 4 segundos de amostragem por modo. O teste dura aproximadamente 15 segundos, sem considerar carregamento e latência do sistema.
+- **Resultados úteis:** FPS médio, FPS 1% low, tempo do quadro p95, quadros longos de 50 ms ou mais, chamadas de renderização (draw calls) e triângulos. Use **COPIAR RESULTADOS** para enviar os números. Pressione **B** novamente para cancelar.
+- **Segurança:** ao cancelar, trocar gráficos, perder o contexto gráfico ou sair da aba, o teste para e restaura a qualidade anterior. O teste **não altera salvamentos nem preferências de qualidade** e não acelera nem avança a partida.
+
+### Como obter um comparativo confiável
+
+1. Inicie a aventura e fique parado olhando para uma cena representativa (por exemplo, com dragões e alguns efeitos ativos).
+2. Pressione **F3**, depois **B**. Não mova o personagem nem a câmera durante a comparação.
+3. Aguarde os três perfis terminarem e copie os resultados. O painel restaura automaticamente a qualidade anterior.
+4. Repita em outra área, inclusive junto de construções ou durante batalhas, para verificar os gargalos.
+
+**Importante:** os resultados são tempos reais de quadros no navegador do dispositivo que executa o teste; **não são benchmarks de GPU realizados neste ambiente**. O jogo mede renderização de uma cena estática, não a execução completa da lógica de combate. Os números podem variar com navegador, resolução, temperatura, drivers e programas abertos. Não prometemos FPS fixo.
+
+**Testes:** `npm run check` valida 269 testes automatizados (252 anteriores + 17 novos). Verificação de lógica, sintaxe e imports; não substitui testes de WebGL nem controle físico. A compatibilidade dos saves, missões, controle e GLB é preservada.
 
 ---
 
@@ -93,17 +126,22 @@ A vegetação deixa de usar um único lote espalhado pelo mapa inteiro: árvores
 
 ---
 
-# Asas de Brumária v1.2.7 — Importação GLB funcional
+# Asas de Brumária v1.2.7 — Importação de GLB funcional
 
-A versão anterior não possuía nenhum GLB configurado e o importador não estava acessível no jogo. Agora, pressione **T** durante a partida, abra a seção **PERSONAGEM 3D · GLB**, escolha **IMPORTAR GLB** e selecione um arquivo `.glb` do seu computador. Você também pode usar **TESTAR MODELO DEMO** e **VOLTAR AO ORIGINAL**.
+**Corrigido:** a versão anterior não tinha nenhum arquivo GLB instalado e mantinha o carregamento desativado. Agora a importação é feita no jogo, por arquivo local, com diagnóstico de erros e uma demonstração original.
 
-O modelo substitui o personagem **a pé e montado**. Animações com nomes contendo Idle, Walk, Run ou Ride são usadas quando disponíveis. A importação não altera missões nem a colisão do personagem. O navegador armazena arquivos até 20 MB localmente com IndexedDB e restaura o último modelo; arquivos maiores funcionam apenas na sessão atual, até 48 MB.
+1. Abra o jogo e inicie a aventura.
+2. Pressione **T** para abrir o estábulo.
+3. Na seção **PERSONAGEM 3D · GLB**, clique **TESTAR MODELO DEMO** para conferir o importador, ou **IMPORTAR GLB** e selecione um `.glb` do computador.
+4. O modelo passa a aparecer **andando e montado no dragão**; se o arquivo tiver clips com nomes Idle/Walk/Run/Ride, eles serão utilizados.
+5. O jogo tentará salvar o arquivo no armazenamento local do navegador (IndexedDB) para carregar novamente nas próximas sessões. Se estiver no modo privado, pode não ser possível salvar.
+6. Use **VOLTAR AO ORIGINAL** para desfazer a substituição e limpar o arquivo salvo.
 
-O GLTFLoader e SkeletonUtils oficiais do Three.js r180 (licença MIT) estão em `vendor/addons` para não depender do CDN na versão publicada. Arquivos com compressão Draco, Meshopt e KTX2 ainda requerem exportação sem essas extensões. O modelo de demonstração é original e simplificado, destinado a testar o sistema. Para usar modelos de terceiros, obtenha seus arquivos GLB de fontes licenciadas.
+O jogo **não envia o modelo para servidores**. A seleção de arquivo fica no navegador. Limite GLB: 48 MB; para armazenamento persistente, 20 MB. Não é compatível diretamente com arquivos FBX/OBJ/ZIP; converta para GLB no Blender. Exporte sem Draco, Meshopt nem texturas KTX2, que exigem decodificadores adicionais.
 
-Execute `npm run check` para validar a estrutura e os testes. A execução WebGL de modelos externos em placas de vídeo variadas ainda precisa de testes manuais.
+A demo é uma figura simplificada criada para verificar a importação, não um asset de produção. O importador usa o GLTFLoader oficial Three.js r180 e SkeletonUtils (licença MIT). Os arquivos podem ser guardados pelo inicializador Windows ou Python ao iniciar com internet, e no GitHub Pages ficam junto ao jogo.
 
----
+**Atenção:** arquivos de até 20 MB são salvos em IndexedDB da origem atual. A mudança de endereço/porta/navegador não compartilha os arquivos GLB, mas os salvamentos das missões permanecem independentes.
 
 # Asas de Brumária v1.2.6 — Fogo otimizado e modo leve
 

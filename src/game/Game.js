@@ -33,12 +33,17 @@ import {projectileLimit} from '../systems/PerformanceBudget.js';
 import {projectileAdmission} from '../systems/ProjectilePolicy.js';
 import {WildBonds} from '../systems/WildBonds.js';
 import {WildDragons} from '../entities/WildDragons.js';
+import {ExpeditionProgress,MOUNTAIN_PORTAL,MOUNTAIN_ENTRY,shouldLoadMountain,shouldEnterMountain,shouldExitMountain} from '../systems/ExpeditionRules.js';
+import {readGPUSettings,writeGPUSettings,chooseContextOptions,describeRenderer} from '../systems/GPUSettings.js';
 
 export class Game {
   constructor() {
     this.container=document.getElementById('game');
+    this.gpuPrefs=readGPUSettings();
     const weakGpu=(navigator.deviceMemory>0&&navigator.deviceMemory<=4)||matchMedia('(pointer:coarse)').matches;
-    this.renderer=new THREE.WebGLRenderer({antialias:!weakGpu,powerPreference:'high-performance'});
+    try{if(!localStorage.getItem('brumaria-gpu-options-v1'))this.gpuPrefs.antialias=!weakGpu;}catch{}
+    const deviceOptions=chooseContextOptions(this.gpuPrefs);
+    this.renderer=new THREE.WebGLRenderer({antialias:deviceOptions.antialias,powerPreference:deviceOptions.powerPreference});
     // GraphicsQuality applies a device-aware resolution cap immediately below.
     this.renderer.setPixelRatio(1);
     this.renderer.setSize(innerWidth,innerHeight);
@@ -50,12 +55,15 @@ export class Game {
     this.container.appendChild(this.renderer.domElement);
     this.webglLost=false;this.frameError=null;this.lastKnownFPS=0;this.diagnosticsVisible=false;this.actorStats={visible:0,full:0,limited:0,hidden:0};this.actorViewDirection=new THREE.Vector3();
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x9bdbef);this.scene.fog=new THREE.FogExp2(0xa3e2ed,.00165);
-    this.camera=new THREE.PerspectiveCamera(67,innerWidth/innerHeight,.15,1050);
+    this.camera=new THREE.PerspectiveCamera(67,innerWidth/innerHeight,.15,1600);
     this.input=new Input();this.audio=new AudioSystem();this.ui=new UI();
     this.cameraOrbit=new CameraOrbit();this.bindOrbitControls();this.controllerWasConnected=false;
     this.graphics=new GraphicsQuality(this.renderer,window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches,navigator.deviceMemory??0);
-    this.updateGraphicsLabel();
+    this.graphics.resolutionScale=this.gpuPrefs.resolution;this.graphics.shadowsAllowed=this.gpuPrefs.shadows;this.graphics.apply();
+    this.initGPUOptions();this.updateGraphicsLabel();
     this.saveSystem=new SaveSystem();this.savedData=this.saveSystem.read();
+    this.expedition=new ExpeditionProgress(this.savedData?.expedition);this.mountain=null;this.mountainLoading=null;this.inMountain=false;this.mountainShots=0;this.gateWarned=false;this.mountainRetryUntil=0;
+    this.portal=this.makeMountainPortal();
     this.progression=new Progression(this.savedData?.progression);this.autoSaveTime=0;this.lastSaveOk=null;
     this.world=new World(this.scene);
     this.weather=new Weather(this.scene,this.world,this.camera,this.savedData?.weather);
@@ -112,7 +120,7 @@ export class Game {
       if(document.hidden){this.cancelBenchmark('Teste interrompido: aba em segundo plano.');this.saveGame();}
     });
     document.getElementById('start-btn').addEventListener('click',()=>this.start());
-    this.ui.updateQuest(this.missions);
+    this.ui.updateQuest(this.missions);this.updateExpeditionUI();
     this.renderer.domElement.addEventListener('webglcontextlost',event=>{
       event.preventDefault();this.webglLost=true;this.cancelBenchmark('Teste interrompido: contexto WebGL perdido.');
       this.ui.toast('GPU reiniciada: aguardando restaurar gráficos…',5);
@@ -308,7 +316,7 @@ export class Game {
     const p=this.dragon.group.position,h=this.hero.group.position;
     const payload={version:1,savedAt:new Date().toISOString(),mission:this.missions.snapshot(),progression:this.progression.snapshot(),
       contracts:this.contracts.snapshot(),weather:this.weather.snapshot(),dayNight:this.dayNight.snapshot(),discoveries:this.discovery.snapshot(),
-      wildBonds:this.wildBonds.snapshot(),
+      wildBonds:this.wildBonds.snapshot(),expedition:this.expedition.snapshot(),
       player:{x:p.x,y:p.y,z:p.z,yaw:this.dragon.yaw,health:this.health,energy:this.dragon.energy,mounted:this.dragon.riding,airborne:this.dragon.airborne,heroX:h.x,heroZ:h.z}};
     this.lastSaveOk=this.saveSystem.write(payload);
     if(manual)this.ui.toast(this.lastSaveOk?'Partida salva neste navegador.':'Não foi possível salvar: armazenamento indisponível.');
@@ -317,7 +325,11 @@ export class Game {
   restoreSave(data){
     this.missions.restore(data.mission);
     this.contracts.restore(data.contracts);this.contracts.syncDay(this.dayNight.state.day);this.villagers.refresh(this.contracts);
-    const p=data.player;
+    const p={...data.player};
+    // If the game was closed during a streamed map, restore at its gateway.
+    // Side-mission progress is preserved, even if the mountain module is not yet loaded.
+    if(p.x>650){p.x=310;p.z=35;p.y=Math.max(40,p.y);p.airborne=true;p.mounted=true;p.heroX=300;p.heroZ=35;}
+    this.expedition.inRegion=false;
     const dragonY=Math.max(p.y,this.world.groundHeightAt(p.x,p.z,1.65)+2.58);
     const dragonSpot=recoverFreePosition({x:p.x,z:p.z},1.65,this.world.obstacles,
       (x,z)=>p.airborne||this.world.walkable(x,z),
@@ -338,7 +350,7 @@ export class Game {
   applySceneQuality(){
     const tier=this.graphics.tier;
     this.effects?.setQuality(tier);this.weather?.setQuality(tier);this.world?.setDetailQuality(tier);
-    if(this.world?.sun){this.world.sun.castShadow=tier!=='economy';}
+    if(this.world?.sun){this.world.sun.castShadow=tier!=='economy'&&this.graphics.shadowsAllowed;}
     if(this.world?.fireLight)this.world.fireLight.visible=tier!=='economy';
     if(this.dragon?.accentLight)this.dragon.accentLight.visible=tier==='quality';
     // Shadows are fully disabled in economy. Never change map size on each shot.
@@ -347,6 +359,107 @@ export class Game {
   cycleGraphics(){
     if(this.benchmark.active)this.cancelBenchmark('Teste interrompido: modo gráfico alterado.');
     this.graphics.cycle();this.applySceneQuality();this.updateGraphicsLabel();this.ui.toast(`Qualidade: ${this.graphics.label}`,3);
+  }
+  initGPUOptions(){
+    const panel=document.getElementById('gpu-panel');
+    document.getElementById('gpu-toggle').addEventListener('click',()=>panel.classList.toggle('hidden'));
+    document.getElementById('gpu-close').addEventListener('click',()=>panel.classList.add('hidden'));
+    document.getElementById('gpu-preference').value=this.gpuPrefs.preference;
+    document.getElementById('gpu-resolution').value=String(this.gpuPrefs.resolution);
+    document.getElementById('gpu-shadows').checked=this.gpuPrefs.shadows;
+    document.getElementById('gpu-antialias').checked=this.gpuPrefs.antialias;
+    document.getElementById('gpu-device').textContent=describeRenderer(this.renderer.getContext());
+    document.getElementById('gpu-apply').addEventListener('click',()=>{
+      const next={preference:document.getElementById('gpu-preference').value,
+        resolution:Number(document.getElementById('gpu-resolution').value),
+        shadows:document.getElementById('gpu-shadows').checked,
+        antialias:document.getElementById('gpu-antialias').checked};
+      if(!writeGPUSettings(next)){
+        document.getElementById('gpu-note').textContent='O navegador bloqueou as preferências. Libere armazenamento local.';return;
+      }
+      this.saveGame();window.location.reload();
+    });
+  }
+  makeMountainPortal(){
+    const root=new THREE.Group();root.position.set(MOUNTAIN_PORTAL.x,44,MOUNTAIN_PORTAL.z);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(12,.7,8,40),new THREE.MeshBasicMaterial({color:0x8deef0}));
+    ring.rotation.y=Math.PI/2;root.add(ring);
+    const signal=new THREE.Mesh(new THREE.ConeGeometry(4,16,6),new THREE.MeshBasicMaterial({color:0xbacbff,transparent:true,opacity:.5,depthWrite:false}));signal.position.y=14;root.add(signal);
+    this.scene.add(root);return root;
+  }
+  async loadMountain(){
+    if(this.mountain||this.mountainLoading||this.elapsed<this.mountainRetryUntil)return this.mountainLoading;
+    this.mountainLoading=(async()=>{
+      const {MountainRegion}=await import('../world/MountainRegion.js');
+      const chunk=new MountainRegion(this.scene,this.world,this.expedition);
+      this.world.mountainRegion=chunk;this.mountain=chunk;
+      this.ui.toast('Montanhas da Sombra carregadas. Siga em frente para entrar!',5);
+    })().catch(error=>{
+      this.mountainRetryUntil=this.elapsed+12;
+      console.warn('Falha ao carregar mapa das montanhas:',error);
+      this.ui.toast('Não foi possível carregar o mapa. Verifique a conexão e tente novamente.',6);
+    }).finally(()=>{this.mountainLoading=null;});
+    return this.mountainLoading;
+  }
+  unloadMountain(){
+    if(!this.mountain||this.inMountain)return;
+    this.mountain.unload();this.mountain=null;
+  }
+  updateExpedition(dt){
+    if(!this.started)return;
+    const pos=this.dragon.group.position,riding=this.dragon.riding;
+    this.portal.visible=!this.inMountain;
+    if(!this.inMountain){
+      if(shouldLoadMountain(pos,riding)){
+        if(this.missions.stage<3){
+          if(!this.gateWarned){this.ui.toast('Conclua as runas para liberar fogo antes de entrar nas montanhas!',4);this.gateWarned=true;}
+        }else{this.gateWarned=false;this.loadMountain();}
+      }else this.gateWarned=false;
+      if(this.mountain&&shouldEnterMountain(pos,riding)&&this.missions.stage>=3){
+        this.inMountain=true;this.expedition.inRegion=true;
+        this.dragon.group.position.set(MOUNTAIN_ENTRY.x,Math.max(47,pos.y),MOUNTAIN_ENTRY.z);
+        this.dragon.airborne=true;this.dragon.speed=Math.max(15,this.dragon.speed);
+        this._camTarget?.copy(this.dragon.group.position);
+        this.ui.toast('NOVA REGIÃO: MONTANHAS DA SOMBRA! Destrua os barcos inimigos.',6);this.saveGame();
+      }
+      // Keep the dynamically imported chunk cached near the gateway, then free its GPU resources.
+      if(this.mountain&&pos.x<245)this.unloadMountain();
+    }else if(shouldExitMountain(pos,riding)){
+      this.inMountain=false;this.expedition.inRegion=false;
+      this.dragon.group.position.set(295,Math.max(45,pos.y),35);
+      this._camTarget?.copy(this.dragon.group.position);
+      if(this.expedition.completeReturn()){
+        this.progression.grant(3);this.audio.play('complete');
+        this.ui.toast('EXPEDIÇÃO CONCLUÍDA! Montanhas libertadas · +3 pontos de treino!',7);
+      }else this.ui.toast('De volta a Brumária! A missão das montanhas está salva.',4);
+      this.saveGame();this.unloadMountain();
+    }
+    if(this.mountain){
+      this.mountain.refresh();this.mountain.update(dt,this.elapsed);
+      if(this.inMountain&&this.expedition.phase==='boss'&&riding){
+        const boss=this.mountain.boss,dist=boss.position.distanceTo(this.dragon.group.position);
+        if(dist<230&&dist>19){
+          this.mountainShots+=dt;
+          if(this.mountainShots>=2.8){
+            this.mountainShots=0;
+            const dir=this.dragon.group.position.clone().sub(boss.position).normalize();
+            this.spawnProjectile(boss.position,dir,'enemy');
+          }
+        }
+      }
+    }
+    this.updateExpeditionUI();
+  }
+  updateExpeditionUI(){
+    const el=document.getElementById('mountain-status');
+    if(this.inMountain){
+      const p=this.expedition;
+      el.textContent=p.phase==='boats'?`🏔 MONTANHAS · DESTRUIR BARCOS ${p.boatsSunk}/3`:
+        p.phase==='boss'?`🐉 DRAGÃO GIGANTE · VIDA ${p.bossHealth}/12`:
+        p.phase==='return'?'✅ CHEFE DERROTADO · RETORNE PELO PORTAL A OESTE':
+        '🏔 EXPEDIÇÃO CONCLUÍDA';
+    }else el.textContent=this.expedition.phase==='complete'?'🏆 MONTANHAS LIBERTADAS':
+      this.missions.stage>=3?'🏔 NOVO MAPA A LESTE · VOE AO PORTAL AZUL':'🏔 MAPA A LESTE · DESBLOQUEIE O FOGO';
   }
   onResize(){
     this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();this.renderer.setSize(innerWidth,innerHeight);
@@ -476,12 +589,13 @@ export class Game {
     // Assistência de mira limitada ao campo frontal. Exige apontar para o alvo.
     let bestDot=.77,bestFound=false;
     // No arrays or cloned vectors on every fire input.
-    const candidates=this.missions.stage===3?this.missions.targets:
-      this.missions.stage===4?this.enemies.enemies:[];
+    const candidates=this.inMountain&&this.mountain?(this.expedition.phase==='boats'?this.mountain.boats:this.expedition.phase==='boss'?[this.mountain.boss]:[]):
+      this.missions.stage===3?this.missions.targets:this.missions.stage===4?this.enemies.enemies:[];
     const shooter=this.dragon.group.position;
     for(const candidate of candidates){
-      if(this.missions.stage===3&&candidate.userData.destroyed)continue;
-      if(this.missions.stage===4&&!candidate.alive)continue;
+      if(this.inMountain&&this.expedition.phase==='boats'&&!candidate.visible)continue;
+      if(this.missions.stage===3&&!this.inMountain&&candidate.userData.destroyed)continue;
+      if(this.missions.stage===4&&!this.inMountain&&!candidate.alive)continue;
       const target=candidate.position;
       const dx=target.x-shooter.x,dy=target.y-shooter.y,dz=target.z-shooter.z;
       const distance=Math.hypot(dx,dy,dz);
@@ -522,7 +636,27 @@ export class Game {
       bullet.mesh.scale.setScalar((bullet.owner==='enemy'?1.55:1.25)+Math.sin(bullet.life*26)*.13);
       let hit=false;
       if(bullet.owner==='player'){
-        if(this.missions.stage===3){
+        if(this.inMountain&&this.mountain){
+          if(this.expedition.phase==='boats'){
+            for(let k=0;k<this.mountain.boats.length;k++){
+              const ship=this.mountain.boats[k];
+              if(!ship.visible)continue;
+              if(segmentSphereHit(from,to,ship.position,11)){
+                const result=this.expedition.hitBoat(k);hit=result.hit;
+                this.effects.burst(ship.position,'impact',15);this.audio.play('hit');
+                this.mountain.refresh();this.ui.toast(result.sunk?`Barco afundado! ${this.expedition.boatsSunk}/3`: 'Barco atingido: acerte novamente!',4);
+                if(result.sunk&&this.expedition.phase==='boss')this.ui.toast('Os barcos caíram! Enfrente o dragão gigante!',6);
+                this.saveGame();break;
+              }
+            }
+          }else if(this.expedition.phase==='boss'&&segmentSphereHit(from,to,this.mountain.boss.position,16)){
+            const result=this.expedition.hitBoss();hit=result.hit;this.effects.burst(this.mountain.boss.position,'fire',17);
+            this.audio.play('hit');this.mountain.refresh();
+            this.ui.toast(result.defeated?'Dragão gigante derrotado! Volte a oeste pelo portal.':`Dragão gigante: ${this.expedition.bossHealth}/12`,4);
+            this.saveGame();
+          }
+        }
+        if(!this.inMountain&&this.missions.stage===3){
           for(let k=0;k<this.missions.targets.length;k++){
             const target=this.missions.targets[k];
             if(!target.userData.destroyed&&segmentSphereHit(from,to,target.position,7.5)){
@@ -533,7 +667,7 @@ export class Game {
             }
           }
         }
-        if(this.missions.stage===4){
+        if(!this.inMountain&&this.missions.stage===4){
           for(const enemy of this.enemies.alive){
             if(segmentSphereHit(from,to,enemy.position,5.6)){
               const dead=enemy.takeHit(this.progression.stats.fireDamage);
@@ -547,7 +681,7 @@ export class Game {
             }
           }
         }
-      } else if(this.missions.stage===4&&this.dragon.riding&&segmentSphereHit(from,to,this.dragon.group.position,4.2)){
+      } else if((this.missions.stage===4||this.inMountain)&&this.dragon.riding&&segmentSphereHit(from,to,this.dragon.group.position,4.2)){
         this.takeDamage(16);hit=true;
       }
       if(hit||bullet.life<=0||to.y<-.9)this.recycleProjectileAt(i);
@@ -585,6 +719,7 @@ export class Game {
     this.camera.fov=THREE.MathUtils.damp(this.camera.fov,fov,3,dt);this.camera.updateProjectionMatrix();
   }
   resetPosition(respawn=false){
+    if(this.inMountain){this.inMountain=false;this.expedition.inRegion=false;this.unloadMountain();}
     const x=8,z=7;this.dragon.group.position.set(x,this.world.groundHeightAt(x,z)+2.58,z);
     this.dragon.yaw=-.5;this.dragon.turnAxis=0;this.dragon.speed=0;this.dragon.airborne=false;this.dragon.energy=Math.max(35,this.dragon.energy);
     if(!this.dragon.riding)this.hero.group.position.set(2,this.world.groundHeightAt(2,11,.52),11);
@@ -650,7 +785,7 @@ export class Game {
     }
     if(this.started){
       if(this.input.consume('t')||this.input.consume('start'))this.toggleStable();
-      if(this.input.consume('escape')){this.ui.stable.classList.add('hidden');this.ui.hideDialogue();}
+      if(this.input.consume('escape')){this.ui.stable.classList.add('hidden');this.ui.hideDialogue();document.getElementById('gpu-panel').classList.add('hidden');}
       if(this.input.consume('p'))this.saveGame(true);
       if(this.input.consume('c')){this.weather.cycle();this.saveGame();this.ui.toast(`Clima: ${this.weather.mode.label}`,3);}
       if(this.input.consume('g'))this.cycleGraphics();
@@ -689,6 +824,7 @@ export class Game {
       if(this.autoSaveTime>15){this.autoSaveTime=0;this.saveGame();}
       this.enemies.update(dt,this.elapsed,this.dragon,(origin,direction)=>this.spawnProjectile(origin,direction,'enemy'));
       this.updateProjectiles(dt);
+      this.updateExpedition(dt);
       this.effects.update(dt);
       this.hurtImmunity=Math.max(0,this.hurtImmunity-dt);
       this.hitFlash=Math.max(0,this.hitFlash-dt);

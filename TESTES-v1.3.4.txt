@@ -1,0 +1,8 @@
+ASAS DE BRUMÁRIA — v1.3.4: NOVA REGIÃO E CONTROLES DE GPU
+
+- Campanha paralela: Montanhas da Sombra, 3 embarcações e um dragão gigante de 12 pontos de vida.
+- Construção sob demanda com import('../world/MountainRegion.js'), iniciada quando o dragão se aproxima da passagem aérea a leste (x>292), e liberação de geometria, materiais e obstáculos ao regressar.
+- O progresso da expedição usa um campo opcional no save v1. Missões principais e contratos diários são preservados.
+- Preferências de GPU (alto desempenho, baixa energia, automático) são dicas ao navegador; o sistema operacional tem a decisão final. Inclui resolução 50/75/100%, sombras e antialias.
+- npm run check executa validação de imports, sintaxe e regressões. Teste visual/WebGL real ainda necessário.
+- Windows continua sendo inicializador do jogo web, não executável 3D nativo.

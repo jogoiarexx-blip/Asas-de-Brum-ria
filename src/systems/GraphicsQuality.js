@@ -23,12 +23,13 @@ export class GraphicsQuality {
     this.coarse=coarse;this.memory=memory;this.mode='auto';
     try{const saved=store?.getItem('asas-brumaria-graphics');if(['auto',...GRAPHICS_TIERS].includes(saved))this.mode=saved;}catch{}
     this.tier=this.mode==='auto'?suggestedTier({coarse,deviceMemory:memory}):this.mode;
+    this.resolutionScale=1;this.shadowsAllowed=true;
     this.slowSamples=0;this.fastSamples=0;this.cooldown=0;
     this.apply();
   }
   apply(){
-    this.renderer.setPixelRatio(pixelRatioFor(this.tier,this.deviceRatio));
-    this.renderer.shadowMap.enabled=this.tier!=='economy';
+    this.renderer.setPixelRatio(pixelRatioFor(this.tier,this.deviceRatio)*this.resolutionScale);
+    this.renderer.shadowMap.enabled=this.tier!=='economy'&&this.shadowsAllowed;
     this.renderer.shadowMap.needsUpdate=true;
   }
   get label(){return `${this.mode==='auto'?'AUTO · ':''}${GRAPHICS_LABELS[this.tier]}`;}

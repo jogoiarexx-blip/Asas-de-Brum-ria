@@ -36,12 +36,13 @@ export class World {
     return island===ISLANDS[0]?flattenVillageGround(original,x,z,VILLAGE_HEIGHT):original;
   }
   heightAt(x,z) {
+    if(x>650&&this.mountainRegion)return this.mountainRegion.heightAt(x,z);
     let h = -2;
     for (const island of ISLANDS) h=Math.max(h,this.islandHeight(island,x,z));
     return h;
   }
   groundHeightAt(x,z,radius=0) { return surfaceHeightAt(this.heightAt(x,z),x,z,this.surfaces,radius); }
-  walkable(x,z) { return ISLANDS.some(i=>Math.hypot(x-i.x,z-i.z) < i.r*.92 && this.islandHeight(i,x,z)>1); }
+  walkable(x,z) { if(x>650&&this.mountainRegion)return this.mountainRegion.heightAt(x,z)>1;return ISLANDS.some(i=>Math.hypot(x-i.x,z-i.z) < i.r*.92 && this.islandHeight(i,x,z)>1); }
   clearanceAt(x,z,radius=1) { return obstacleCeiling(x,z,radius,this.obstacles); }
   addObstacle(x,y,z,radius,height,type){
     this.obstacles.push({x,z,radius,bottom:y,top:y+height,type});

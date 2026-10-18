@@ -1,4 +1,5 @@
 import {normalizeWildBonds} from './WildBonds.js';
+import {normalizeExpedition} from './ExpeditionRules.js';
 import {normalizeWeather} from './weatherMath.js';
 import {normalizeDayCycle} from './dayCycleMath.js';
 import {normalizeDiscoveries,LANDMARKS} from './Discovery.js';
@@ -19,8 +20,9 @@ export function normalizeSave(payload){
     weather:normalizeWeather(payload.weather),
     dayNight:normalizeDayCycle(payload.dayNight),
     wildBonds:normalizeWildBonds(payload.wildBonds),
+    expedition:normalizeExpedition(payload.expedition),
     discoveries:{found:LANDMARKS.filter((_,i)=>normalizeDiscoveries(payload.discoveries)[i]).map(m=>m.id)},
-    player:{x:finite(p.x,-420,420,8),y:finite(p.y,2.7,110,4),z:finite(p.z,-420,420,7),yaw:finite(p.yaw,-Math.PI*4,Math.PI*4,-.5),energy:finite(p.energy,0,250,100),health:finite(p.health,1,100,100),mounted:p.mounted===true,airborne:p.airborne===true,heroX:finite(p.heroX,-420,420,2),heroZ:finite(p.heroZ,-420,420,11)},
+    player:{x:finite(p.x,-420,1450,8),y:finite(p.y,2.7,110,4),z:finite(p.z,-420,420,7),yaw:finite(p.yaw,-Math.PI*4,Math.PI*4,-.5),energy:finite(p.energy,0,250,100),health:finite(p.health,1,100,100),mounted:p.mounted===true,airborne:p.airborne===true,heroX:finite(p.heroX,-420,420,2),heroZ:finite(p.heroZ,-420,420,11)},
     savedAt:typeof payload.savedAt==='string'?payload.savedAt:''
   };
 }

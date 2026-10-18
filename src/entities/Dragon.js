@@ -305,7 +305,7 @@ export class Dragon {
         }
       } else {
         const moved=moveWithCollisions(this.group.position,horizontal,1.65,this.world.obstacles,
-          (x,z)=>Math.abs(x)<425&&Math.abs(z)<425,
+          (x,z)=>this.world.walkable(x,z),
           o=>obstacleBlocks(o,this.group.position.y,1.65),
           {groundAt:(x,z)=>this.world.groundHeightAt(x,z,1.65),maxStepUp:1.65});
         this.group.position.x=moved.x;this.group.position.z=moved.z;

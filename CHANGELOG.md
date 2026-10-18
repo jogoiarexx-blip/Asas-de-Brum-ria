@@ -1,3 +1,14 @@
+## v1.3.4 — Segunda região em streaming e batalhas de chefe
+
+- Novo módulo carregado dinamicamente `src/world/MountainRegion.js`, com terreno montanhoso original, pedras, oceano, três barcos 3D e dragão colossal animado.
+- Portal a leste: geometria, materiais e colisões da região são criados apenas quando o jogador se aproxima voando; ao voltar, recursos são liberados para PCs mais fracos.
+- Campanha paralela com sequência barcos (2 disparos cada), chefe (12 disparos), retorno e recompensa não repetida; HUD e minimapa atualizados.
+- Salvos antigos compatíveis: campo opcional `expedition`; a história principal, os contratos e os GLBs não são substituídos.
+- Painel `⚙ GPU` para WebGL powerPreference (apenas sugestão ao navegador), resolução escalonada, sombras, antialias e identificação da GPU quando permitida.
+- Testes de missão, carregamento/descarregamento, colisões, persistência e sanitização de opções. Renderização real e FPS requerem teste no navegador do usuário.
+
+---
+
 ## v1.3.3 — Novas missões, resgate e física
 
 - Novo ciclo de **dias numerados** persistidos sem perda de saves v1.
@@ -12,13 +23,15 @@
 
 ---
 
-## v1.3.2 — Evitar engasgos em explosões e medir FPS por perfil
+## v1.3.2 — Renderização, alocações do combate e benchmark comparativo
 
-- Novo pool `ReusableSlots.js` e partículas pré-alocadas em `Effects.js`, mantendo renderização instanciada.
-- Pré-criação de 28 registros de projéteis (malhas e vetores compartilhados) e eliminação de clones/arrays durante mira de disparos.
-- Novo `GraphicsBenchmark.js` para registrar quadros reais, FPS médio, 1% low, p95 e draw calls em cada perfil; aquecimento antes de comparar.
-- Benchmark com cena congelada, recuperação do perfil anterior, cancelamento seguro e resultados copiáveis via F3/B.
-- 17 testes adicionais, total de 269 aprovados. Os testes não medem FPS real em GPU.
+- `ReusableSlots.js`: pool de objetos de capacidade fixa, com retirada, reciclagem e limitação de instâncias ativas.
+- `Effects.js`: partículas de fogo/explosões usam vetores pré-alocados e slot reutilizável; mantém instancing por tipo.
+- `Game.js`: projéteis pré-criados, com reciclagem do registro e do vetor de velocidade; mira automática evita clones e arrays intermediários.
+- `GraphicsBenchmark.js`: medição real de quadros no navegador, 0,8 s de aquecimento + 4 s de amostra por perfil, percentual 1% low e latência p95; resultados copiáveis no painel.
+- Durante o benchmark a jogabilidade/IA fica pausada para manter a mesma cena e não causar mortes ou mudanças na progressão; ao finalizar/cancelar os gráficos anteriores são restaurados.
+- Novos atalhos `B` e botões no painel F3. Sem mudança em saves ou controles anteriores.
+- 269 testes automatizados aprovados (17 testes adicionais); sem medição real de FPS em GPU neste ambiente.
 
 ---
 
@@ -70,17 +83,17 @@
 
 ---
 
-## v1.2.7 — Carregamento de GLB corrigido
+## v1.2.7 — Importador GLB real
 
-- Importação do arquivo GLB diretamente pelo navegador, com feedback detalhado.
-- Modelo 3D usado no personagem a pé e montado, inclusive com rig esquelético ao clonar via SkeletonUtils.
-- Demonstração GLB gerada pelo jogo, sem exigir download do modelo.
-- Armazenamento local opcional via IndexedDB e botão para restaurar personagem original.
-- GLTFLoader + dependências oficiais Three.js r180 embarcadas no site sob licença MIT.
-- Nove novos testes de GLB (196 aprovados na bateria local).
-- Continuidade das missões, controles, gráficos adaptativos e salvamentos.
-
----
+- Novo painel no estábulo: importar `.glb` do PC, testar demonstração e remover modelo.
+- Validação de assinatura, estrutura glTF 2.0 e limite de tamanho com mensagens de erro claras.
+- Loader oficial Three.js r180 com addons locais, fallback de CDN e configuração de cache nos inicializadores.
+- GLB com malhas skinned agora é clonado corretamente para a versão montada, com fallback seguro para rigs.
+- Importação atômica: se der erro, o personagem anterior permanece; animações Idle, Walk, Run e Ride quando presentes.
+- IndexedDB guarda GLBs pessoais pequenos localmente e restaura o modelo depois de recarregar a página.
+- Modelo de teste original em `assets/models/hero-demo.glb`; sem assets de terceiros incluídos.
+- Testes de GLB, modelo corrompido, carregador e interface adicionados; salva missões e jogo sem modificar o formato.
+- WebGL deve ser confirmado no navegador; teste com modelos reais mais complexos ainda depende do hardware do jogador.
 
 # v1.2.6 — Desempenho e estabilidade do fogo
 

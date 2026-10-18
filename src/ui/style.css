@@ -105,3 +105,21 @@ body:has(#controller-status.connected) .gamepad-help{opacity:.92}
 .daily-job span{font-size:10px;color:#bee9d9}
 .daily-board-note{font-size:11px;color:#b5dacf;line-height:1.5}
 @media(max-width:560px){.daily-board{grid-template-columns:1fr}}
+
+/* v1.3.4 — HUD de expedições + configurações reais WebGL */
+.mountain-status{position:fixed;right:14px;top:176px;max-width:260px;padding:9px 12px;
+ background:rgba(7,27,36,.85);color:#cbf0fe;border:1px solid rgba(124,217,243,.4);
+ border-radius:9px;font-size:10px;font-weight:750;letter-spacing:.35px;z-index:5;pointer-events:none}
+.gpu-panel{position:fixed;right:14px;top:74px;width:min(365px,calc(100vw - 28px));max-height:calc(100dvh - 90px);overflow:auto;
+ background:#102c39f7;border:1px solid #8abacdaa;box-shadow:0 16px 45px #000b;border-radius:14px;
+ padding:18px;z-index:26;color:#ebfaff;font-size:12px;display:flex;flex-direction:column;gap:10px}
+.gpu-panel.hidden{display:none!important}
+.gpu-panel-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px}
+.gpu-panel-title button{background:transparent;border:1px solid #83adbd;color:#e9fbff;border-radius:5px;padding:3px 9px;cursor:pointer}
+.gpu-panel label{display:flex;flex-direction:column;gap:5px;font-weight:700}
+.gpu-panel select{background:#214755;color:#fff;border:1px solid #6da6b8;padding:9px;border-radius:7px}
+.gpu-panel label.gpu-check{flex-direction:row;align-items:center;gap:8px}
+.gpu-panel p{line-height:1.45;color:#bddce5;margin:1px 0}
+.gpu-panel #gpu-apply{background:#72c9d1;border:0;border-radius:8px;color:#072530;padding:11px;font-weight:850;cursor:pointer}
+#gpu-toggle{background:#184256;color:#c6f5ff;border:1px solid #6cb2cb88;border-radius:15px;padding:5px 10px;font-weight:800;cursor:pointer}
+@media(max-width:850px){.mountain-status{right:8px;top:165px;max-width:180px;font-size:8px}.gpu-panel{right:4px;top:52px}}

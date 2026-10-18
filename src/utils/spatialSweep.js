@@ -42,7 +42,7 @@ export function resolveCameraPosition(anchor,desired,obstacles=[],terrainAt=()=>
  * ceiling, diving through a roof, or tunneling into a tower in one frame.
  */
 export function moveFlightWithCollisions(start,delta,radius,halfHeight,obstacles=[],groundAt=()=>-Infinity,
-  {floorOffset=2.58,bounds=425}={}) {
+  {floorOffset=2.58,bounds=1600}={}) {
   const length=Math.hypot(delta.x,delta.y,delta.z);
   const steps=Math.max(1,Math.ceil(length/Math.max(.15,radius*.23)));
   const dx=delta.x/steps,dy=delta.y/steps,dz=delta.z/steps;

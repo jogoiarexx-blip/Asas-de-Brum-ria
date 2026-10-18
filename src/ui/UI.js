@@ -120,6 +120,18 @@ export class UI {
     this.uiClock+=dt;if(shouldThrottleHUD(this.uiClock,game.graphics?.tier??'balanced'))return;this.uiClock=0;
     const {dragon,hero,missions,world}=game;
     this.updateQuest(missions);
+    if(game.inMountain){
+      const exp=game.expedition;
+      this.questIndex.textContent='EXPEDIÇÃO · MONTANHAS';
+      this.questTitle.textContent=exp.phase==='boats'?'FROTA DOS SAQUEADORES':exp.phase==='boss'?'O DRAGÃO COLOSSAL':'REGRESSO AO REFÚGIO';
+      this.questDesc.textContent=exp.phase==='boats'?`Destrua os 3 barcos inimigos com fogo · ${exp.boatsSunk}/3 afundados (2 acertos por barco).`:
+        exp.phase==='boss'?`Enfrente o dragão gigante · resistência ${exp.bossHealth}/12 · desvie das bolas de fogo.`:
+        'Retorne pelo portal a oeste para completar a expedição e receber +3 pontos.';
+      this.questProgress.replaceChildren();
+      const total=exp.phase==='boss'?12:3,done=exp.phase==='boats'?exp.boatsSunk:exp.phase==='boss'?12-exp.bossHealth:3;
+      for(let i=0;i<total;i++){const dot=document.createElement('div');dot.className='quest-tick'+(i<done?' done':'');this.questProgress.append(dot);}
+    }else if(this.lastMountain){this.lastStage=-1;this.updateQuest(missions);}
+    this.lastMountain=game.inMountain;
     this.weatherPill.textContent=game.weather.mode.label+(dragon.riding&&dragon.airborne&&dragon.windDrift>.1?` · RAJADAS ${dragon.windDrift.toFixed(1)}m/s`:``);
     this.clockPill.textContent=`DIA ${game.dayNight.state.day} · ${game.dayNight.clock}`;
     this.expeditionStatus.textContent=`MARCOS ${game.discovery.total}/5 · AMIZADES ${game.wildBonds.total}/3`;
@@ -141,14 +153,17 @@ export class UI {
     const marker=contractKey&&state.status==='active'?game.villagers.markers.find(m=>m.id===contractKey&&!state.collected[m.index]):null;
     const npcReturn=contractKey&&state.status==='ready'?game.villagers.npcs.find(n=>n.spec.id===contract.npc):null;
     const contractTarget=marker?.group.position??npcReturn?.root.position??null;
-    const target=game.training.waypoint??contractTarget??missions.waypoint(dragon);
+    const mountainTarget=game.inMountain&&game.mountain?(game.expedition.phase==='boats'?
+      game.mountain.boats.find((boat,i)=>game.expedition.boatHealth[i]>0)?.position:
+      game.expedition.phase==='boss'?game.mountain.boss.position:{x:753,y:50,z:35}):null;
+    const target=mountainTarget??game.training.waypoint??contractTarget??missions.waypoint(dragon);
     const dist=target?Math.round(position.distanceTo(target)):0;
-    this.waypoint.textContent=game.training.active?`TREINO: ${dist} m`:contractTarget?`CONTRATO A ${dist} m`:missions.complete?'ARQUIPÉLAGO LIBERADO':missions.stage===6?'VOLTE À VILA · TECLA T':`OBJETIVO A ${dist} m`;
+    this.waypoint.textContent=game.inMountain?`EXPEDIÇÃO: ALVO A ${dist} m`:game.training.active?`TREINO: ${dist} m`:contractTarget?`CONTRATO A ${dist} m`:missions.complete?'ARQUIPÉLAGO LIBERADO':missions.stage===6?'VOLTE À VILA · TECLA T':`OBJETIVO A ${dist} m`;
     this.contractStatus.classList.toggle('hidden',!activeContract);
     if(activeContract)this.contractStatus.textContent=`${contract.title} · ${state.collected.filter(Boolean).length}/${contract.points.length}${state.status==='ready'?' · VOLTE AO NPC':''}`;
     this.trainingStatus.classList.toggle('hidden',!game.training.active);
     if(game.training.active)this.trainingStatus.textContent=`TREINO ${CIRCUITS[game.training.mode].label} · ${game.training.progress}/${game.training.definition.checkpoints.length} · ${Math.ceil(game.training.seconds)}s`;
-    const enemy=missions.stage===4?game.enemies.nearest(dragon.group.position):null;
+    const enemy=!game.inMountain&&missions.stage===4?game.enemies.nearest(dragon.group.position):null;
     const toEnemy=enemy?enemy.position.clone().sub(dragon.group.position):null;
     const locked=dragon.riding&&toEnemy&&toEnemy.length()<165&&dragon.forward().dot(toEnemy.normalize())>.78;
     this.targetLock.classList.toggle('hidden',!locked);
@@ -164,30 +179,36 @@ export class UI {
     if(mobileInteract)mobileInteract.textContent=nearNpc?'FALAR':nearWild?(calm.mood==='tranquilo'?'CARINHO':'ESPERAR'):dragon.riding?'DESCER':'MONTAR';
     const slowButton=document.querySelector('[data-hold="shift"]');
     if(slowButton)slowButton.textContent=dragon.riding?'TURBO':'DEVAGAR';
-    this.drawMap(position,target,dragon.yaw,missions,game.enemies,game.villagers,game.contracts,game.discovery,game.wildDragons);
+    this.drawMap(position,target,dragon.yaw,missions,game.enemies,game.villagers,game.contracts,game.discovery,game.wildDragons,game.mountain,game.expedition);
   }
-  drawMap(position,target,yaw,missions,enemies,villagers,contracts,discovery,wildDragons){
+  drawMap(position,target,yaw,missions,enemies,villagers,contracts,discovery,wildDragons,mountain=null,expedition=null){
     const ctx=this.ctx,W=this.mini.width,H=this.mini.height,s=0.34;
     ctx.clearRect(0,0,W,H);ctx.fillStyle='#0b3645';ctx.fillRect(0,0,W,H);
     const mx=x=>W/2+(x-position.x)*s, my=z=>H/2+(z-position.z)*s;
     ctx.fillStyle='#4e8d76';ctx.strokeStyle='#8bc19c';ctx.lineWidth=1;
-    for(const island of ISLANDS){ctx.beginPath();ctx.arc(mx(island.x),my(island.z),island.r*s,0,Math.PI*2);ctx.fill();ctx.stroke();}
+    if(position.x>650){ctx.beginPath();ctx.arc(mx(1042),my(3),176*s,0,Math.PI*2);ctx.fill();ctx.stroke();}
+    else for(const island of ISLANDS){ctx.beginPath();ctx.arc(mx(island.x),my(island.z),island.r*s,0,Math.PI*2);ctx.fill();ctx.stroke();}
     ctx.strokeStyle='rgba(232,250,255,.13)';ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
-    if(missions.stage===4){ctx.fillStyle='#f68bab';for(const e of enemies.alive){ctx.beginPath();ctx.arc(mx(e.position.x),my(e.position.z),3.5,0,Math.PI*2);ctx.fill();}}
-    if(missions.stage===5){ctx.fillStyle='#a0ffd2';for(const baby of missions.hatchlings.filter((b,i)=>!b.userData.rescued&&i!==missions.carriedIndex)){ctx.beginPath();ctx.arc(mx(baby.position.x),my(baby.position.z),3.1,0,Math.PI*2);ctx.fill();}}
-    if(missions.stage===5&&missions.carriedIndex>=0){const refuge=missions.nest.position;ctx.strokeStyle='#ffe38b';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(mx(refuge.x),my(refuge.z),6,0,Math.PI*2);ctx.stroke();}
-    for(let i=0;i<LANDMARKS.length;i++){ 
+    if(position.x>650&&mountain){
+      ctx.fillStyle='#ffb5a6';mountain.boats.forEach((boat,i)=>{if(expedition?.boatHealth[i]<=0)return;ctx.fillRect(mx(boat.position.x)-4,my(boat.position.z)-2,8,4);});
+      if(expedition?.phase==='boss'){ctx.fillStyle='#ff618f';ctx.beginPath();ctx.arc(mx(mountain.boss.position.x),my(mountain.boss.position.z),7,0,Math.PI*2);ctx.fill();}
+    }
+    if(position.x<650){ctx.fillStyle='#82eeff';ctx.fillRect(Math.min(W-8,mx(328))-4,my(35)-4,8,8);}
+    if(position.x<650&&missions.stage===4){ctx.fillStyle='#f68bab';for(const e of enemies.alive){ctx.beginPath();ctx.arc(mx(e.position.x),my(e.position.z),3.5,0,Math.PI*2);ctx.fill();}}
+    if(position.x<650&&missions.stage===5){ctx.fillStyle='#a0ffd2';for(const baby of missions.hatchlings.filter((b,i)=>!b.userData.rescued&&i!==missions.carriedIndex)){ctx.beginPath();ctx.arc(mx(baby.position.x),my(baby.position.z),3.1,0,Math.PI*2);ctx.fill();}}
+    if(position.x<650&&missions.stage===5&&missions.carriedIndex>=0){const refuge=missions.nest.position;ctx.strokeStyle='#ffe38b';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(mx(refuge.x),my(refuge.z),6,0,Math.PI*2);ctx.stroke();}
+    if(position.x<650)for(let i=0;i<LANDMARKS.length;i++){ 
       if(discovery.found[i])continue;
       const lm=LANDMARKS[i];const x=mx(lm.x),y=my(lm.z);
       ctx.save();ctx.translate(x,y);ctx.rotate(Math.PI/4);ctx.fillStyle='#9df8e3';ctx.fillRect(-2.8,-2.8,5.6,5.6);ctx.restore();
     }
-    for(const wild of wildDragons.remaining){
+    if(position.x<650)for(const wild of wildDragons.remaining){
       const x=mx(wild.group.position.x),y=my(wild.group.position.z);
       ctx.fillStyle='#f4aeff';ctx.strokeStyle='#50235f';ctx.lineWidth=1;
       ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
-    for(const npc of villagers.npcs){ctx.fillStyle='#ffcf82';ctx.fillRect(mx(npc.root.position.x)-2,my(npc.root.position.z)-2,4,4);}
-    for(const m of villagers.markers){if(!m.group.visible)continue;ctx.fillStyle=m.id==='correio'?'#f3c88a':'#89ffc3';ctx.beginPath();ctx.arc(mx(m.group.position.x),my(m.group.position.z),3,0,Math.PI*2);ctx.fill();}
+    if(position.x<650)for(const npc of villagers.npcs){ctx.fillStyle='#ffcf82';ctx.fillRect(mx(npc.root.position.x)-2,my(npc.root.position.z)-2,4,4);}
+    if(position.x<650)for(const m of villagers.markers){if(!m.group.visible)continue;ctx.fillStyle=m.id==='correio'?'#f3c88a':'#89ffc3';ctx.beginPath();ctx.arc(mx(m.group.position.x),my(m.group.position.z),3,0,Math.PI*2);ctx.fill();}
     if(target){const tx=mx(target.x),ty=my(target.z);ctx.save();ctx.shadowColor='#ffdb8d';ctx.shadowBlur=14;ctx.fillStyle='#ffe3a0';ctx.beginPath();ctx.arc(tx,ty,5,0,Math.PI*2);ctx.fill();ctx.restore();}
     ctx.save();ctx.translate(W/2,H/2);ctx.rotate(-yaw);ctx.fillStyle='#f3fff8';ctx.strokeStyle='#133944';ctx.lineWidth=1.8;
     ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(-5,7);ctx.lineTo(0,4);ctx.lineTo(5,7);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
