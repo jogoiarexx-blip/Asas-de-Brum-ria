@@ -1,0 +1,8 @@
+ASAS DE BRUMÁRIA v1.4.3
+
+Base publicada v1.4.2: 426 testes automatizados.
+Novo: 11 testes de faróis, UI, salvamento, virada de dia e lotes de flores.
+Total esperado: 437 testes automatizados, sujeito à execução de CI.
+O teste de WebGL e o ganho real de FPS exigem computador com GPU.
+
+Windows: jogo de navegador servido por inicializador, não um executável nativo.

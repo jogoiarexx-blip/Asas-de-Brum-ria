@@ -6,7 +6,8 @@ export const VILLAGERS=[
   {id:'lume',name:'LUME',role:'Curandeira',x:22,z:14,coat:0x9f835c,cap:0xd1a271},
   {id:'borin',name:'BORIN',role:'Mestre da forja',x:-7,z:-24,coat:0x71546b,cap:0x62564e},
   {id:'nara',name:'NARA',role:'Guardadora dos filhotes',x:34,z:24,coat:0x7e6b9e,cap:0x6e8b6f},
-  {id:'tavi',name:'TAVI',role:'Vigia dos Horizontes',x:-29,z:31,coat:0x416b8b,cap:0xc69b5e}
+  {id:'tavi',name:'TAVI',role:'Vigia dos Horizontes',x:-29,z:31,coat:0x416b8b,cap:0xc69b5e},
+  {id:'suri',name:'SURI',role:'Guardiã dos faróis',x:-30,z:-15,coat:0xa7673a,cap:0xc7a256}
 ];
 function cylinderBetween(a,b,r,mat){
   const vector=new THREE.Vector3().subVectors(b,a),mesh=new THREE.Mesh(new THREE.CylinderGeometry(r*.78,r,vector.length(),7),mat);
@@ -46,7 +47,7 @@ export class VillageNPCs {
       root.add(labelSprite(spec.name,spec.role));scene.add(root);this.npcs.push({spec,root,halo});
       world.addObstacle(spec.x,root.position.y,spec.z,.63,3.5,'npc');
     }
-    const palette={correio:0xffcb86,ervas:0x89ffc3,minérios:0x9ec1fa,socorro:0xf8a6dc,patrulha:0x92caff};
+    const palette={correio:0xffcb86,ervas:0x89ffc3,minérios:0x9ec1fa,socorro:0xf8a6dc,patrulha:0x92caff,brasas:0xff985c};
     for(const [id,def] of Object.entries(CONTRACTS)){
       for(let i=0;i<def.points.length;i++){
         const [x,y,z]=def.points[i],height=def.requiresMount?y:world.heightAt(x,z)+1.8;
@@ -55,6 +56,12 @@ export class VillageNPCs {
         const center=new THREE.Mesh(!def.requiresMount?new THREE.OctahedronGeometry(1.1):new THREE.BoxGeometry(2.4,1.3,.9),material);group.add(center);
         const hoop=new THREE.Mesh(new THREE.TorusGeometry(!def.requiresMount?2.5:5,.15,6,32),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide}));group.add(hoop);
         const beam=new THREE.Mesh(new THREE.CylinderGeometry(.14,.85,!def.requiresMount?7:18,8,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.16,depthWrite:false,side:THREE.DoubleSide}));beam.position.y=!def.requiresMount?3.6:9;group.add(beam);
+        if(def.requiresFire){
+          const brazier=new THREE.Mesh(new THREE.CylinderGeometry(1.45,1.8,2.1,6),new THREE.MeshLambertMaterial({color:0x684737}));
+          brazier.position.y=-1.3;group.add(brazier);
+          const flame=new THREE.Mesh(new THREE.ConeGeometry(1.25,3.8,5),new THREE.MeshBasicMaterial({color:0xffa13c,transparent:true,opacity:.85}));
+          flame.position.y=1.4;group.add(flame);group.userData.beaconFlame=flame;
+        }
         group.visible=false;scene.add(group);this.markers.push({id,index:i,group,baseY:height});
       }
     }

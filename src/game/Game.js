@@ -694,7 +694,7 @@ export class Game {
             this.saveGame();
           }
         }
-        if(!this.inMountain&&this.missions.stage===3){
+        if(!hit&&!this.inMountain&&this.missions.stage===3){
           for(let k=0;k<this.missions.targets.length;k++){
             const target=this.missions.targets[k];
             if(!target.userData.destroyed&&segmentSphereHit(from,to,target.position,7.5)){
@@ -705,7 +705,7 @@ export class Game {
             }
           }
         }
-        if(!this.inMountain&&this.missions.stage===4){
+        if(!hit&&!this.inMountain&&this.missions.stage===4){
           for(const enemy of this.enemies.alive){
             if(segmentSphereHit(from,to,enemy.position,5.6)){
               const dead=enemy.takeHit(this.progression.stats.fireDamage);

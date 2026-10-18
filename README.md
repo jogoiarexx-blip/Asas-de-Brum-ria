@@ -1,3 +1,22 @@
+# Asas de Brumária v1.4.3 — Faróis de fogo e cenário florido
+
+## Conteúdo novo
+
+- **Suri, guardiã dos faróis:** nova moradora da vila, com o contrato diário **Chamas dos Faróis**. Aceite a missão, monte no dragão, acenda três balizas laranjas com a tecla **F** (fogo) e retorne a Suri para receber **3 pontos de treinamento**. Cada missão reabre no dia seguinte. O jogador precisa desbloquear o sopro de fogo nas missões da história; apenas sobrevoar a baliza não conta.
+- **Visual dos objetivos:** balizas com braseiros e chama laranja, bônus de mira quando o marcador está ativo e dicas próprias no painel de missão e na barra do contrato.
+- **Ilhas mais coloridas:** flores de cinco cores espalhadas pelo terreno, em **um lote 3D instanciado por ilha**, sem hitboxes nem centenas de objetos isolados. Elas ficam ocultas no modo **LEVE**, usam densidade menor no **EQUILIBRADO** e aparecem completas no **DETALHADO**.
+- **Compatibilidade:** os cinco contratos anteriores, missão principal, dragões e mapas em streaming continuam. Os saves antigos recebem o novo contrato inicialmente disponível sem perder suas conquistas.
+- **Lógica testada:** 11 novos testes de faróis, recompensa, virada do dia, salvamento, projéteis, HUD e geometria instanciada. A medição de FPS ainda precisa ser realizada em uma GPU real.
+
+### Como jogar
+
+1. Vá à vila do Refúgio e converse com **Suri**, perto da forja.
+2. Desbloqueie o sopro de fogo se ainda não o tiver feito; aperte **T** para ver o quadro diário.
+3. Siga a bússola e o minimapa até as três balizas laranjas, acenda cada uma com **F** e volte para Suri.
+4. No menu ⚙ GPU, use o perfil LEVE se o computador apresentar engasgos.
+
+---
+
 ## v1.4.2 — Gráficos e missões
 
 A v1.4.2 reúne as melhorias gráficas do terreno e da água com o trabalho de orientação de missões das versões anteriores, sem apagar progressos.

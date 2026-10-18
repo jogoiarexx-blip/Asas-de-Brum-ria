@@ -26,7 +26,7 @@ export class World {
     this.materials = [];
     this.obstacles = [];this.surfaces=[];
     this.forestTrees = [];this.forestRocks = [];this.foliageMeshes = [];
-    this.foliageByIsland=new Map();this.grassByIsland=new Map();
+    this.foliageByIsland=new Map();this.grassByIsland=new Map();this.flowersByIsland=new Map();
     this.detailTier='balanced';this.detailElapsed=Infinity;this.cloudElapsed=Infinity;
     this.cloudTravel=0;this.visibleIslandCount=ISLANDS.length;
     this.cloudWind=1;
@@ -62,7 +62,7 @@ export class World {
     water.rotation.x=-Math.PI/2; water.position.y=-.9; water.receiveShadow=true;scene.add(water);
     for (const island of ISLANDS) this.buildIsland(island);
     this.flushFoliage();
-    this.buildCoastalDetails(); this.buildWildGrass(); this.buildVillage(); this.buildVillageProps(); this.buildClouds(); this.buildSeabirds();
+    this.buildCoastalDetails(); this.buildWildGrass(); this.buildWildflowers(); this.buildVillage(); this.buildVillageProps(); this.buildClouds(); this.buildSeabirds();
   }
   makeWaterTexture() {
     const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;
@@ -157,6 +157,35 @@ export class World {
       mesh.count=placed;mesh.instanceMatrix.needsUpdate=true;
       if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;
       this.scene.add(mesh);this.grassByIsland.set(island.name,mesh);
+    }
+  }
+  /** Low-cost flower accents: one instanced draw per island; no collisions. */
+  buildWildflowers(){
+    const geometry=new THREE.TetrahedronGeometry(.38,0);
+    const material=new THREE.MeshLambertMaterial({color:0xffffff,side:THREE.DoubleSide});
+    const dummy=new THREE.Object3D();
+    const palette=[0xffd8a1,0xf9acc7,0xd7c7ff,0xfff3b7,0x87d6cf];
+    for(const island of ISLANDS){
+      const maximum=island.r>70?175:85;
+      const flowers=new THREE.InstancedMesh(geometry,material,maximum);
+      let count=0;
+      for(let attempts=0;attempts<maximum*8&&count<maximum;attempts++){
+        const a=rand()*Math.PI*2,d=island.r*Math.sqrt(rand())*.81;
+        const x=island.x+Math.cos(a)*d,z=island.z+Math.sin(a)*d;
+        if(island===ISLANDS[0]&&x>-36&&x<40&&z>-30&&z<45)continue;
+        const y=this.heightAt(x,z);
+        if(y<3||y>21)continue;
+        const size=.45+rand()*.8;
+        dummy.position.set(x,y+.26*size,z);dummy.rotation.set(0,rand()*6.28,0);
+        dummy.scale.set(size,.38*size,size);dummy.updateMatrix();
+        flowers.setMatrixAt(count,dummy.matrix);
+        flowers.setColorAt(count,new THREE.Color(palette[Math.floor(rand()*palette.length)]));
+        count++;
+      }
+      flowers.count=count;flowers.userData.totalCount=count;flowers.instanceMatrix.needsUpdate=true;
+      if(flowers.instanceColor)flowers.instanceColor.needsUpdate=true;
+      flowers.castShadow=false;flowers.receiveShadow=false;
+      this.scene.add(flowers);this.flowersByIsland.set(island.name,flowers);
     }
   }
   buildVillageProps() {
@@ -316,6 +345,13 @@ export class World {
     if(this.detailElapsed<.24)return;
     this.detailElapsed=0;
     const state=applyIslandVisibility(observer,this.detailTier,ISLANDS,this.foliageByIsland,this.grassByIsland);
+    for(const island of ISLANDS){
+      const bloom=this.flowersByIsland.get(island.name);
+      if(!bloom)continue;
+      const grass=this.grassByIsland.get(island.name);
+      bloom.visible=(grass?.visible??true)&&this.detailTier!=='economy';
+      bloom.count=this.detailTier==='balanced'?Math.ceil(bloom.userData.totalCount*.65):bloom.userData.totalCount;
+    }
     this.visibleIslandCount=state.visible;
   }
   buildSeabirds() {

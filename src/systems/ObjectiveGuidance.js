@@ -14,13 +14,14 @@ export function headingToObjective(from,target,yaw=0){
   return {direction,symbol,distance};
 }
 export function missionNextStep({stage=0,progress=0,riding=false,carriedIndex=-1,rescueHold=0,
-  nearestEnemyHealth=null,inMountain=false,expeditionPhase='',bossHealth=12,activeContract=null,training=false}={}){
+  nearestEnemyHealth=null,inMountain=false,expeditionPhase='',bossHealth=12,activeContract=null,activeContractType=null,training=false}={}){
   if(inMountain){
     if(expeditionPhase==='boats')return 'MISSÃO: Aproxime-se dos navios e use FOGO para destruir as velas e os cascos.';
     if(expeditionPhase==='boss')return bossHealth<=6?'CHEFE EM FÚRIA: esquive com Q e acerte no CONTRA-ATAQUE!':'CHEFE: desvie do anel de aviso e responda após o sopro.';
     return 'REGRESSO: siga o portal para oeste e receba a recompensa.';
   }
   if(training)return 'CIRCUITO ATIVO: atravesse o próximo aro antes do tempo terminar.';
+  if(activeContractType==='brasas')return 'BALIZAS DE FOGO: voe até o farol laranja, mire e pressione F. Depois volte para Suri.';
   if(activeContract)return 'CONTRATO DIÁRIO: siga o destino do minimapa e retorne ao morador.';
   switch(stage){
     case 0:return riding?'MONTARIA PRONTA: descubra os aros da próxima missão.':'ENCONTRE NIMBO: aproxime-se e pressione E para montar.';

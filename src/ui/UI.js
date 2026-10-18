@@ -164,7 +164,7 @@ export class UI {
     this.questGuide.textContent=missionNextStep({stage:missions.stage,progress:missions.progress,riding:dragon.riding,
       carriedIndex:missions.carriedIndex,rescueHold:missions.rescueHold,
       nearestEnemyHealth:enemyForGuide?.health,inMountain:game.inMountain,expeditionPhase:game.expedition.phase,
-      bossHealth:game.expedition.bossHealth,activeContract:contractTarget,training:game.training.active});
+      bossHealth:game.expedition.bossHealth,activeContract:contractTarget,activeContractType:contractKey,training:game.training.active});
     const waypointType=game.inMountain?'EXPEDIÇÃO':game.training.active?'TREINO':contractTarget?'CONTRATO':'OBJETIVO';
     this.waypoint.textContent=bearing?`${bearing.symbol} ${waypointType} · ${bearing.distance} m · ${bearing.direction}`:
       missions.complete?'ARQUIPÉLAGO LIBERADO':missions.stage===6?'VOLTE À VILA · TECLA T':'ENCONTRE O PRÓXIMO OBJETIVO';
@@ -172,7 +172,7 @@ export class UI {
     portal.classList.toggle('hidden',!game.inMountain && !shouldShowMountainHint(position,missions.stage,false,game.expedition.phase==='complete'));
 
     this.contractStatus.classList.toggle('hidden',!activeContract);
-    if(activeContract)this.contractStatus.textContent=`${contract.title} · ${state.collected.filter(Boolean).length}/${contract.points.length}${state.status==='ready'?' · VOLTE AO NPC':''}`;
+    if(activeContract)this.contractStatus.textContent=`${contract.title} · ${state.collected.filter(Boolean).length}/${contract.points.length}${state.status==='ready'?' · VOLTE AO NPC':contract.requiresFire?' · USE FOGO':''}`;
     this.trainingStatus.classList.toggle('hidden',!game.training.active);
     if(game.training.active)this.trainingStatus.textContent=`TREINO ${CIRCUITS[game.training.mode].label} · ${game.training.progress}/${game.training.definition.checkpoints.length} · ${Math.ceil(game.training.seconds)}s`;
     const enemy=!game.inMountain&&missions.stage===4?game.enemies.nearest(dragon.group.position):null;

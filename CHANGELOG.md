@@ -1,3 +1,13 @@
+## v1.4.3 — Novo contrato de fogo e flores instanciadas
+
+- Novo contrato repetível de Suri: Chamas dos Faróis, três alvos atingidos com o sopro, +3 pontos ao entregar.
+- Novos braseiros com sinalização clara no mapa, mira assistida de curto alcance e objetivo explicado no HUD.
+- Progresso gravado por baliza, protegido contra múltiplos acertos, válido para salvamentos anteriores e reiniciado apenas no dia seguinte.
+- Flores decorativas coloridas em lotes instanciados por ilha com visibilidade conforme a qualidade; sem impacto nas colisões.
+- 11 testes de regressão novos, preservando os testes existentes. A GPU real ainda precisa ser avaliada.
+
+---
+
 ## v1.4.2 — Gráficos e missões
 
 A v1.4.2 reúne as melhorias gráficas do terreno e da água com o trabalho de orientação de missões das versões anteriores, sem apagar progressos.

@@ -15,7 +15,10 @@ export const CONTRACTS=Object.freeze({
     points:[[-182,30,-123],[168,35,104],[196,32,-160]]},
   patrulha:{title:'VIGÍLIA DOS HORIZONTES',npc:'tavi',reward:2,requiresMount:true,
     description:'Sobrevoe três balizas de patrulha entre as ilhas e informe Tavi ao regressar.',
-    points:[[-115,42,79],[121,44,32],[174,38,-110]]}
+    points:[[-115,42,79],[121,44,32],[174,38,-110]]},
+  brasas:{title:'CHAMAS DOS FARÓIS',npc:'suri',reward:3,requiresMount:true,requiresFire:true,
+    description:'Monte no dragão e acenda com FOGO as três balizas laranjas das ilhas. Volte para Suri.',
+    points:[[105,38,43],[-154,42,-105],[190,42,-115]]}
 });
 const safeStatus=value=>['idle','active','ready','done'].includes(value)?value:'idle';
 const dayNumber=value=>Number.isSafeInteger(value)?Math.min(1000000,Math.max(1,value)):1;
@@ -70,9 +73,18 @@ export class VillageContracts {
     }
     return {npc,text:'Contrato diário concluído. Volte amanhã para uma nova rota!',action:'done',key};
   }
+  /** Projectile-only contracts: proximity cannot ignite a beacon. */
+  ignite(key,index){
+    const s=this.state[key],def=CONTRACTS[key];
+    if(!def?.requiresFire||!s||s.status!=='active'||!Number.isInteger(index)||
+      index<0||index>=def.points.length||s.collected[index])return false;
+    s.collected[index]=true;
+    if(s.collected.every(Boolean))s.status='ready';
+    return true;
+  }
   collect(key,index,mounted){
     const s=this.state[key],def=CONTRACTS[key];
-    if(!s||s.status!=='active'||s.collected[index]||!def.points[index]||def.requiresMount!==mounted)return false;
+    if(!s||s.status!=='active'||s.collected[index]||!def.points[index]||def.requiresFire||def.requiresMount!==mounted)return false;
     s.collected[index]=true;
     if(s.collected.every(Boolean))s.status='ready';
     return true;
