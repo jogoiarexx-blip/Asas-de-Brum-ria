@@ -52,7 +52,7 @@ export class Hero {
     }else{
       cape.rotation.z=THREE.MathUtils.damp(cape.rotation.z,pose.sway*.42,6,dt);
     }
-    body.rotation.x=THREE.MathUtils.damp(body.rotation.x,pose.bodyLean,7,dt);
+    if(!mounted)body.rotation.x=THREE.MathUtils.damp(body.rotation.x,pose.bodyLean,7,dt);
     cape.rotation.x=THREE.MathUtils.damp(cape.rotation.x,pose.cape+Math.sin(now*(mounted?6:9))*.04,5,dt);
   }
   update(dt,input,time){
