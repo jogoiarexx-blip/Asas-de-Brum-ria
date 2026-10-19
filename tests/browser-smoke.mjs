@@ -86,8 +86,9 @@ try{
   await page.locator('#stable').waitFor({state:'visible',timeout:10000});
   await page.locator('#dragon-glb-reset').click();
   await page.waitForFunction(()=>
-    document.querySelector('#dragon-glb-status')?.dataset.state==='ok',null,{timeout:15000});
+    document.querySelector('#dragon-glb-status')?.textContent?.includes('original restaurado'),null,{timeout:15000});
   await check('Restaurar dragão procedural após GLB');
+  await page.locator('#stable-close').click();
   await page.keyboard.press('p');
   await page.waitForTimeout(450);
   await check('Salvar partida sem travamento de frame');
