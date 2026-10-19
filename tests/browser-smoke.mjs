@@ -65,18 +65,21 @@ try{
   await page.waitForTimeout(500);
   await check('Estábulo e Fúria da Luz disponíveis na prévia');
 
-  // Exercise the actual GLTFLoader, scene replacement and fallback with a
-  // small original GLB supplied to the file input. No third-party binaries.
+  // Exercise the actual GLTFLoader, scene replacement and fallback using
+  // an original animated dragon GLB with clips for flight, attack and landing.
   const demoBytes=await page.evaluate(async()=>{
-    const {buildDemoGLB}=await import('./src/entities/demoGlb.js');
-    return Array.from(buildDemoGLB());
+    const {buildDragonDemoGLB}=await import('./src/entities/dragonDemoGlb.js');
+    return Array.from(buildDragonDemoGLB());
   });
   await page.locator('#dragon-glb-file').setInputFiles({
     name:'dragao-teste.glb',mimeType:'model/gltf-binary',buffer:Buffer.from(demoBytes)
   });
   await page.waitForFunction(()=>
     document.querySelector('#dragon-glb-status')?.dataset.state==='ok',null,{timeout:15000});
-  await check('Importação GLB real no dragão sem alterar o controle');
+  const statusText=await page.locator('#dragon-glb-status').innerText();
+  assert.match(statusText,/Flying/);
+  assert.match(statusText,/Attack/);
+  await check('Importação GLB animado no dragão sem alterar o controle');
 
   await page.locator('#stable-close').click();
   await page.waitForTimeout(350);
