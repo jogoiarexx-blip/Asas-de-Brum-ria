@@ -9,6 +9,7 @@ import { Dragon } from '../entities/Dragon.js';
 import { EnemySquad } from '../entities/EnemyDragon.js';
 import { Hero } from '../entities/Hero.js';
 import {HeroAssetUI} from '../ui/HeroAssetUI.js';
+import {DragonAssetUI} from '../ui/DragonAssetUI.js';
 import { Missions } from '../systems/Missions.js';
 import { AudioSystem } from '../systems/Audio.js';
 import { Effects } from '../systems/Effects.js';
@@ -78,6 +79,7 @@ export class Game {
     this.dragon=new Dragon(this.scene,this.world);
     this.hero=new Hero(this.scene,this.world,this.dragon);
     this.heroAssetUI=new HeroAssetUI(this.hero);
+    this.dragonAssetUI=new DragonAssetUI(this.dragon);
     this.enemies=new EnemySquad(this.scene,this.world);
     this.effects=new Effects(this.scene);
     this.applySceneQuality();
