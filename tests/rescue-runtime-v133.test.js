@@ -26,8 +26,17 @@ const Three={Group,Mesh,DoubleSide:2,
 function createMissions(){
  const js=readFileSync(new URL('../src/systems/Missions.js',import.meta.url),'utf8')
    .replace(/^import[^\n]*\n/gm,'').replace('export class Missions','class Missions')+'\nglobalThis.Result=Missions;';
+ // The rescue visual was extracted into its own module. Stub only its visuals;
+ // run the real Missions pickup/delivery/save behavior unchanged.
+ const buildHatchling=()=>{
+   const group=new Group();
+   group.userData.ring=new Mesh();
+   group.userData.wings=[{w:new Group(),side:-1},{w:new Group(),side:1}];
+   return group;
+ };
  const ctx={THREE:Three,QUEST_DEFS,RING_POSITIONS,CRYSTAL_POSITIONS,TARGET_POSITIONS,HATCHLING_POSITIONS,
-   rescueApproach,deliveryReady,RESCUE_HOVER_SECONDS,RESCUE_NEST};
+   rescueApproach,deliveryReady,RESCUE_HOVER_SECONDS,RESCUE_NEST,buildHatchling,
+   animateHatchling:()=>{}};
  runInNewContext(js,ctx);
  const awards=[],sounds=[],messages=[],snapshots=[];
  const mission=new ctx.Result({add(){}},{play:x=>sounds.push(x)},()=>{},null,stage=>awards.push(stage));

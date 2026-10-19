@@ -22,3 +22,32 @@ jobs:
           node-version: '22'
       - name: Validar sintaxe imports HUD e regressao
         run: npm run check
+
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v4
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Three.js local e navegador para QA
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1 three@0.180.0
+          npx playwright install --with-deps chromium
+          mkdir -p vendor
+          cp node_modules/three/build/three.module.js vendor/three.module.js
+          cp node_modules/three/build/three.core.js vendor/three.core.js
+      - name: Simular partida no Chromium
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/brumaria-server.log 2>&1 &
+          node tests/browser-smoke.mjs
+      - name: Salvar captura de tela do teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brumaria-browser-smoke
+          path: artifacts/
+          if-no-files-found: ignore

@@ -182,11 +182,12 @@ export class UI {
     if(locked)this.targetLock.textContent=`◆ SENTINELA NA MIRA · ${Math.ceil(enemy.health)}/${enemy.maxHealth}`;
     const near=hero.group.position.distanceTo(dragon.group.position)<10.5;
     const nearNpc=!dragon.riding?game.villagers.nearby(hero.group.position,5.5):null;
-    const nearWild=!dragon.riding&&!nearNpc?game.wildDragons.nearby(hero.group.position,8.2):null;
+    const nearWild=!dragon.riding&&!nearNpc?game.wildDragons.nearby(hero.group.position,8.2,true):null;
     const showInteraction=nearNpc||nearWild|| (dragon.riding?(dragon.group.position.y-world.heightAt(dragon.group.position.x,dragon.group.position.z)<4.8 && dragon.speed<11):near);
     this.interaction.classList.toggle('hidden',!showInteraction);
     const calm=nearWild?game.wildDragons.approach.get(nearWild.spec.id):null;
-    this.interaction.textContent=nearNpc?`E · CONVERSAR COM ${nearNpc.spec.name}`:nearWild?(calm.mood==='assustado'?`${nearWild.spec.name} ASSUSTADO · PARE E AGUARDE`:calm.mood==='tranquilo'?`E · CARINHO EM ${nearWild.spec.name} (${game.wildBonds.progress(nearWild.spec.id)}/3)`: `GANHANDO CONFIANÇA ${Math.round(calm.calm*100)}% · ${nearWild.spec.id==='nimbo'?'SHIFT = ANDAR DEVAGAR':'FIQUE POR PERTO'}`):dragon.riding?'E · DESMONTAR':`E · MONTAR EM ${SPECIES[game.progression.species].name.toUpperCase()}`;
+    const wildBefriended=!!nearWild&&game.wildBonds.progress(nearWild.spec.id)>=3;
+    this.interaction.textContent=nearNpc?`E · CONVERSAR COM ${nearNpc.spec.name}`:nearWild?(calm.mood==='assustado'?`${nearWild.spec.name} ASSUSTADO · PARE E AGUARDE`:calm.mood==='tranquilo'?(wildBefriended?`E · ACARICIAR ${nearWild.spec.name} · AMIGO`:`E · CARINHO EM ${nearWild.spec.name} (${game.wildBonds.progress(nearWild.spec.id)}/3)`): `GANHANDO CONFIANÇA ${Math.round(calm.calm*100)}% · ${nearWild.spec.id==='nimbo'?'SHIFT = ANDAR DEVAGAR':'FIQUE POR PERTO'}`):dragon.riding?'E · DESMONTAR':`E · MONTAR EM ${SPECIES[game.progression.species].name.toUpperCase()}`;
     const mobileInteract=document.querySelector('[data-tap="e"]');
     if(mobileInteract)mobileInteract.textContent=nearNpc?'FALAR':nearWild?(calm.mood==='tranquilo'?'CARINHO':'ESPERAR'):dragon.riding?'DESCER':'MONTAR';
     const slowButton=document.querySelector('[data-hold="shift"]');

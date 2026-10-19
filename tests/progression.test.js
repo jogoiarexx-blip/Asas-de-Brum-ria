@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Progression,SPECIES,SKILLS,REWARDS} from '../src/systems/Progression.js';
 import {SaveSystem,normalizeSave} from '../src/systems/SaveSystem.js';
-test('três espécies, três habilidades e sete recompensas de missão',()=>{
-  assert.deepEqual(Object.keys(SPECIES),['nimbo','brasa','raio']);
+test('quatro espécies, três habilidades e sete recompensas de missão',()=>{
+  assert.deepEqual(Object.keys(SPECIES),['nimbo','brasa','raio','furia_luz']);
   assert.equal(Object.keys(SKILLS).length,3);
   assert.equal(REWARDS.length,7);
 });

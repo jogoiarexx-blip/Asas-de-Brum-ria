@@ -67,6 +67,7 @@ test('HUD expõe etapa ativa e direção da próxima missão',()=>{
 test('marcadores de cristais e filhotes deixam o céu mais limpo',()=>{
  const missions=source('../src/systems/Missions.js');
  assert.match(missions,/CylinderGeometry\(\.13,\.7,22/);
- assert.match(missions,/CylinderGeometry\(\.12,\.8,15/);
+ const hatchlings=source('../src/entities/HatchlingVisual.js');
+ assert.match(hatchlings,/CylinderGeometry\(\.12,\.8,15/);
  assert.doesNotMatch(missions,/CylinderGeometry\(\.26,1\.7,48/);
 });

@@ -10,30 +10,33 @@ import webbrowser
 os.chdir(Path(__file__).resolve().parent)
 
 def cache_three():
-    target = Path('vendor/three.module.js')
-    if target.exists() and target.stat().st_size > 100_000:
-        return
+    """Store the two matching r180 build modules used by the native Three ESM bundle."""
     if os.environ.get('BRUMARIA_SKIP_DOWNLOAD') == '1':
         return
-    target.parent.mkdir(exist_ok=True)
-    urls = [
-        'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js',
-        'https://unpkg.com/three@0.180.0/build/three.module.js',
+    base_urls = [
+        'https://cdn.jsdelivr.net/npm/three@0.180.0/build/',
+        'https://unpkg.com/three@0.180.0/build/',
     ]
-    for url in urls:
-        try:
-            request = Request(url, headers={'User-Agent': 'Brumaria-1.4.3/1.0'})
-            with urlopen(request, timeout=5) as handle:
-                data = handle.read(1_500_001)
-            if 100_000 < len(data) < 1_500_000 and b'export' in data:
-                temp = target.with_suffix('.part')
-                temp.write_bytes(data)
-                temp.replace(target)
-                print('Three.js salvo localmente para proxima execucao offline.', flush=True)
-                return
-        except Exception as exc:
-            print(f'Falha no download Three.js ({url.split("/")[2]}): {exc}', flush=True)
-    print('Biblioteca local ainda ausente; navegador tentara obter Three.js pela internet.', flush=True)
+    for filename in ('three.module.js', 'three.core.js'):
+        target = Path('vendor') / filename
+        if target.exists() and target.stat().st_size > 100_000:
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        for base in base_urls:
+            try:
+                request = Request(base + filename, headers={'User-Agent': 'Brumaria-QA/1.4.7'})
+                with urlopen(request, timeout=8) as response:
+                    data = response.read(4_000_001)
+                if 100_000 < len(data) <= 4_000_000 and b'export' in data:
+                    temp = target.with_suffix('.part')
+                    temp.write_bytes(data)
+                    temp.replace(target)
+                    print('Three.js em cache:', filename, flush=True)
+                    break
+            except Exception as exc:
+                print(f'Falha ao baixar {filename} ({base.split("/")[2]}): {exc}', flush=True)
+        else:
+            print(f'{filename} ausente; o navegador tentara um CDN.', flush=True)
 
 cache_three()
 
@@ -49,7 +52,7 @@ def cache_glb_addons():
         for provider in ('https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/',
                          'https://unpkg.com/three@0.180.0/examples/jsm/'):
             try:
-                request=Request(provider+name,headers={'User-Agent':'Brumaria-GLB/1.4.3'})
+                request=Request(provider+name,headers={'User-Agent':'Brumaria-GLB/1.4.7'})
                 with urlopen(request,timeout=6) as response: data=response.read(160_001)
                 if 500 < len(data) < 160_000 and b'import ' in data:
                     tmp=target.with_suffix('.part');tmp.write_bytes(data);tmp.replace(target)
@@ -72,7 +75,7 @@ for candidate in ([port] if remote else range(port, port + 20)):
 if server is None:
     raise SystemExit(f'Nao foi possivel iniciar o servidor na porta {port}.')
 url = f'http://127.0.0.1:{port}/'
-print(f'\nASAS DE BRUMARIA v1.4.3 - JOGO THREE.JS\nServidor na porta {port}.\nPressione Ctrl+C para encerrar.\n', flush=True)
+print(f'\nASAS DE BRUMARIA v1.4.7 - JOGO THREE.JS\nServidor na porta {port}.\nPressione Ctrl+C para encerrar.\n', flush=True)
 if not remote:
     print(f'Acesse: {url}\n', flush=True)
     threading.Timer(1, lambda: webbrowser.open(url)).start()
