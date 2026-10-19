@@ -55,7 +55,7 @@ test('modelos preservam contrato de resgate e acoplamento ao carinho',()=>{
   const game=readFileSync(new URL('../src/game/Game.js',import.meta.url),'utf8');
   assert.match(missions,/buildHatchling\(i\)/);
   assert.match(missions,/animateHatchling\(baby/);
-  assert.match(missions,/baby\.userData\.rescued/);
+  assert.match(missions,/carried\.userData\.rescued/);
   assert.match(missions,/this\.carriedIndex/);
   assert.match(wild,/onPetted\(id\)/);
   assert.match(game,/this\.wildDragons\.onPetted\(creature\.spec\.id\)/);
