@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { QUEST_DEFS,RING_POSITIONS,CRYSTAL_POSITIONS,TARGET_POSITIONS,HATCHLING_POSITIONS } from '../world/config.js';
 import {rescueApproach,deliveryReady,RESCUE_HOVER_SECONDS,RESCUE_NEST} from './RescueRules.js';
+import {buildHatchling,animateHatchling} from '../entities/HatchlingVisual.js';
 export class Missions {
   constructor(scene,audio,onProgress,enemies=null,onAward=null) {
     this.scene=scene;this.audio=audio;this.onProgress=onProgress;this.enemies=enemies;this.onAward=onAward;
@@ -46,23 +47,11 @@ export class Missions {
       }
       this.scene.add(group);this.targets.push(group);
     }
-    // Filhotes originais: asas pequenas animadas e sinal de resgate.
+    // Separate juvenile visual rig; rescue targets, marker and saved flags remain unchanged.
     for(let i=0;i<HATCHLING_POSITIONS.length;i++){
-      const [x,y,z]=HATCHLING_POSITIONS[i];const group=new THREE.Group();group.position.set(x,y,z);
-      const skin=new THREE.MeshStandardMaterial({color:[0x57ad87,0x779ada,0xc7ab5d][i],flatShading:true,roughness:.6});
-      const glow=new THREE.MeshBasicMaterial({color:0xa5ffd0,transparent:true,opacity:.78,side:THREE.DoubleSide});
-      const body=new THREE.Mesh(new THREE.SphereGeometry(1.1,10,8),skin);body.scale.set(1,.8,1.55);group.add(body);
-      const face=new THREE.Mesh(new THREE.SphereGeometry(.75,10,8),skin);face.position.set(0,.6,-1.25);group.add(face);
-      const eye=new THREE.MeshBasicMaterial({color:0xffebc4});
-      for(const side of [-1,1]){
-        const w=new THREE.Group();w.position.set(side*.95,.35,0);
-        const mesh=new THREE.Mesh(new THREE.ConeGeometry(1.2,3,3),skin);mesh.rotation.z=side*Math.PI*.45;w.add(mesh);group.add(w);
-        (group.userData.wings??=[]).push({w,side});
-        const e=new THREE.Mesh(new THREE.SphereGeometry(.14,6,6),eye);e.position.set(side*.48,.87,-1.73);group.add(e);
-      }
-      const ring=new THREE.Mesh(new THREE.TorusGeometry(4,.16,5,28),glow);ring.rotation.x=.2;group.add(ring);
-      const beam=new THREE.Mesh(new THREE.CylinderGeometry(.12,.8,15,7,1,true),new THREE.MeshBasicMaterial({color:0x83ffc7,transparent:true,opacity:.14,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=7.5;group.add(beam);
-      group.userData.ring=ring;this.scene.add(group);this.hatchlings.push(group);
+      const [x,y,z]=HATCHLING_POSITIONS[i];
+      const group=buildHatchling(i);group.position.set(x,y,z);
+      this.scene.add(group);this.hatchlings.push(group);
     }
     // Santuário visível apenas durante a operação de transporte dos filhotes.
     this.nest=new THREE.Group();this.nest.position.set(...RESCUE_NEST);
@@ -171,8 +160,7 @@ export class Missions {
     }
     this.hatchlings.forEach((baby,i)=>{if(!baby.visible)return;
       baby.userData.ring.rotation.z+=dt*.5;
-      baby.children[0].rotation.y=Math.sin(time*2+i)*.14;
-      for(const {w,side} of baby.userData.wings)w.rotation.z=side*Math.sin(time*8+i)*.33;
+      animateHatchling(baby,time,dt,i,i===this.carriedIndex);
       if(i!==this.carriedIndex)baby.position.y=HATCHLING_POSITIONS[i][1]+Math.sin(time*2+i)*1.2;
     });
     if(this.nest.visible)this.nest.children[0].rotation.z+=dt*.22;
