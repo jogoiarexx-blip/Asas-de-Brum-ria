@@ -6,6 +6,8 @@
   "description": "Protótipo 3D de aventura, montaria e missões com dragões feito em Three.js",
   "scripts": {
     "start": "python start_game.py",
-    "check": "node tests/check-project.mjs && node --test tests/*.test.js"
+    "check": "node tests/check-project.mjs && node --test tests/*.test.js",
+    "assets:inspect": "node tools/modelPipeline.mjs inspect",
+    "assets:optimize": "node tools/modelPipeline.mjs optimize"
   }
 }
