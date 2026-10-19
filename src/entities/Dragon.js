@@ -8,6 +8,7 @@ import {terrainAttitude,terrainTraction,visualContactHeight} from './TerrainResp
 import {flightPhase, liftBlend} from './flightMath.js';
 import {airflowTarget,airflowSpeed} from './Airflow.js';
 import {wingPose} from './wingPose.js';
+import {updateDragonGLB} from './dragonAssetLoader.js';
 import {batchRigidMeshes} from '../utils/rigBatch.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
 import {startDodge,advanceDodge,dodgeImpulse} from '../systems/AerialCombat.js';
@@ -324,7 +325,7 @@ export class Dragon {
   triggerAttack(){this.attackTime=.35;}
   triggerHurt(){this.hurtTime=.45;}
   setSpecies(id,preset){
-    this.speciesId=id;
+    this.speciesId=id;this.speciesPreset=preset;
     for(const [kind,group] of Object.entries(this.speciesOrnaments))group.visible=(kind===id);
     this.muzzleGlow.material.color.setHex(id==='furia_luz'?0xc7f7ff:id==='raio'?0x94dfff:id==='brasa'?0xff7438:0x95ffe0);
     const colors=preset.colors;
@@ -336,6 +337,14 @@ export class Dragon {
     this.colorMaterials.spotMat.color.setHex(colors[5]).lerp(new THREE.Color(colors[1]),.45);
     this.accentLight.color.setHex(id==='furia_luz'?0xb9ebff:id==='brasa'?0xffa35d:id==='raio'?0x87c8ff:0x69eee5);
     this.accentLight.intensity=id==='furia_luz'?6:8;
+    if(this.externalDragonModel){
+      // Remember which species decorations belong to the current selection;
+      // keep them hidden until the player restores the procedural dragon.
+      for(const record of this.externalDragonModel.original){
+        record.visible=record.obj.visible;
+        record.obj.visible=false;
+      }
+    }
   }
   setStats(stats){
     const previous=this.stats?.maxEnergy??100;
@@ -511,5 +520,6 @@ export class Dragon {
     const blink=Math.sin(time*.65)**18;
     for(const eye of this.eyeBlink)eye.scale.y=Math.max(.065,1-.93*blink);
     this.visual.position.y=THREE.MathUtils.damp(this.visual.position.y,visualContactHeight(contact.offsetY,bob),12,dt);
+    updateDragonGLB(this,dt);
   }
 }
