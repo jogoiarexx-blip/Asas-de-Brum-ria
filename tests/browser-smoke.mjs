@@ -65,7 +65,29 @@ try{
   await page.waitForTimeout(500);
   await check('Estábulo e Fúria da Luz disponíveis na prévia');
 
+  // Exercise the actual GLTFLoader, scene replacement and fallback with a
+  // small original GLB supplied to the file input. No third-party binaries.
+  const demoBytes=await page.evaluate(async()=>{
+    const {buildDemoGLB}=await import('./src/entities/demoGlb.js');
+    return Array.from(buildDemoGLB());
+  });
+  await page.locator('#dragon-glb-file').setInputFiles({
+    name:'dragao-teste.glb',mimeType:'model/gltf-binary',buffer:Buffer.from(demoBytes)
+  });
+  await page.waitForFunction(()=>
+    document.querySelector('#dragon-glb-status')?.dataset.state==='ok',null,{timeout:15000});
+  await check('Importação GLB real no dragão sem alterar o controle');
+
   await page.locator('#stable-close').click();
+  await page.waitForTimeout(350);
+  await check('Modelo importado mantém montagem, voo e renderização');
+
+  await page.keyboard.press('t');
+  await page.locator('#stable').waitFor({state:'visible',timeout:10000});
+  await page.locator('#dragon-glb-reset').click();
+  await page.waitForFunction(()=>
+    document.querySelector('#dragon-glb-status')?.dataset.state==='ok',null,{timeout:15000});
+  await check('Restaurar dragão procedural após GLB');
   await page.keyboard.press('p');
   await page.waitForTimeout(450);
   await check('Salvar partida sem travamento de frame');
