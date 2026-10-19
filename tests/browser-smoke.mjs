@@ -81,6 +81,13 @@ try{
   assert.match(statusText,/Attack/);
   await check('Importação GLB animado no dragão sem alterar o controle');
 
+  await page.locator('#dragon-glb-file').setInputFiles({
+    name:'arquivo-invalido.glb',mimeType:'model/gltf-binary',buffer:Buffer.from('invalid GLB')
+  });
+  await page.waitForFunction(()=>
+    document.querySelector('#dragon-glb-status')?.dataset.state==='error',null,{timeout:10000});
+  await check('Arquivo GLB inválido rejeitado sem derrubar o jogo');
+
   await page.locator('#stable-close').click();
   await page.waitForTimeout(350);
   await check('Modelo importado mantém montagem, voo e renderização');
