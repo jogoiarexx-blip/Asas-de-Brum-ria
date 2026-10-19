@@ -340,8 +340,9 @@ export class Dragon {
     if(this.externalDragonModel){
       // Remember which species decorations belong to the current selection;
       // keep them hidden until the player restores the procedural dragon.
+      const accents=new Set(Object.values(this.speciesOrnaments));
       for(const record of this.externalDragonModel.original){
-        record.visible=record.obj.visible;
+        if(accents.has(record.obj))record.visible=record.obj.visible;
         record.obj.visible=false;
       }
     }
