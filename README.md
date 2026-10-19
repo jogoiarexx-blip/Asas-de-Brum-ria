@@ -1,3 +1,16 @@
+# Asas de Brumária v1.4.12 — Dragão GLB animado (integração opcional)
+
+## Novidade jogável no estábulo
+- **IMPORTAR DRAGÃO GLB:** importe um modelo 3D legalmente obtido e convertido a GLB. O jogo inspeciona a estrutura, normaliza a escala e mapeia automaticamente as animações nomeadas Idle, Walking, Flying, Glide, Takeoff, Landing, Attack e Hurt.
+- **TESTAR DRAGÃO DEMO ANIMADO:** gera localmente um pequeno GLB original de dragão com 8 clipes e asas articuladas para testar o pipeline sem depender de download de assets de terceiros. É um protótipo geométrico, **não** o modelo de Cethiel convertido.
+- **VOLTAR AO DRAGÃO ORIGINAL:** restaura todas as malhas e animações procedurais. O cavaleiro, as colisões, o voo, as missões, as espécies e os saves não são alterados. GLBs opcionais podem ser guardados no IndexedDB, isolados do save da campanha.
+- **Código:** `src/entities/dragonAssetLoader.js`, `dragonClipMap.js`, `dragonDemoGlb.js`, `dragonAssetStore.js` e `src/ui/DragonAssetUI.js`; teste Node em `tests/dragon-glb.test.js`; teste funcional de upload, GLB inválido e restauração em `tests/browser-smoke.mjs`.
+- **Fonte CC0 indicada:** [Cethiel's Dragon 3D](https://opengameart.org/content/cethiels-dragon-3d), de Drummyfish/Cethiel. O pacote oficial é ZIP e precisa ser inspecionado e convertido para GLB no Blender; não foi incorporado ao repositório nem validado em jogo nesta revisão.
+- **Validações até o merge:** parse estático dos módulos novos; gerador do GLB demo executado e inspecionado (glTF 2.0, 6 malhas, 14 nós-filhos e 8 animações, offsets corretos). A suíte GitHub Actions de Chromium desta revisão ainda estava **na fila** no momento da integração. Não há alegação de teste WebGL aprovado no novo importador.
+- **Compatibilidade GitHub Pages:** nenhuma dependência obrigatória nem mudança de build no jogo; carregador GLTF oficial só é importado quando um GLB opcional é escolhido.
+
+---
+
 ## Pesquisa open source para modelos 3D (outubro de 2026)
 
 Foi integrado um novo guia de assets CC0 e bibliotecas open source em [docs/OPEN-SOURCE-3D-ROADMAP.md](docs/OPEN-SOURCE-3D-ROADMAP.md). O primeiro candidato para um dragão real rigado e animado é **Cethiel’s Dragon 3D (CC0)**; outros acervos selecionados incluem Quaternius Ultimate Monsters e Animated Animals, Kenney Nature Kit/Fantasy Town e Poly Haven.
