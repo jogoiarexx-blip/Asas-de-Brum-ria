@@ -12,6 +12,7 @@ export class Hero {
     this.group=buildHero();this.group.position.set(2,world.groundHeightAt(2,11,.52),11);scene.add(this.group);
     this.rider=buildHero();this.rider.position.set(0,.75,-.03);this.rider.rotation.y=0;
     this.rider.scale.setScalar(.78);dragon.visual.add(this.rider);this.rider.visible=false;
+    dragon.rider=this.rider; // Preserve the player when swapping dragon visuals.
     this.mounted=false;this.walkTime=0;this.moveSpeed=0;this.fallVelocity=0;this.slopeClock=0;this.slope={pitch:0,roll:0};
     if(HERO_GLB_URL)loadOptionalHeroGLB(this,HERO_GLB_URL,{yaw:HERO_MODEL_FACING_YAW});
   }
