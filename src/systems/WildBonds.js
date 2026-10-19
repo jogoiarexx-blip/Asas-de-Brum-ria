@@ -6,6 +6,10 @@ export const WILD_DRAGON_DEFS=Object.freeze([
 ]);
 const ids=WILD_DRAGON_DEFS.map(d=>d.id);
 const BOND_TARGET=3;
+export const PET_COOLDOWN_SECONDS=1.8;
+export function petRepeatAllowed(now,lastPetAt){
+  return Number.isFinite(now)&&now>=0&&(!Number.isFinite(lastPetAt)||now-lastPetAt>=PET_COOLDOWN_SECONDS);
+}
 export function normalizeWildBonds(input){
   const source=input&&typeof input==='object'&&!Array.isArray(input)?input:{};
   return Object.fromEntries(ids.map(id=>[id,Number.isInteger(source[id])?Math.max(0,Math.min(BOND_TARGET,source[id])):0]));
