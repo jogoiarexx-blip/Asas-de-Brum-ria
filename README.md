@@ -1,3 +1,17 @@
+# Asas de Brumária v1.4.9 — QA do treinamento e das Montanhas da Sombra
+
+## Validações realizadas no navegador
+- **Treinamento:** testes Playwright usam as classes reais de `Training`, `Missions` e `Game`. Confirmados circuito básico, progressão até a fase 7, cooldown, velocidade mínima do avançado, circuito avançado e ausência de recompensa duplicada. Treino básico concede **1 ponto do circuito + 2 pontos da missão final**; avançado concede mais 2 pontos, total 5.
+- **Streaming da montanha:** importação dinâmica de `MountainRegion`, adição de 14 obstáculos da região, deslocamento pelo portal e restauração ao entrar.
+- **Navios:** três navios atingidos duas vezes cada, por seis projéteis simulados através do sistema verdadeiro de fogo e colisão. Fase muda de `boats` para `boss`.
+- **Chefe:** o aviso do ataque ocorre antes dos projéteis; janela de contra-ataque confirmada. Derrota por 11 disparos com um contra-ataque registrado, sem alterar a resistência do chefe artificialmente.
+- **Salvamento e retorno:** partida salva na fase do chefe, página recarregada, barcos ainda destruídos, retorno ao portal, chefe derrotado, +3 pontos de expedição **apenas uma vez** e liberação da região da GPU.
+- **Verificação automatizada:** GitHub Actions `39236876779`, ambos trabalhos aprovados. **445 testes de lógica aprovados**, com 79 módulos e 132 imports locais analisados. `tests/browser-mountain.mjs` inclui imagens e verificações de erros de console.
+- **Escopo:** trajetos entre checkpoints e alvos foram acelerados dentro do Playwright; as classes de jogo, tiros, colisões, fluxo de missão e carregamento do mapa não foram substituídas. A execução usa Chromium com renderização SwiftShader; desempenho FPS de hardware real e uma campanha inteira pilotada manualmente permanecem sem certificação.
+- **Código de produção:** nenhuma regra ou recompensa de jogo precisou de correção nesta etapa. A validação é permanente no CI e não instala atalhos de depuração na versão pública.
+
+---
+
 # Asas de Brumária v1.4.8 — Validação de missões e câmera na floresta
 
 ## Implementações confirmadas
