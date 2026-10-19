@@ -13,14 +13,27 @@ export function resolveCameraPosition(anchor,desired,obstacles=[],terrainAt=()=>
   const length=Math.hypot(dx,dy,dz);
   if(!Number.isFinite(length)||length<1e-7)return {...anchor,clipped:false};
   const steps=Math.max(1,Math.ceil(length/.28));
-  // Pre-filter the hundreds of trees/rocks to the small 2D camera corridor.
-  const corridor=obstacles.filter(o=>
-    o.x+o.radius+radius>=Math.min(anchor.x,desired.x) &&
-    o.x-o.radius-radius<=Math.max(anchor.x,desired.x) &&
-    o.z+o.radius+radius>=Math.min(anchor.z,desired.z) &&
-    o.z-o.radius-radius<=Math.max(anchor.z,desired.z) &&
-    o.top>=Math.min(anchor.y,desired.y)-radius &&
-    o.bottom<=Math.max(anchor.y,desired.y)+radius);
+  // Camera-only canopy clearance. Tree gameplay colliders cover trunks, while
+  // the rendered crowns are more than twice as wide. Without this extra
+  // volume the camera can sit *inside* opaque crowns and hide the player.
+  // Flight, walking, hitboxes and saves continue using the original obstacles.
+  const minX=Math.min(anchor.x,desired.x)-radius,maxX=Math.max(anchor.x,desired.x)+radius;
+  const minZ=Math.min(anchor.z,desired.z)-radius,maxZ=Math.max(anchor.z,desired.z)+radius;
+  const minY=Math.min(anchor.y,desired.y)-radius,maxY=Math.max(anchor.y,desired.y)+radius;
+  const corridor=[];
+  const intersects=(o,r=o.radius,bottom=o.bottom,top=o.top)=>
+    o.x+r>=minX&&o.x-r<=maxX&&o.z+r>=minZ&&o.z-r<=maxZ&&top>=minY&&bottom<=maxY;
+  for(const o of obstacles){
+    if(intersects(o))corridor.push(o);
+    if(o.type!=='tree')continue;
+    // addTree uses .82*size for the trunk collider. Broad crowns need ~2.3*size.
+    const treeSize=o.radius/.82;
+    const crownRadius=treeSize*2.3;
+    const crownBottom=o.bottom+treeSize*1.25;
+    const crownTop=o.bottom+treeSize*5.95;
+    if(intersects(o,crownRadius,crownBottom,crownTop))
+      corridor.push({...o,radius:crownRadius,bottom:crownBottom,top:crownTop});
+  }
   let last=0;
   for(let k=1;k<=steps;k++){
     const t=k/steps;
