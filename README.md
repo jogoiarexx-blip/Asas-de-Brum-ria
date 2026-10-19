@@ -1,3 +1,13 @@
+## Pesquisa open source para modelos 3D (outubro de 2026)
+
+Foi integrado um novo guia de assets CC0 e bibliotecas open source em [docs/OPEN-SOURCE-3D-ROADMAP.md](docs/OPEN-SOURCE-3D-ROADMAP.md). O primeiro candidato para um dragão real rigado e animado é **Cethiel’s Dragon 3D (CC0)**; outros acervos selecionados incluem Quaternius Ultimate Monsters e Animated Animals, Kenney Nature Kit/Fantasy Town e Poly Haven.
+
+Adicionamos auditoria de modelos GLB sem dependências adicionais: `npm run assets:inspect -- modelo.glb`. Quem instalar opcionalmente `@gltf-transform/cli` pode usar `npm run assets:optimize -- original.glb otimizado.glb` para gerar um GLB otimizado sem usar Draco/Meshopt/KTX2 ou fundir ossos e malhas animadas. O processo verifica a compatibilidade estrutural do arquivo e preserva o original.
+
+**Importante:** nenhum modelo externo ou biblioteca pesada foi embutido no jogo nesta etapa. A tela, os controles, as missões e os salvamentos existentes permanecem iguais. As novas ferramentas deverão ser usadas quando selecionarmos e validarmos um GLB real.
+
+---
+
 # Asas de Brumária v1.4.11 — Otimização dos dragões articulados
 
 ## Novo agrupamento de malhas
