@@ -1,3 +1,23 @@
+# Asas de Brumária v1.4.10 — Otimização de renderização e medição de desempenho
+
+## Implementado
+- **Aves marítimas instanciadas:** 12 aves animadas agora usam **um único `THREE.InstancedMesh`** com dois pares de asas reunidos em geometria compartilhada, preservando cor, posição, movimento e seed do cenário. A verificação WebGL confirmou `12 instâncias, 1 draw call`. O culling frustum usa uma esfera calculada na criação com margem para a órbita de voo, sem recalcular limites a cada frame.
+- **Destroços de barcos:** quando nenhum barco está afundando, o mapa da montanha não recalcula nove matrizes de fragmentos nem marca o buffer de instâncias para upload. Durante o afundamento as peças continuam animadas; no último quadro são ocultadas corretamente, sem afetar dano ou recompensas.
+- **Benchmark repetível no navegador:** `tests/browser-performance.mjs` mede três cenas em 1280×720, qualidade equilibrada, reportando FPS do Chromium SwiftShader, p95 do frame, chamadas de desenho, triângulos e geometrias. Salva `artifacts/perf-metrics.json` e capturas para futura comparação. O workflow executa o teste junto do smoke, das missões principais e das montanhas.
+
+## Comparação observada (CI Chromium, SwiftShader)
+| Cena | Draw calls antes → depois | Geometrias antes → depois |
+| --- | --- | --- |
+| Vila | 317 → 318 | 319 → 310 |
+| Dragões selvagens | **422 → 401** | **446 → 423** |
+| Chefe da montanha | 216 → 216 | 462 → 439 |
+
+- **Ganhos estruturais:** menos 21 draw calls (5,0%) na cena dos dragões selvagens, menos 23 geometrias (5,2%) nessa cena; em cenas distantes, a nova ave única é descartada por frustum e não acrescenta chamadas de desenho. A cena da vila pode exibir uma chamada a mais porque o lote pode abranger aves antes individualmente fora do campo da câmera.
+- **Validação do código otimizado:** GitHub Actions `39242903765`, **445 de 445 testes aprovados** e smoke Chromium aprovado, incluindo todos os cenários das missões principais, treinamento, barcos e chefe. A verificação específica da fauna confirmou 12 aves por um draw call.
+- **Limitação:** FPS de 2–12 no Chromium sem GPU dedicada não representa FPS do usuário, e os resultados numéricos variam entre runners. A melhoria de FPS em placas reais ainda não foi quantificada. O benchmark interno no jogo pode ser ativado com F3 e B, nos mesmos locais e câmera.
+
+---
+
 # Asas de Brumária v1.4.9 — QA do treinamento e das Montanhas da Sombra
 
 ## Validações realizadas no navegador
