@@ -39,6 +39,7 @@ jobs:
           npx playwright install --with-deps chromium
           mkdir -p vendor
           cp node_modules/three/build/three.module.js vendor/three.module.js
+          cp node_modules/three/build/three.core.js vendor/three.core.js
       - name: Simular partida no Chromium
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/brumaria-server.log 2>&1 &
