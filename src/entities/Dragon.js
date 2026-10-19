@@ -8,6 +8,7 @@ import {terrainAttitude,terrainTraction,visualContactHeight} from './TerrainResp
 import {flightPhase, liftBlend} from './flightMath.js';
 import {airflowTarget,airflowSpeed} from './Airflow.js';
 import {wingPose} from './wingPose.js';
+import {batchRigidMeshes} from '../utils/rigBatch.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
 import {startDodge,advanceDodge,dodgeImpulse} from '../systems/AerialCombat.js';
 import {steeringRate,bankTarget,flightPitch,tailYaw,landingDescent,smoothedTurn} from './flightHandling.js';
@@ -263,6 +264,19 @@ export class Dragon {
     this.muzzleGlow.position.set(0,-.4,-1.52);this.headPivot.add(this.muzzleGlow);this.muzzleGlow.visible=false;
     // Luz de identificação leve
     const light=new THREE.PointLight(0x69eee5,8,15,2);light.position.set(0,.65,-3.1);this.visual.add(light);this.accentLight=light;
+    // Bake ONLY rigid geometry within its existing animated joint.
+    // Pupils, eyebrows, glowing muzzle and all articulated pivots stay intact.
+    let removed=0;
+    const batch=(group,options)=>{removed+=batchRigidMeshes(group,options).removed;};
+    for(const group of Object.values(this.speciesOrnaments))batch(group);
+    batch(this.neckCrest);
+    batch(this.jawPivot);
+    batch(this.headPivot,{preserve:this.brows.map(({brow})=>brow)});
+    for(const {shoulder,wrist} of this.forelegs){batch(wrist);batch(shoulder);}
+    for(const {leg} of this.legs)batch(leg);
+    for(const {wing,elbow,tip} of this.wings){batch(wing);batch(elbow);batch(tip);}
+    batch(this.visual);
+    this.rigidBatchedParts=removed;
   }
   addWing(side,wingMat,membrane) {
     // Three lightweight articulated joints instead of a single rigid triangular wing.
