@@ -54,7 +54,7 @@ try{
   await page.keyboard.down('w');
   await page.waitForTimeout(750);
   await page.keyboard.up('w');
-  await page.keyboard.press('space');
+  await page.keyboard.press('Space');
   await page.waitForTimeout(800);
   await check('Entrada de movimento, aceleração e decolagem');
 
