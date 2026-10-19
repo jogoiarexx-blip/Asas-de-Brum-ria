@@ -384,15 +384,57 @@ export class World {
     this.visibleIslandCount=state.visible;
   }
   buildSeabirds() {
-    const mat=new THREE.MeshBasicMaterial({color:0xe3faf9,side:THREE.DoubleSide});this.birds=[];
-    for(let i=0;i<12;i++) {
-      const bird=new THREE.Group();bird.position.set((rand()-.5)*250,38+rand()*28,(rand()-.5)*230);
-      for(const side of [-1,1]){
-        const wing=new THREE.Mesh(new THREE.ConeGeometry(.25,2.5,3),mat);
-        wing.position.x=side*.95;wing.rotation.z=side*Math.PI/2;bird.add(wing);
-      }
-      bird.userData={offset:rand()*6.2,speed:2+rand()*2,centerX:bird.position.x,centerZ:bird.position.z};this.scene.add(bird);this.birds.push(bird);
+    // Merge a pair of wings once and instance the whole bird.
+    // Formerly: 12 bird groups / 24 independent draw calls.
+    // Now: one material + geometry, 12 moving instances, one draw call.
+    const halves=[];
+    for(const side of [-1,1]){
+      const cone=new THREE.ConeGeometry(.25,2.5,3).toNonIndexed();
+      cone.rotateZ(side*Math.PI/2);
+      cone.translate(side*.95,0,0);
+      halves.push(cone);
     }
+    const geometry=new THREE.BufferGeometry();
+    for(const [name,itemSize] of [['position',3],['normal',3],['uv',2]]){
+      const length=halves.reduce((total,g)=>total+g.getAttribute(name).array.length,0);
+      const data=new Float32Array(length);
+      let offset=0;
+      for(const half of halves){
+        const part=half.getAttribute(name).array;
+        data.set(part,offset);offset+=part.length;
+      }
+      geometry.setAttribute(name,new THREE.BufferAttribute(data,itemSize));
+    }
+    halves.forEach(half=>half.dispose());
+    geometry.computeBoundingSphere();
+    const material=new THREE.MeshBasicMaterial({color:0xe3faf9,side:THREE.DoubleSide});
+    const count=12;
+    this.birdMesh=new THREE.InstancedMesh(geometry,material,count);
+    this.birdMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.birdMesh.frustumCulled=true;this.birdMesh.castShadow=false;
+    this.scene.add(this.birdMesh);this.birdDummy=new THREE.Object3D();
+    this.birds=[];
+    for(let i=0;i<count;i++){
+      this.birds.push({centerX:(rand()-.5)*250,y:38+rand()*28,centerZ:(rand()-.5)*230,
+        offset:rand()*6.2,speed:2+rand()*2});
+    }
+    this.updateSeabirds(0);
+    // Bird flights orbit up to 18 world units around their initial position.
+    // The enlarged static bounds remain valid without per-frame sphere rebuilds.
+    this.birdMesh.computeBoundingSphere();
+    this.birdMesh.boundingSphere.radius+=36;
+  }
+  updateSeabirds(time){
+    const dummy=this.birdDummy;
+    for(let i=0;i<this.birds.length;i++){
+      const bird=this.birds[i],angle=time*.18*bird.speed+bird.offset;
+      dummy.position.set(bird.centerX+Math.cos(angle)*18,bird.y,bird.centerZ+Math.sin(angle)*18);
+      dummy.rotation.set(0,-angle,0);
+      dummy.scale.set(1,1,1);
+      dummy.updateMatrix();
+      this.birdMesh.setMatrixAt(i,dummy.matrix);
+    }
+    this.birdMesh.instanceMatrix.needsUpdate=true;
   }
   update(dt,time) {
     this.elapsed=time;this.waterTexture.offset.x=(time*.004)%1;this.waterTexture.offset.y=(time*.003)%1;
@@ -400,7 +442,7 @@ export class World {
     const elapsed=Math.max(0,dt);
     this.cloudTravel+=elapsed*this.cloudWind;this.cloudElapsed+=elapsed;
     if(shouldRefreshClouds(this.cloudElapsed,this.detailTier))this.updateClouds(this.cloudTravel);
-    for(const bird of this.birds){const d=bird.userData;bird.position.x=d.centerX+Math.cos(time*.18*d.speed+d.offset)*18;bird.position.z=d.centerZ+Math.sin(time*.18*d.speed+d.offset)*18;bird.rotation.y=-time*.18*d.speed-d.offset;}
+    this.updateSeabirds(time);
   }
 }
 function sceneAdd(scene,mesh){scene.add(mesh);}

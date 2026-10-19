@@ -189,13 +189,17 @@ export class MountainRegion {
       }else boat.visible=false;
     });
     // Update at most nine transient fragments; no new meshes in the combat loop.
-    let debrisActive=false;
+    let debrisActive=false,debrisChanged=false;
     for(let i=0;i<BOAT_POSITIONS.length;i++){
       const age=this.boatDebrisAges[i];
-      const nextAge=age===null?null:age+dt;
+      // Static sunken/untouched boats need no matrix edits or GPU uploads.
+      // On the final active tick we write invisible matrices once.
+      if(age===null)continue;
+      const nextAge=age+dt;
       this.boatDebrisAges[i]=nextAge;
+      debrisChanged=true;
       for(let k=0;k<3;k++){
-        const piece=nextAge===null?{visible:false}:shipDebrisStep(nextAge,k);
+        const piece=shipDebrisStep(nextAge,k);
         const dummy=this.debrisDummy;
         if(piece.visible){
           debrisActive=true;const [x,y,z]=BOAT_POSITIONS[i];
@@ -206,7 +210,7 @@ export class MountainRegion {
         }else dummy.scale.set(0,0,0);
         dummy.updateMatrix();this.boatDebrisMesh.setMatrixAt(i*3+k,dummy.matrix);
       }
-      if(nextAge!==null&&!shipDebrisStep(nextAge,0).visible)this.boatDebrisAges[i]=null;
+      if(!shipDebrisStep(nextAge,0).visible)this.boatDebrisAges[i]=null;
     }
     // An age-based wave can outlive the collapsing hull; no save changes.
     for(let i=0;i<this.boatRipples.length;i++){
@@ -222,7 +226,7 @@ export class MountainRegion {
       this.boatRippleAges[i]=age>SHIP_SPLASH_START+SHIP_SPLASH_DURATION?null:age;
     }
     this.boatDebrisMesh.visible=debrisActive;
-    if(debrisActive)this.boatDebrisMesh.instanceMatrix.needsUpdate=true;
+    if(debrisChanged)this.boatDebrisMesh.instanceMatrix.needsUpdate=true;
     if(this.boss.visible){
       const goal=playerPosition?bossBattleDestination(time,this.progress.bossHealth,playerPosition):bossMotionTarget(time,this.progress.bossHealth);
       const position=bossMotionStep(this.boss.position,goal,dt,{
