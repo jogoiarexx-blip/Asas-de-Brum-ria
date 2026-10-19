@@ -57,6 +57,26 @@ try{
     g.graphics.mode='balanced';g.graphics.tier='balanced';
     g.graphics.apply();g.applySceneQuality();
   });
+  const rigBatches=await page.evaluate(()=>{
+    const g=window.__brumariaPerfGame;
+    const dragon=g.dragon,creatures=g.wildDragons.creatures;
+    if(dragon.rigidBatchedParts<30)throw Error('Main dragon did not batch static details: '+dragon.rigidBatchedParts);
+    if(!creatures.length||creatures.some(c=>c.rigidBatchedParts<7))
+      throw Error('Wild dragon decoration batching missing');
+    for(const pivot of [dragon.headPivot,dragon.jawPivot,dragon.neckCrest,...dragon.tail,
+      ...dragon.wings.flatMap(w=>[w.wing,w.elbow,w.tip]),
+      ...dragon.forelegs.flatMap(f=>[f.shoulder,f.wrist])])
+      if(!pivot?.isGroup)throw Error('Articulated rig pivot was modified');
+    if(dragon.pupils.length!==2||dragon.brows.length!==2||dragon.eyeBlink.length!==2)
+      throw Error('Facial rig lost animated parts');
+    const counts=creatures.map(c=>({
+      species:c.spec.id,merged:c.rigidBatchedParts,
+      eyes:c.eyes.length,ears:c.ears.length,wings:c.wings.length}));
+    for(const c of counts)if(c.eyes!==2||c.ears!==2||c.wings!==2)
+      throw Error('Wild animated facial rig broken: '+JSON.stringify(c));
+    return {main:dragon.rigidBatchedParts,wild:counts};
+  });
+  console.log('DRAGON_BATCH '+JSON.stringify(rigBatches));
   await measure('village');
   const batching=await page.evaluate(()=>{
     const g=window.__brumariaPerfGame,birds=g.world.birdMesh;
