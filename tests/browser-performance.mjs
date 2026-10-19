@@ -58,6 +58,24 @@ try{
     g.graphics.apply();g.applySceneQuality();
   });
   await measure('village');
+  const batching=await page.evaluate(()=>{
+    const g=window.__brumariaPerfGame,birds=g.world.birdMesh;
+    if(!birds?.isInstancedMesh||birds.count!==12||g.world.birds.length!==12)
+      throw Error('Seabird instances missing');
+    const before=new birds.matrixWorld.constructor(),after=before.clone();
+    birds.getMatrixAt(0,before);
+    g.world.updateSeabirds(g.elapsed+2.5);
+    birds.getMatrixAt(0,after);
+    if(before.equals(after))throw Error('Bird flight did not animate');
+    g.renderer.render(g.scene,g.camera);
+    const withBirds=g.renderer.info.render.calls;
+    birds.visible=false;g.renderer.render(g.scene,g.camera);
+    const withoutBirds=g.renderer.info.render.calls;
+    birds.visible=true;
+    if(withBirds-withoutBirds!==1)throw Error('Birds cost '+(withBirds-withoutBirds)+' draws instead of one');
+    return {instances:birds.count,drawCalls:withBirds-withoutBirds};
+  });
+  console.log('BIRD_BATCH '+JSON.stringify(batching));
   await page.evaluate(()=>{
     const g=window.__brumariaPerfGame;
     g.dragon.mount();g.hero.setMounted(true);g.dragon.airborne=true;
