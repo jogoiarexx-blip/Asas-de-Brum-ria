@@ -1,3 +1,14 @@
+# Asas de Brumária v1.4.8 — Validação de missões e câmera na floresta
+
+## Implementações confirmadas
+- **Testes E2E de missões no Chromium:** o arquivo `tests/browser-missions.mjs` executa as classes reais Game/Missions/EnemyDragon/SaveSystem com renderização WebGL e deslocamentos acelerados entre destinos dentro do teste. Testa cinco aros, três cristais, três orbes destruídos por projéteis reais, três sentinelas derrotadas por projéteis reais, resgate e entrega dos três filhotes, checkpoint salvo/restaurado após reload e carinho após amizade 3/3 sem recompensas extras.
+- **Segurança da aplicação:** o teste captura uma referência ao Game somente ao interceptar `src/main.js` pelo Playwright. Não foi adicionado painel de trapaças ou API de depuração ao jogo publicado.
+- **Correção de câmera:** `src/utils/spatialSweep.js` passa a considerar as copas maiores das árvores ao posicionar a câmera, sem alterar obstáculos usados por jogadores, dragões, física ou saves. Nova regressão em `tests/camera-canopy.test.js` verifica copas, árvores altas, pousos e cenário sem árvores.
+- **Resultado verificável:** GitHub Actions, run `39233563527`: **445/445 testes aprovados**, 79 módulos e 132 imports válidos; ambos jobs `tests` e `browser-smoke` concluídos com sucesso. Capturas de tela (início, fase dos filhotes e carinho) estão disponíveis nos artifacts da execução.
+- **Limite de teste:** os trajetos longos foram acelerados pelo teste automatizado; os controles de pilotagem foram verificados no smoke padrão. FPS da GPU SwiftShader e obstáculos em cenários teletransportados não equivalem a desempenho em hardware real. Ainda não representa cada missão percorrida manualmente, nem o circuito final, nem toda a expedição da montanha.
+
+---
+
 # Asas de Brumária v1.4.7 — QA de jogabilidade e correções estruturais
 
 - **Carinho contínuo:** Faísca, Zéfiro e Neblina podem ser acariciados após atingir confiança 3/3. A animação é repetível com cooldown de 1,8 segundo, sem repetir recompensas, espécie desbloqueada ou alterações de salvamento.
