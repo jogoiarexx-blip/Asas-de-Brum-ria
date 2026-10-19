@@ -108,7 +108,7 @@ export class WildDragons {
       const lowDetail=buildDragonProxy(palette[1],palette[4]);lowDetail.visible=false;
       model.group.add(highDetail,lowDetail);
       model.group.position.set(x,world.heightAt(x,z),z);scene.add(model.group);
-      return {spec,...model,highDetail,lowDetail,anchor:new THREE.Vector2(x,z),phase:i*2.1,visualLevel:'full',visualClock:0,petTime:0};
+      return {spec,...model,highDetail,lowDetail,anchor:new THREE.Vector2(x,z),phase:i*2.1,visualLevel:'full',visualClock:0,petTime:0,lastPetAt:-Infinity};
     });
   }
   /** Visual-only LOD. Wild bonds and gameplay positions remain independent. */
@@ -123,16 +123,20 @@ export class WildDragons {
     }
   }
   get remaining(){return this.creatures.filter(c=>this.bonds.progress(c.spec.id)<3);}
-  /** Only animates affection; bonding points and cooldown stay in WildBonds. */
-  onPetted(id){
+  /** Visual reaction; tamed repeat petting uses a separate cooldown and never grants rewards. */
+  onPetted(id,time=Infinity){
     const creature=this.creatures.find(c=>c.spec.id===id);
     if(!creature)return false;
+    if(Number.isFinite(time)){
+      if(time-creature.lastPetAt<1.8)return false;
+      creature.lastPetAt=time;
+    }
     creature.petTime=1.25;
     return true;
   }
-  nearby(position,limit=8){
+  nearby(position,limit=8,includeTamed=false){
     let nearest=null,smallest=limit*limit;
-    for(const creature of this.remaining){
+    for(const creature of includeTamed?this.creatures:this.remaining){
       const dx=creature.group.position.x-position.x,dz=creature.group.position.z-position.z;
       const dist=dx*dx+dz*dz;if(dist<smallest){nearest=creature;smallest=dist;}
     }
