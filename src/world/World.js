@@ -411,7 +411,7 @@ export class World {
     const count=12;
     this.birdMesh=new THREE.InstancedMesh(geometry,material,count);
     this.birdMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.birdMesh.frustumCulled=false;this.birdMesh.castShadow=false;
+    this.birdMesh.frustumCulled=true;this.birdMesh.castShadow=false;
     this.scene.add(this.birdMesh);this.birdDummy=new THREE.Object3D();
     this.birds=[];
     for(let i=0;i<count;i++){
@@ -419,6 +419,10 @@ export class World {
         offset:rand()*6.2,speed:2+rand()*2});
     }
     this.updateSeabirds(0);
+    // Bird flights orbit up to 18 world units around their initial position.
+    // The enlarged static bounds remain valid without per-frame sphere rebuilds.
+    this.birdMesh.computeBoundingSphere();
+    this.birdMesh.boundingSphere.radius+=36;
   }
   updateSeabirds(time){
     const dummy=this.birdDummy;
