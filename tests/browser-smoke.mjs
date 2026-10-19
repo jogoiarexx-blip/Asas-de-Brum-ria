@@ -20,7 +20,13 @@ const check=async label=>{
 };
 try{
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
-  await page.locator('#game canvas').waitFor({timeout:70000});
+  try{
+    await page.locator('#game canvas').waitFor({state:'attached',timeout:40000});
+  }catch(error){
+    await page.screenshot({path:'artifacts/boot-failure.png',fullPage:true});
+    const fatal=await page.locator('#fatal').innerText();
+    throw Error('Falha na inicialização: '+fatal+'; console='+pageErrors.join(' | ')+'; '+error);
+  }
   await page.waitForTimeout(1200);
   await check('Three.js carregado e cena 3D inicializada');
 
