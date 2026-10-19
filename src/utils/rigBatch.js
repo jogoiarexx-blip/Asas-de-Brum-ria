@@ -16,7 +16,9 @@ export function batchRigidMeshes(pivot,{preserve=[]}={}){
     if(!mesh.isMesh||protectedMeshes.has(mesh)||!mesh.geometry?.isBufferGeometry)continue;
     const mat=mesh.material,geo=mesh.geometry;
     if(!mat||Array.isArray(mat)||mat.transparent||geo.morphAttributes?.position?.length)continue;
-    if(geo.groups?.length>1||geo.drawRange.start!==0||geo.drawRange.count!==Infinity)continue;
+    // Geometry groups are safe with a single material: Three.js ignores
+    // per-face material indices unless mesh.material is an array.
+    if(geo.drawRange.start!==0||geo.drawRange.count!==Infinity)continue;
     const names=Object.keys(geo.attributes);
     if(names.some(n=>!allowable.includes(n)))continue;
     if(!geo.getAttribute('position')||!geo.getAttribute('normal'))continue;
