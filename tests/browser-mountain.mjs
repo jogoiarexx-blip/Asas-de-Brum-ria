@@ -45,7 +45,7 @@ try{
       g.training.update(.05,g.elapsed,g.dragon);
     }
     if(g.training.active||g.missions.stage!==7)throw Error('Treino básico não completou missão final');
-    if(g.progression.circuits!==prev+1||g.progression.points!==initial+1)throw Error('Recompensa básica errada');
+    if(g.progression.circuits!==prev+1||g.progression.points!==initial+3)throw Error('Recompensa básica errada');
     g.dragon.group.position.set(8,g.world.groundHeightAt(8,7)+2.58,7);
     g.dragon.airborne=false;
     g.startTraining('advanced');
@@ -63,10 +63,10 @@ try{
       g.dragon.group.position.set(...spot);
       g.training.update(.05,g.elapsed,g.dragon);
     }
-    if(g.training.active||g.progression.circuits!==prev+2||g.progression.points!==initial+3)
+    if(g.training.active||g.progression.circuits!==prev+2||g.progression.points!==initial+5)
       throw Error('Treino avançado não concluiu corretamente');
     g.training.update(40,g.elapsed,g.dragon);
-    if(g.progression.points!==initial+3)throw Error('Recompensa duplicada');
+    if(g.progression.points!==initial+5)throw Error('Recompensa duplicada');
     return {stage:g.missions.stage,circuits:g.progression.circuits,earned:g.progression.points-initial};
   });
   assert.equal(training.stage,7);
