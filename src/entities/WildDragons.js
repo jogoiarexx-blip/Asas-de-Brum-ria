@@ -5,6 +5,7 @@ import {SPECIES} from '../systems/Progression.js';
 import {actorVisualLevel,shouldAnimateActor} from '../systems/ActorLOD.js';
 import {dragonMeshVisibility} from '../systems/DragonMeshLOD.js';
 import {buildDragonProxy} from './DragonProxy.js';
+import {wildDragonPose} from './CreatureMotion.js';
 const shape=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{
   const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;return m;
 };
@@ -25,12 +26,27 @@ function buildCreature(spec){
   }
   group.add(shape(new THREE.SphereGeometry(1,12,9),skin,0,2.12,-.95,.48,.61,.92));
   const head=new THREE.Group();head.position.set(0,2.53,-1.45);group.add(head);
+  const eyes=[],ears=[];
   const lowerJaw=shape(new THREE.SphereGeometry(.65,12,9),skin,0,-.28,-.52,.88,.21,.87);head.add(lowerJaw);
-  head.add(shape(new THREE.SphereGeometry(1,12,10),face,0,0,0,.73,.59,.75));
-  head.add(shape(new THREE.SphereGeometry(1,10,9),skin,0,-.22,-.56,.59,.28,.65));
+  head.add(shape(new THREE.SphereGeometry(1,16,12),face,0,0,0,.85,.68,.84));
+  head.add(shape(new THREE.SphereGeometry(1,12,10),skin,0,-.23,-.61,.65,.29,.62));
+  // Cheeks and nostrils add expression without any per-frame geometry changes.
   for(const side of [-1,1]){
-    head.add(shape(new THREE.SphereGeometry(.17,10,8),iris,side*.55,.13,-.42,.9,1.1,.7));
-    head.add(shape(new THREE.SphereGeometry(.092,9,7),pupil,side*.57,.12,-.54,.87,1.1,.7));
+    head.add(shape(new THREE.SphereGeometry(1,9,7),skin,side*.57,-.26,-.38,.26,.21,.32));
+    head.add(shape(new THREE.SphereGeometry(1,6,5),face,side*.25,-.22,-1.17,.075,.048,.065));
+  }
+  for(const side of [-1,1]){
+    const eye=new THREE.Group();eye.position.set(side*.62,.15,-.52);head.add(eye);
+    eye.add(shape(new THREE.SphereGeometry(1,12,10),face,0,0,.024,.242,.258,.125));
+    eye.add(shape(new THREE.SphereGeometry(1,12,10),iris,0,0,-.018,.217,.227,.135));
+    const irisColor=new THREE.MeshBasicMaterial({color:spec.species==='brasa'?0xe6ae5c:spec.species==='raio'?0x83baf7:0x74cbbb});
+    eye.add(shape(new THREE.SphereGeometry(1,10,9),irisColor,0,-.009,-.136,.15,.178,.073));
+    eye.add(shape(new THREE.SphereGeometry(1,9,7),pupil,0,-.015,-.196,.088,.124,.052));
+    eye.add(shape(new THREE.SphereGeometry(1,6,6),new THREE.MeshBasicMaterial({color:0xffffff}),-side*.049,.07,-.23,.043,.044,.022));
+    eyes.push(eye);
+    const ear=new THREE.Group();ear.position.set(side*.58,.48,.08);head.add(ear);
+    const earFin=shape(new THREE.ConeGeometry(.235,.87,5),wingMat,side*.18,.29,.08);
+    earFin.rotation.z=-side*.64;earFin.rotation.x=-.31;ear.add(earFin);ears.push({ear,side});
     const horn=shape(new THREE.ConeGeometry(.20,.72,6),spikeMat,side*.51,.70,.12);
     horn.rotation.z=-side*.35;head.add(horn);
     const leg=shape(new THREE.CylinderGeometry(.22,.27,1.0,7),skin,side*.7,.78,.94);
@@ -71,7 +87,7 @@ function buildCreature(spec){
   ring.rotation.x=Math.PI/2;ring.position.y=.25;group.add(ring);
   const beacon=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshBasicMaterial({color:spec.color,transparent:true,opacity:.76}));
   beacon.position.set(0,5.2,0);group.add(beacon);
-  return {group,wings,tail,head,ring,beacon,torso,lowerJaw};
+  return {group,wings,tail,head,ring,beacon,torso,lowerJaw,eyes,ears};
 }
 export class WildDragons {
   constructor(scene,world,bonds){
@@ -92,7 +108,7 @@ export class WildDragons {
       const lowDetail=buildDragonProxy(palette[1],palette[4]);lowDetail.visible=false;
       model.group.add(highDetail,lowDetail);
       model.group.position.set(x,world.heightAt(x,z),z);scene.add(model.group);
-      return {spec,...model,highDetail,lowDetail,anchor:new THREE.Vector2(x,z),phase:i*2.1,visualLevel:'full',visualClock:0};
+      return {spec,...model,highDetail,lowDetail,anchor:new THREE.Vector2(x,z),phase:i*2.1,visualLevel:'full',visualClock:0,petTime:0};
     });
   }
   /** Visual-only LOD. Wild bonds and gameplay positions remain independent. */
@@ -107,6 +123,13 @@ export class WildDragons {
     }
   }
   get remaining(){return this.creatures.filter(c=>this.bonds.progress(c.spec.id)<3);}
+  /** Only animates affection; bonding points and cooldown stay in WildBonds. */
+  onPetted(id){
+    const creature=this.creatures.find(c=>c.spec.id===id);
+    if(!creature)return false;
+    creature.petTime=1.25;
+    return true;
+  }
   nearby(position,limit=8){
     let nearest=null,smallest=limit*limit;
     for(const creature of this.remaining){
@@ -122,6 +145,7 @@ export class WildDragons {
       // Domestication always advances, even when the meshes are not drawn.
       const mood=this.approach.update(spec.id,dt,time,{distance,speed:heroSpeed,riding});
       creature.visualClock+=dt;
+      creature.petTime=Math.max(0,creature.petTime-dt);
       const level=creature.visualLevel;
       if(!shouldAnimateActor(level,creature.visualClock))continue;
       creature.visualClock=0;
@@ -134,17 +158,22 @@ export class WildDragons {
       const safe=this.world.walkable(x,z)&&this.world.clearanceAt(x,z,1.3)<this.world.heightAt(x,z)+.5;
       const gx=safe?x:anchor.x, gz=safe?z:anchor.y;
       group.position.set(gx,this.world.heightAt(gx,gz)+Math.sin(time*1.6+phase)*.045,gz);
-      creature.torso.scale.y=.69*(1+Math.sin(time*2.0+phase)*.018);
+      const pose=wildDragonPose({time,phase,mood:mood.mood,near,petTime:creature.petTime});
+      creature.torso.scale.y=.69*pose.breath;
       const lookAngle=near?Math.atan2(-(position.x-gx),-(position.z-gz)):.7+Math.sin(time*.3+phase)*.45;
       group.rotation.y=THREE.MathUtils.damp(group.rotation.y,lookAngle,1.55,dt);
       for(const {joint,side} of creature.wings){
         const flap=Math.sin(time*(mood.mood==='assustado'?7:near?4.6:2.4)+phase)*(mood.mood==='assustado'?.38:.22);
-        joint.rotation.z=side*(.15+flap+(tamed?.14:0));
+        joint.rotation.z=side*(.15+flap+(tamed?.14:0)+pose.wingsRelax);
         joint.rotation.x=side*Math.sin(time*.95+phase)*.08;
       }
-      creature.head.rotation.x=Math.sin(time*2.2+phase)*.055+(mood.mood==='assustado'?.22:near?-.08:0);
-      creature.lowerJaw.rotation.x=THREE.MathUtils.damp(creature.lowerJaw.rotation.x,mood.mood==='tranquilo'?-.17:0,5,dt);
-      creature.tail.rotation.y=Math.sin(time*1.45+phase)*.18;
+      creature.head.rotation.x=THREE.MathUtils.damp(creature.head.rotation.x,pose.headPitch,7,dt);
+      creature.head.rotation.z=THREE.MathUtils.damp(creature.head.rotation.z,pose.headRoll,6,dt);
+      creature.lowerJaw.rotation.x=THREE.MathUtils.damp(creature.lowerJaw.rotation.x,pose.jawOpen,5,dt);
+      creature.tail.rotation.y=THREE.MathUtils.damp(creature.tail.rotation.y,pose.tailYaw,6,dt);
+      creature.tail.rotation.x=THREE.MathUtils.damp(creature.tail.rotation.x,pose.tailPitch,5,dt);
+      for(const eye of creature.eyes)eye.scale.y=THREE.MathUtils.damp(eye.scale.y,pose.eyeOpen,12,dt);
+      for(const {ear,side} of creature.ears)ear.rotation.z=THREE.MathUtils.damp(ear.rotation.z,side*pose.ears,6,dt);
       creature.ring.material.opacity=tamed?.19:mood.mood==='tranquilo'?.95:mood.mood==='assustado'?.18:near?.7:.48;
       creature.ring.rotation.z+=dt*.42;
       creature.beacon.position.y=5.2+Math.sin(time*2.4+phase)*.35;
