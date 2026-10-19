@@ -35,10 +35,20 @@ try{
   await page.waitForTimeout(1500);
   await check('Nova partida iniciada e 90 quadros aproximados');
 
-  await page.keyboard.press('e');
-  await page.waitForTimeout(600);
-  const mode=await page.locator('#mode-pill').innerText();
-  assert.match(mode,/NIMBO|MONTAD|SOLO|VOO/i);
+  await page.keyboard.down('e');
+  await page.waitForTimeout(230);
+  await page.keyboard.up('e');
+  try{
+    await page.waitForFunction(()=>/NIMBO|MONTAD|SOLO|VOO/i.test(document.querySelector('#mode-pill')?.textContent??''),null,{timeout:13000});
+  }catch(error){
+    console.log('MOUNT DEBUG:',JSON.stringify({
+      mode:await page.locator('#mode-pill').innerText(),
+      toast:await page.locator('#toast').innerText(),
+      interaction:await page.locator('#interaction').innerText(),
+      fatal:await page.locator('#fatal').innerText()
+    }));
+    throw error;
+  }
   await check('Interação inicial e montagem sem erro');
 
   await page.keyboard.down('w');
@@ -61,6 +71,10 @@ try{
   await check('Salvar partida sem travamento de frame');
   await page.screenshot({path:'artifacts/brumaria-smoke.png',fullPage:true});
   console.log('RESULTADO: smoke browser concluído, screenshot artifacts/brumaria-smoke.png');
+}catch(error){
+  console.error('QA BROWSER ERROR:',error);
+  try{await page.screenshot({path:'artifacts/brumaria-failure.png',fullPage:true});}catch{}
+  throw error;
 }finally{
   await browser.close();
 }
