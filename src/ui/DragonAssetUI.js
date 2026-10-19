@@ -1,4 +1,5 @@
 import {inspectGLB} from '../entities/glbValidation.js';
+import {buildDragonDemoGLB} from '../entities/dragonDemoGlb.js';
 import {installDragonGLB,clearDragonGLB} from '../entities/dragonAssetLoader.js';
 import {loadSavedDragonGLB,saveDragonGLB,clearSavedDragonGLB} from '../entities/dragonAssetStore.js';
 
@@ -8,13 +9,14 @@ export class DragonAssetUI{
     this.dragon=dragon;this.busy=false;this.hasInteracted=false;
     this.status=document.getElementById('dragon-glb-status');
     this.input=document.getElementById('dragon-glb-file');
-    this.buttons=['dragon-glb-import','dragon-glb-reset'].map(id=>document.getElementById(id));
+    this.buttons=['dragon-glb-import','dragon-glb-demo','dragon-glb-reset'].map(id=>document.getElementById(id));
     this.buttons[0].addEventListener('click',()=>this.input.click());
     this.input.addEventListener('change',()=>{
       const file=this.input.files?.[0];if(file)this.install(file);
       this.input.value='';
     });
-    this.buttons[1].addEventListener('click',()=>this.reset());
+    this.buttons[1].addEventListener('click',()=>this.install(new File([buildDragonDemoGLB()],'dragao-demo.glb',{type:'model/gltf-binary'}),{remember:false}));
+    this.buttons[2].addEventListener('click',()=>this.reset());
     this.restoreSaved();
   }
   setStatus(message,mode='neutral'){
