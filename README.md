@@ -1,3 +1,23 @@
+# Asas de Brumária v1.4.11 — Otimização dos dragões articulados
+
+## Novo agrupamento de malhas
+- **Rigs montáveis:** `src/utils/rigBatch.js` agrupa geometrias rígidas opacas que compartilham material *dentro do mesmo pivô*, preservando textura, cores por vértice, normais e sombras. É aplicado somente na construção do modelo, nunca a cada quadro. Nenhum objeto de animação é agrupado com outro pivô.
+- **Dragão principal:** 161 malhas rígidas consolidadas na construção. Mantidas cabeça, mandíbula, duas asas com cotovelos e pontas, olhos, sobrancelhas, patas e segmentos da cauda independentes. Ornamentos dos quatro dragões são consolidados em suas próprias variantes visíveis.
+- **Dragões acariciáveis:** Brasa (21 malhas consolidadas), Raio (20) e Nimbo (21), mantendo piscadas, carinho, movimentos de cabeça e asas. Os dragões distantes ainda usam seus modelos simplificados anteriores.
+- **Memória e compatibilidade:** sem modificação de controles, física, missões, progressão ou formato de saves. As geometrias originais não são descartadas prematuramente quando compartilhadas com outras malhas.
+
+## Medição Chromium WebGL (GitHub Actions, SwiftShader)
+| Cena | Chamadas de desenho: v1.4.10 → v1.4.11 | Geometrias: antes → depois |
+| --- | ---: | ---: |
+| Vila | **318 → 204** (−35,8%) | 310 → 219 |
+| Dragões selvagens | **401 → 287** (−28,4%) | 423 → 311 |
+| Montanha e chefe | **216 → 102** (−52,8%) | 439 → 327 |
+
+- **Verificação automática:** GitHub Actions `39251876830` aprovou os dois trabalhos, incluindo **445/445 testes de lógica**, cenários completos de resgate, treinamento e montanha no Chromium, validação dos pivôs e contagem de malhas consolidadas e benchmark de três cenários.
+- **Limites:** são métricas de renderização real num navegador com SwiftShader no CI, não FPS em placa de vídeo dedicada. Não é possível inferir aumento percentual de FPS no computador do jogador só a partir da queda das draw calls.
+
+---
+
 # Asas de Brumária v1.4.10 — Otimização de renderização e medição de desempenho
 
 ## Implementado
