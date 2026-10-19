@@ -55,7 +55,7 @@ export class Game {
     this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure=1.23;
     this.renderer.shadowMap.enabled=true;
-    this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type=THREE.PCFShadowMap;
     this.container.appendChild(this.renderer.domElement);
     this.webglLost=false;this.frameError=null;this.lastKnownFPS=0;this.diagnosticsVisible=false;this.actorStats={visible:0,full:0,limited:0,hidden:0};this.actorViewDirection=new THREE.Vector3();
     this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0x9bdbef);this.scene.fog=new THREE.FogExp2(0xa3e2ed,.00165);
@@ -515,7 +515,7 @@ export class Game {
   }
   interactWildDragon(){
     if(this.dragon.riding)return false;
-    const creature=this.wildDragons.nearby(this.hero.group.position,8.2);
+    const creature=this.wildDragons.nearby(this.hero.group.position,8.2,true);
     if(!creature)return false;
     const distance=this.hero.group.position.distanceTo(creature.group.position);
     const ready=this.wildDragons.approach.ready(creature.spec.id,distance);
@@ -524,10 +524,20 @@ export class Game {
       this.ui.toast(mood.mood==='assustado'?`${creature.spec.name} se assustou! Espere e aproxime-se devagar com SHIFT.`:`Fique perto de ${creature.spec.name} até ganhar confiança${creature.spec.id==='nimbo'?' (segure SHIFT para andar devagar)':''}.`,4);
       return true;
     }
+    // Fully befriended dragons stay pettable, but never grant points again.
+    if(this.wildBonds.progress(creature.spec.id)>=3){
+      const pet=this.wildDragons.onPetted(creature.spec.id,this.elapsed);
+      if(pet){
+        this.effects.burst(creature.group.position.clone().add(new THREE.Vector3(0,2.5,0)),'rescue',6);
+        this.audio.play('pickup');
+        this.ui.toast(`${creature.spec.name} adora seu carinho! Amizade já conquistada.`,3);
+      }else this.ui.toast(`${creature.spec.name} está descansando. Espere um instante para outro carinho.`,3);
+      return true;
+    }
     const result=this.wildBonds.bond(creature.spec.id,this.elapsed,ready);
     if(!result.ok){this.ui.toast(result.reason,3);return true;}
     this.wildDragons.approach.onBond(creature.spec.id);
-    this.wildDragons.onPetted(creature.spec.id);
+    this.wildDragons.onPetted(creature.spec.id,this.elapsed);
     this.effects.burst(creature.group.position.clone().add(new THREE.Vector3(0,2.5,0)),'rescue',12);
     this.audio.play(result.completed?'complete':'pickup');
     if(result.completed){
