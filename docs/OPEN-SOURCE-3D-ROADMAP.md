@@ -32,6 +32,19 @@ Pesquisa atualizada em 19/10/2026. O jogo já possui Three.js r180, importação
 | [howler.js](https://github.com/goldfire/howler.js) | MIT | Áudio espacial para asas, rugidos, vento, fogo, água e carinho | Carregar somente se necessário; atualmente o jogo já tem sistema de áudio e deve ser preservado. |
 | [Three.js GLTFLoader](https://threejs.org/docs/pages/GLTFLoader.html) | MIT do Three.js | Importar GLB 3D com skeletons e clipes de animação | Já usado no herói; criar caminho separado e opcional para futuros dragões importados. |
 
+## Primeiro teste de dragão GLB externo (opcional)
+
+A partir do importador novo, no **Estábulo dos Dragões → DRAGÃO 3D · TESTE DE MODELO EXTERNO**, existe um botão **IMPORTAR DRAGÃO GLB** e um botão **VOLTAR AO DRAGÃO ORIGINAL**. Isso permite testar um dragão com geometria própria, sem alterar combate, saves, física, hitboxes nem modelo do cavaleiro.
+
+**Cethiel's Dragon 3D (CC0):** [fonte e ZIP original](https://opengameart.org/content/cethiels-dragon-3d). O autor declara rig e animações, mas o pacote publicado é `dragon_oga.zip` e **não foi baixado, inspecionado ou convertido automaticamente** nesta fase. Para preparar um teste:
+1. Baixe `dragon_oga.zip` da página oficial, confira os arquivos e importe no Blender com o importador correspondente ao formato encontrado.
+2. Confira se armature, bones, texturas e ações/animações aparecem no Blender. Se houver múltiplas ações, organize-as como ações exportáveis ou trilhas NLA para glTF.
+3. Exporte como `glTF 2.0 → glTF Binary (.glb)` com malhas, texturas internas, skinning e animações habilitados. Mantenha o modelo enxuto para testar WebGL em dispositivos móveis.
+4. Rode `npm run assets:inspect -- caminho/dragao.glb` para ver quantidades de malhas, animações, ossos e extensões requeridas. O primeiro teste deve usar um GLB **sem Draco, Meshopt ou KTX2**, conforme o importador atual.
+5. Abra o jogo no navegador, entre no estábulo, importe o `.glb` e avalie voo, pouso, caminhada, combate, cavaleiro e distância da câmera; depois use **VOLTAR AO DRAGÃO ORIGINAL** para comparar. O jogo procura nomes de animações (idle, walk, fly, glide, takeoff, land, attack, hurt); se faltarem clipes, o modelo será exibido com as animações presentes e o painel avisará sobre ausência de voo específico.
+
+**Limites e segurança:** o arquivo só é lido quando o jogador escolhe importar. Ao falhar, o dragão original permanece. O arquivo pode ser guardado no IndexedDB separado do save normal até 20 MB; a aparência externa não faz parte do formato de save da campanha. As espécies originais continuam jogáveis quando não existe GLB importado.
+
 ## Ordem de implementação sugerida
 
 1. **Criar um dragão original no Blender** usando rig com controles de ombros, cotovelos, punhos, patas, cauda e mandíbula. Usar Quaternius apenas como referência estética ou para NPCs, não copiar personagens protegidos.

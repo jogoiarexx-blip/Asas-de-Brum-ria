@@ -65,6 +65,39 @@ try{
   await page.waitForTimeout(500);
   await check('Estábulo e Fúria da Luz disponíveis na prévia');
 
+  // Exercise the actual GLTFLoader, scene replacement and fallback using
+  // an original animated dragon GLB with clips for flight, attack and landing.
+  const demoBytes=await page.evaluate(async()=>{
+    const {buildDragonDemoGLB}=await import('./src/entities/dragonDemoGlb.js');
+    return Array.from(buildDragonDemoGLB());
+  });
+  await page.locator('#dragon-glb-file').setInputFiles({
+    name:'dragao-teste.glb',mimeType:'model/gltf-binary',buffer:Buffer.from(demoBytes)
+  });
+  await page.waitForFunction(()=>
+    document.querySelector('#dragon-glb-status')?.dataset.state==='ok',null,{timeout:15000});
+  const statusText=await page.locator('#dragon-glb-status').innerText();
+  assert.match(statusText,/Flying/);
+  assert.match(statusText,/Attack/);
+  await check('Importação GLB animado no dragão sem alterar o controle');
+
+  await page.locator('#dragon-glb-file').setInputFiles({
+    name:'arquivo-invalido.glb',mimeType:'model/gltf-binary',buffer:Buffer.from('invalid GLB')
+  });
+  await page.waitForFunction(()=>
+    document.querySelector('#dragon-glb-status')?.dataset.state==='error',null,{timeout:10000});
+  await check('Arquivo GLB inválido rejeitado sem derrubar o jogo');
+
+  await page.locator('#stable-close').click();
+  await page.waitForTimeout(350);
+  await check('Modelo importado mantém montagem, voo e renderização');
+
+  await page.keyboard.press('t');
+  await page.locator('#stable').waitFor({state:'visible',timeout:10000});
+  await page.locator('#dragon-glb-reset').click();
+  await page.waitForFunction(()=>
+    document.querySelector('#dragon-glb-status')?.textContent?.includes('original restaurado'),null,{timeout:15000});
+  await check('Restaurar dragão procedural após GLB');
   await page.locator('#stable-close').click();
   await page.keyboard.press('p');
   await page.waitForTimeout(450);
