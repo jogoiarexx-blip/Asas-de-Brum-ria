@@ -1,3 +1,15 @@
+# Asas de Brumária v1.4.7 — QA de jogabilidade e correções estruturais
+
+- **Carinho contínuo:** Faísca, Zéfiro e Neblina podem ser acariciados após atingir confiança 3/3. A animação é repetível com cooldown de 1,8 segundo, sem repetir recompensas, espécie desbloqueada ou alterações de salvamento.
+- **HUD contextual:** dragões já amigos continuam visíveis como alvos de interação e mostram "ACARICIAR · AMIGO" quando tranquilos.
+- **Compatibilidade gráfica:** `PCFShadowMap` substitui o modo de sombra removido; `start_game.py` baixa conjuntamente `three.module.js` e `three.core.js` do Three r180. O carregador ignora cache parcial e usa CDN quando necessário.
+- **Regressão:** testes antigos atualizados para a quarta espécie e para a separação de modelos de filhotes. Testes de entrega e salvamento continuam exercitando as regras reais de `Missions` via adaptador de cena.
+- **Validação GitHub Actions:** **442 de 442 testes automatizados aprovados**, 79 módulos JavaScript com sintaxe verificada e 132 imports locais encontrados corretamente.
+- **Teste de navegação automatizado:** Chromium + SwiftShader abriram o mundo 3D, iniciaram a partida, montaram, testaram controles de deslocamento/decolagem, abriram o estábulo com Fúria da Luz e salvaram sem erro detectado. `tests/browser-smoke.mjs` e workflow em `.github/workflows/validate.yml`.
+- **Limites de QA:** o smoke de navegador não representa uma partida integral, nem aprova todas as missões ou desempenho em GPU real. Avaliação de FPS e jogo prolongado permanecem pendentes.
+
+---
+
 # Asas de Brumária v1.4.6 — Filhotes expressivos e dragões acariciáveis
 
 ## Visual e animação
