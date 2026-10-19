@@ -527,6 +527,7 @@ export class Game {
     const result=this.wildBonds.bond(creature.spec.id,this.elapsed,ready);
     if(!result.ok){this.ui.toast(result.reason,3);return true;}
     this.wildDragons.approach.onBond(creature.spec.id);
+    this.wildDragons.onPetted(creature.spec.id);
     this.effects.burst(creature.group.position.clone().add(new THREE.Vector3(0,2.5,0)),'rescue',12);
     this.audio.play(result.completed?'complete':'pickup');
     if(result.completed){
