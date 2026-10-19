@@ -54,6 +54,13 @@
         <div class="hero-glb-buttons"><button id="hero-glb-import" type="button">IMPORTAR GLB</button><button id="hero-glb-demo" type="button">TESTAR MODELO DEMO</button><button id="hero-glb-reset" type="button">VOLTAR AO ORIGINAL</button></div>
         <p id="hero-glb-status" data-state="neutral" role="status" aria-live="polite">Selecione um GLB. O arquivo é salvo somente neste navegador, quando possível.</p>
       </section>
+      <section class="hero-glb-panel" aria-label="Testar modelo 3D GLB do dragão">
+        <strong>DRAGÃO 3D · TESTE DE MODELO EXTERNO</strong>
+        <p>Importe um dragão GLB rigado do seu computador para comparar com o original durante voo, pouso e combate. As mecânicas continuam iguais. Modelo CC0 sugerido: <a href="https://opengameart.org/content/cethiels-dragon-3d" target="_blank" rel="noopener noreferrer">Cethiel's Dragon 3D</a> (o ZIP exige conversão para GLB no Blender).</p>
+        <input id="dragon-glb-file" type="file" accept=".glb,model/gltf-binary" hidden>
+        <div class="hero-glb-buttons"><button id="dragon-glb-import" type="button">IMPORTAR DRAGÃO GLB</button><button id="dragon-glb-reset" type="button">VOLTAR AO DRAGÃO ORIGINAL</button></div>
+        <p id="dragon-glb-status" role="status" aria-live="polite" data-state="neutral">O arquivo é opcional. Sem GLB, o jogo mantém todos os modelos e animações originais.</p>
+      </section>
       <div id="stable-village-note" class="stable-note"></div>
       <div class="stable-balance"><strong id="train-points">0</strong> PONTOS DE TREINAMENTO <span id="train-circuits">0 circuitos</span></div>
       <div id="discovery-list" class="discovery-list">Marcos encontrados: 0/5</div>
