@@ -53,7 +53,7 @@ test('dragão GLB demo contém malhas e oito clipes reais exportados em glTF 2.0
   const json=JSON.parse(new TextDecoder().decode(bytes.slice(20,20+size)));
   const names=json.animations.map(a=>a.name);
   assert.ok(names.includes('Flying')&&names.includes('Attack')&&names.includes('Landing'));
-  assert.equal(json.nodes.find(n=>n.name==='DemoDragonRoot').children.length,13);
+  assert.equal(json.nodes.find(n=>n.name==='DemoDragonRoot').children.length,14);
   for(const anim of json.animations){
     assert.equal(anim.channels.length,2);
     assert.equal(anim.samplers.length,2);
