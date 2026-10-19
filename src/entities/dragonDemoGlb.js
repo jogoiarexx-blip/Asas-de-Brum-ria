@@ -33,6 +33,8 @@ export function buildDragonDemoGLB(){
   const iBox=accessor(boxTris,'SCALAR',5123,1,34963);
   const pWing=accessor(wing,'VEC3',5126,3,34962);
   const iWing=accessor(wingTris,'SCALAR',5123,1,34963);
+  accessors[pBox].min=[-.5,-.5,-.5];accessors[pBox].max=[.5,.5,.5];
+  accessors[pWing].min=[0,-.14,-.72];accessors[pWing].max=[3.45,.18,1.05];
   const colors=[
     [.10,.48,.56,1],[.18,.72,.70,1],[.27,.77,.82,1],
     [.035,.14,.20,1],[.88,.92,.67,1]
