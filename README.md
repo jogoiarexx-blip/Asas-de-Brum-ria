@@ -1,3 +1,16 @@
+# Asas de Brumária v1.4.6 — Filhotes expressivos e dragões acariciáveis
+
+## Visual e animação
+- **Filhotes do resgate:** novos modelos com cabeça proporcionalmente maior, olhos em camadas com reflexo, focinho curto, bochechas, patas arredondadas, chifres pequenos, cauda curta e asas em membranas. Três paletas diferentes e olhos piscando.
+- **Animação dos filhotes:** respiração, movimento de cabeça e cauda, piscadas e asas com ritmo próprio quando transportados; seus alvos, anéis, feixes e posições de missão continuam iguais.
+- **Dragões selvagens Faísca, Zéfiro e Neblina:** olhos com pupilas e brilho, bochechas, narinas e orelhas articuladas; expressões variam ao observar, assustar-se e relaxar.
+- **Carinho visível:** após uma interação de confiança bem-sucedida, o dragão baixa a cabeça, semicierra os olhos, movimenta cauda/orelhas e relaxa as asas durante 1,25 segundo. A reação é visual e não concede pontos extras nem altera o cooldown.
+- **Código desacoplado:** poses puras em `src/entities/CreatureMotion.js`, modelo separado em `src/entities/HatchlingVisual.js`, integrados aos sistemas existentes sem mudar o schema dos salvamentos.
+- **Desempenho:** as geometrias dos três filhotes são compartilhadas; animações atualizam apenas transformações, sem criar malhas a cada quadro. Os dragões selvagens continuam sob `ActorLOD`.
+- **Testes:** novo `tests/creature-visuals.test.js` verifica poses, resgate, tempo de carinho e integração. Em execução isolada local, **4 verificações de animação e regras puras passaram**, incluindo 500 frames por filhote. **Ainda faltam `npm run check` completo, teste visual WebGL, FPS e jogabilidade em navegador.**
+
+---
+
 # Asas de Brumária v1.4.5 — Fúria da Luz
 
 - **Novo dragão jogável:** Fúria da Luz, de tons branco-azulados, barbatanas arredondadas, chifres menores e brilho frio, disponível por **4 pontos de treinamento** no estábulo.
