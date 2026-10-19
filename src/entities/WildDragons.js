@@ -6,6 +6,7 @@ import {actorVisualLevel,shouldAnimateActor} from '../systems/ActorLOD.js';
 import {dragonMeshVisibility} from '../systems/DragonMeshLOD.js';
 import {buildDragonProxy} from './DragonProxy.js';
 import {wildDragonPose} from './CreatureMotion.js';
+import {batchRigidMeshes} from '../utils/rigBatch.js';
 const shape=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{
   const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;return m;
 };
@@ -85,9 +86,16 @@ function buildCreature(spec){
   }
   const ring=new THREE.Mesh(new THREE.TorusGeometry(3.25,.13,6,36),new THREE.MeshBasicMaterial({color:spec.color,transparent:true,opacity:.65}));
   ring.rotation.x=Math.PI/2;ring.position.y=.25;group.add(ring);
+  // Preserve torso breathing, jaw movement and pupil blinking. Fuse only
+  // the immobile scales, head decorations and pieces within each wing pivot.
+  let batched=0;
+  batched+=batchRigidMeshes(group,{preserve:[torso]}).removed;
+  batched+=batchRigidMeshes(head,{preserve:[lowerJaw]}).removed;
+  for(const {joint} of wings)batched+=batchRigidMeshes(joint).removed;
+  batched+=batchRigidMeshes(tail).removed;
   const beacon=new THREE.Mesh(new THREE.OctahedronGeometry(.45),new THREE.MeshBasicMaterial({color:spec.color,transparent:true,opacity:.76}));
   beacon.position.set(0,5.2,0);group.add(beacon);
-  return {group,wings,tail,head,ring,beacon,torso,lowerJaw,eyes,ears};
+  return {group,wings,tail,head,ring,beacon,torso,lowerJaw,eyes,ears,rigidBatchedParts:batched};
 }
 export class WildDragons {
   constructor(scene,world,bonds){
