@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {WILD_DRAGON_DEFS} from '../systems/WildBonds.js';
+import {WILD_DRAGON_DEFS,petRepeatAllowed} from '../systems/WildBonds.js';
 import {WildApproach} from '../systems/WildApproach.js';
 import {SPECIES} from '../systems/Progression.js';
 import {actorVisualLevel,shouldAnimateActor} from '../systems/ActorLOD.js';
@@ -128,7 +128,7 @@ export class WildDragons {
     const creature=this.creatures.find(c=>c.spec.id===id);
     if(!creature)return false;
     if(Number.isFinite(time)){
-      if(time-creature.lastPetAt<1.8)return false;
+      if(!petRepeatAllowed(time,creature.lastPetAt))return false;
       creature.lastPetAt=time;
     }
     creature.petTime=1.25;
