@@ -16,6 +16,13 @@ async function resolveThree(){
       try{response=await fetch(url,{cache:'force-cache',signal:controller.signal});}
       finally{clearTimeout(timer);}
       if(!response.ok)continue;
+      // The r180 browser module imports ./three.core.js. A half-populated
+      // offline cache must never mask fully working CDN mirrors.
+      if(url===THREE_CANDIDATES[0]){
+        const core=new URL('../vendor/three.core.js',import.meta.url).href;
+        const companion=await fetch(core,{cache:'force-cache',signal:controller.signal});
+        if(!companion.ok)continue;
+      }
       const type=response.headers.get('content-type')||'';
       if(type.includes('text/html'))continue;
       await response.arrayBuffer(); // Complete a leitura para aquecer o cache HTTP.
