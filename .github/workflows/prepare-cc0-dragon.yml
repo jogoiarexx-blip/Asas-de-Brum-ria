@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - feature/cc0-dragon-conversion-qa-20261021
+      - main
     paths:
       - .github/workflows/prepare-cc0-dragon.yml
       - tools/fetch_cc0_dragon.py
       - tools/export_cc0_dragon_blender.py
       - tests/browser-cc0-dragon.mjs
+      - src/ui/DragonAssetUI.js
+      - index.html
   pull_request:
     branches: [main]
     paths:
@@ -54,6 +57,8 @@ jobs:
           cp node_modules/three/examples/jsm/utils/BufferGeometryUtils.js vendor/addons/utils/BufferGeometryUtils.js
       - name: Importar o modelo CC0 real no jogo com WebGL e conferir as animacoes
         run: |
+          mkdir -p assets/models
+          cp artifacts/cc0/cethiel-dragon.glb assets/models/cethiel-dragon.glb
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/brumaria-cc0-http.log 2>&1 &
           node tests/browser-cc0-dragon.mjs
       - name: Disponibilizar dragao convertido e auditoria
@@ -63,3 +68,29 @@ jobs:
           name: cethiel-cc0-converted-dragon
           path: artifacts/cc0/
           if-no-files-found: ignore
+
+  publish-model:
+    needs: convert
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cethiel-cc0-converted-dragon
+          path: artifacts/converted
+      - name: Publicar GLB CC0 convertido como recurso opcional
+        run: |
+          mkdir -p assets/models
+          cp artifacts/converted/cethiel-dragon.glb assets/models/cethiel-dragon.glb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/cethiel-dragon.glb
+          if git diff --cached --quiet; then
+            echo "Asset identico ao publicado"
+          else
+            git commit -m "Assets CC0: dragao rigado e animado (Cethiel / Drummyfish)"
+            git push origin HEAD:main
+          fi
