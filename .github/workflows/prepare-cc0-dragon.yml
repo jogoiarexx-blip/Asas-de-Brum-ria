@@ -1,0 +1,45 @@
+name: Preparar dragao CC0 para teste
+
+on:
+  push:
+    branches:
+      - feature/cc0-dragon-conversion-qa-20261021
+    paths:
+      - .github/workflows/prepare-cc0-dragon.yml
+      - tools/fetch_cc0_dragon.py
+      - tools/export_cc0_dragon_blender.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Blender e Node
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender
+          blender --version | head -n 3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Baixar apenas do autor original e conferir o ZIP CC0
+        run: python3 tools/fetch_cc0_dragon.py artifacts/cc0
+      - name: Exportar o .blend para GLB mantendo esqueleto e animacoes
+        run: blender --disable-autoexec --background artifacts/cc0/cethiel-source.blend --python tools/export_cc0_dragon_blender.py -- artifacts/cc0/cethiel-dragon.glb
+      - name: Inspecionar GLB final com o validador do jogo
+        run: |
+          npm run assets:inspect -- artifacts/cc0/cethiel-dragon.glb > artifacts/cc0/model-report.txt
+          cat artifacts/cc0/model-report.txt
+          node --input-type=module -e "import{readFileSync}from'node:fs';import{modelReportGLB}from'./tools/modelPipeline.mjs';const r=modelReportGLB(readFileSync('artifacts/cc0/cethiel-dragon.glb')); if(!r.skins||!r.joints||!r.animationCount)throw Error('GLB conversion lost rig or animations: '+JSON.stringify(r)); console.log('VALID_CC0_DRAGON',JSON.stringify(r))"
+      - name: Disponibilizar dragao convertido e auditoria
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cethiel-cc0-converted-dragon
+          path: artifacts/cc0/
+          if-no-files-found: ignore
