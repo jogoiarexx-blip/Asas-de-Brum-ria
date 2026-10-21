@@ -71,7 +71,11 @@ jobs:
 
   publish-model:
     needs: convert
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' &&
+       github.head_ref == 'feature/publish-cc0-model-20261021' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -83,6 +87,10 @@ jobs:
           path: artifacts/converted
       - name: Publicar GLB CC0 convertido como recurso opcional
         run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git fetch origin main
+            git checkout -B assets/cethiel-cc0-20261021 origin/main
+          fi
           mkdir -p assets/models
           cp artifacts/converted/cethiel-dragon.glb assets/models/cethiel-dragon.glb
           git config user.name "github-actions[bot]"
@@ -92,5 +100,9 @@ jobs:
             echo "Asset identico ao publicado"
           else
             git commit -m "Assets CC0: dragao rigado e animado (Cethiel / Drummyfish)"
-            git push origin HEAD:main
+            if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+              git push origin HEAD:assets/cethiel-cc0-20261021
+            else
+              git push origin HEAD:main
+            fi
           fi
