@@ -26,6 +26,19 @@ def main(out):
     model=out/"cethiel-source.blend"
     with archive.open(best) as inp,model.open("wb") as dest:
         while chunk:=inp.read(65536):dest.write(chunk)
+    # External textures in the same ZIP must sit beside the extracted .blend;
+    # otherwise Blender can silently export an untextured grey model.
+    textures=[]
+    for item in archive.infolist():
+        if item.is_dir():continue
+        name=Path(item.filename.replace("\\","/")).name
+        if Path(name).suffix.lower() not in (".png",".jpg",".jpeg",".webp"):continue
+        if item.file_size>10_000_000:raise ValueError("Texture too large: "+name)
+        dst=out/name
+        with archive.open(item) as inp,dst.open("wb") as dest:
+            while chunk:=inp.read(65536):dest.write(chunk)
+        textures.append(name)
+    print("EXTRACTED_TEXTURES",textures,flush=True)
     manifest={"license":"CC0 per author","author":"Drummyfish with Cethiel","source":PAGE,
       "archive":URL,"archive_bytes":len(data),"sha256":hashlib.sha256(data).hexdigest(),
       "source_blend":best.filename,"files":items}
