@@ -44,7 +44,7 @@ try{
   console.log('CC0_DRAGON_BROWSER',JSON.stringify(result));
   assert.ok(result.meshes.some(x=>x.skinned),'The external model has no skinned meshes');
   assert.ok(result.originalHidden,'Procedural dragon is still showing beneath imported model');
-  assert.ok(result.riderAttached,'The player's rider was detached');
+  assert.ok(result.riderAttached,"The player's rider was detached");
   for(const required of ['idle','walk','attack','fly','glide'])
     assert.ok(result.clips.includes(required),'Missing '+required+' clip');
   await page.locator('#stable-close').click();
