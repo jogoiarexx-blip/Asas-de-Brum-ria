@@ -30,6 +30,41 @@ def main():
             obj.select_set(True)
     if meshes:
         bpy.context.view_layer.objects.active=meshes[0]
+    # The CC0 original has Walk/Idle/Attack/Die, but no flying animation.
+    # Derive two original wing-flap clips using the existing armature. Keep
+    # the source actions untouched, copy idle body/head motion into each clip.
+    if armatures:
+        import math
+        from mathutils import Quaternion
+        rig=armatures[0]
+        wing_names=("wing_upper.L","wing_lower.L","wing_upper.R","wing_lower.R")
+        if all(rig.pose.bones.get(name) for name in wing_names):
+            idle=bpy.data.actions.get("Idle")
+            if idle:
+                rig.animation_data_create()
+                for clip,amplitude in (("Flying",.62),("Glide",.10)):
+                    action=idle.copy()
+                    action.name=clip
+                    for fcurve in list(action.fcurves):
+                        if any('pose.bones["'+name+'"]' in fcurve.data_path
+                               for name in wing_names):
+                            action.fcurves.remove(fcurve)
+                    rig.animation_data.action=action
+                    for frame in (1,7,13,19,25):
+                        phase=(frame-1)/24*math.pi*2
+                        for name in wing_names:
+                            bone=rig.pose.bones[name]
+                            side=1 if name.endswith(".L") else -1
+                            extension=.38 if "lower" in name else 1.0
+                            angle=math.sin(phase)*amplitude*side*extension
+                            bone.rotation_mode="QUATERNION"
+                            bone.rotation_quaternion=Quaternion((0,0,1),angle)
+                            bone.keyframe_insert(data_path="rotation_quaternion",frame=frame)
+                    action.use_fake_user=True
+                    print("DRAGON_SYNTHETIC_CLIP",clip,len(action.fcurves),flush=True)
+                rig.animation_data.action=idle
+        else:
+            print("DRAGON_SYNTHETIC_CLIP_SKIPPED missing wing bones",flush=True)
     available=bpy.ops.export_scene.gltf.get_rna_type().properties.keys()
     kwargs={"filepath":str(target),"export_format":"GLB","use_selection":True,
             "export_animations":True}
