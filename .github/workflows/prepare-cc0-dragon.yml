@@ -8,6 +8,12 @@ on:
       - .github/workflows/prepare-cc0-dragon.yml
       - tools/fetch_cc0_dragon.py
       - tools/export_cc0_dragon_blender.py
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/prepare-cc0-dragon.yml
+      - tools/fetch_cc0_dragon.py
+      - tools/export_cc0_dragon_blender.py
   workflow_dispatch:
 
 permissions:
