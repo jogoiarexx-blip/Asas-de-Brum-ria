@@ -8,6 +8,7 @@ on:
       - .github/workflows/prepare-cc0-dragon.yml
       - tools/fetch_cc0_dragon.py
       - tools/export_cc0_dragon_blender.py
+      - tests/browser-cc0-dragon.mjs
   pull_request:
     branches: [main]
     paths:
@@ -42,6 +43,19 @@ jobs:
           npm run assets:inspect -- artifacts/cc0/cethiel-dragon.glb > artifacts/cc0/model-report.txt
           cat artifacts/cc0/model-report.txt
           node --input-type=module -e "import{readFileSync}from'node:fs';import{modelReportGLB}from'./tools/modelPipeline.mjs';const r=modelReportGLB(readFileSync('artifacts/cc0/cethiel-dragon.glb')); if(!r.skins||!r.joints||!r.animationCount)throw Error('GLB conversion lost rig or animations: '+JSON.stringify(r)); console.log('VALID_CC0_DRAGON',JSON.stringify(r))"
+      - name: Preparar teste visual Chromium e Three.js
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1 three@0.180.0
+          npx playwright install --with-deps chromium
+          mkdir -p vendor/addons/loaders vendor/addons/utils
+          cp node_modules/three/build/three.module.js vendor/three.module.js
+          cp node_modules/three/build/three.core.js vendor/three.core.js
+          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js vendor/addons/loaders/GLTFLoader.js
+          cp node_modules/three/examples/jsm/utils/BufferGeometryUtils.js vendor/addons/utils/BufferGeometryUtils.js
+      - name: Importar o modelo CC0 real no jogo com WebGL e conferir as animacoes
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/brumaria-cc0-http.log 2>&1 &
+          node tests/browser-cc0-dragon.mjs
       - name: Disponibilizar dragao convertido e auditoria
         if: always()
         uses: actions/upload-artifact@v4
