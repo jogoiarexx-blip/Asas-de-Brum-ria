@@ -1,3 +1,15 @@
+## Piloto CC0 convertido e testado (21/10/2026)
+
+O pacote oficial [Cethiel's Dragon 3D](https://opengameart.org/content/cethiels-dragon-3d), de Drummyfish e Cethiel, foi baixado do autor e convertido no GitHub Actions usando **Blender 4.0.2**. O modelo de origem contém as ações Attack, Die, Idle e Walk, mas nenhuma animação de voo. Foram geradas duas novas animações de asas a partir da mesma armature: **Flying** e **Glide**.
+
+O arquivo resultante tem 32 ossos, 6 animações, 1.900 triângulos, 2 malhas, 2 materiais e textura embutida, com cerca de 738 KB. O Playwright abriu o modelo no Three.js e confirmou uma malha skinned, ações de voo e caminhada, cavaleiro preservado e restauração do modelo procedural.
+
+A opção **USAR DRAGÃO CC0 REAL** será oferecida no estábulo sem importação manual, com botão para voltar ao original. O recurso `assets/models/cethiel-dragon.glb` é produzido de maneira reproduzível em `.github/workflows/prepare-cc0-dragon.yml` e publicado somente após validação no ramo principal. Os arquivos intermediários e relatórios ficam como artefato da execução. Não substitui automaticamente as espécies originais, nem altera física, colisões, missão ou save.
+
+Atribuição não é exigida pela licença CC0, mas o jogo identifica e referencia os autores. Os clipes Flying e Glide são **adaptações procedurais deste projeto**, não animações de voo fornecidas pelos autores originais.
+
+---
+
 # Biblioteca open source para evolução visual de Asas de Brumária
 
 Pesquisa atualizada em 19/10/2026. O jogo já possui Three.js r180, importação opcional de GLB para o herói, animações procedurais articuladas, LOD e testes Chromium. O objetivo é migrar aos poucos para **assets originais e legais, sem perder desempenho ou transformar GitHub Pages em aplicativo que exige build**.

@@ -1,0 +1,96 @@
+name: Preparar dragao CC0 para teste
+
+on:
+  push:
+    branches:
+      - feature/cc0-dragon-conversion-qa-20261021
+      - main
+    paths:
+      - .github/workflows/prepare-cc0-dragon.yml
+      - tools/fetch_cc0_dragon.py
+      - tools/export_cc0_dragon_blender.py
+      - tests/browser-cc0-dragon.mjs
+      - src/ui/DragonAssetUI.js
+      - index.html
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/prepare-cc0-dragon.yml
+      - tools/fetch_cc0_dragon.py
+      - tools/export_cc0_dragon_blender.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Blender e Node
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender python3-numpy
+          blender --version | head -n 3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Baixar apenas do autor original e conferir o ZIP CC0
+        run: python3 tools/fetch_cc0_dragon.py artifacts/cc0
+      - name: Exportar o .blend para GLB mantendo esqueleto e animacoes
+        run: blender --disable-autoexec --background artifacts/cc0/cethiel-source.blend --python tools/export_cc0_dragon_blender.py -- artifacts/cc0/cethiel-dragon.glb
+      - name: Inspecionar GLB final com o validador do jogo
+        run: |
+          npm run assets:inspect -- artifacts/cc0/cethiel-dragon.glb > artifacts/cc0/model-report.txt
+          cat artifacts/cc0/model-report.txt
+          node --input-type=module -e "import{readFileSync}from'node:fs';import{modelReportGLB}from'./tools/modelPipeline.mjs';const r=modelReportGLB(readFileSync('artifacts/cc0/cethiel-dragon.glb')); if(!r.skins||!r.joints||!r.animationCount)throw Error('GLB conversion lost rig or animations: '+JSON.stringify(r)); console.log('VALID_CC0_DRAGON',JSON.stringify(r))"
+      - name: Preparar teste visual Chromium e Three.js
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1 three@0.180.0
+          npx playwright install --with-deps chromium
+          mkdir -p vendor/addons/loaders vendor/addons/utils
+          cp node_modules/three/build/three.module.js vendor/three.module.js
+          cp node_modules/three/build/three.core.js vendor/three.core.js
+          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js vendor/addons/loaders/GLTFLoader.js
+          cp node_modules/three/examples/jsm/utils/BufferGeometryUtils.js vendor/addons/utils/BufferGeometryUtils.js
+      - name: Importar o modelo CC0 real no jogo com WebGL e conferir as animacoes
+        run: |
+          mkdir -p assets/models
+          cp artifacts/cc0/cethiel-dragon.glb assets/models/cethiel-dragon.glb
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/brumaria-cc0-http.log 2>&1 &
+          node tests/browser-cc0-dragon.mjs
+      - name: Disponibilizar dragao convertido e auditoria
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cethiel-cc0-converted-dragon
+          path: artifacts/cc0/
+          if-no-files-found: ignore
+
+  publish-model:
+    needs: convert
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: cethiel-cc0-converted-dragon
+          path: artifacts/converted
+      - name: Publicar GLB CC0 convertido como recurso opcional
+        run: |
+          mkdir -p assets/models
+          cp artifacts/converted/cethiel-dragon.glb assets/models/cethiel-dragon.glb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/models/cethiel-dragon.glb
+          if git diff --cached --quiet; then
+            echo "Asset identico ao publicado"
+          else
+            git commit -m "Assets CC0: dragao rigado e animado (Cethiel / Drummyfish)"
+            git push origin HEAD:main
+          fi
