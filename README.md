@@ -1,3 +1,15 @@
+# Asas de Brumária v1.4.13 — Dragão CC0 real jogável no estábulo
+
+## Modelo 3D real, com rig e seis animações
+- **Novo botão no Estábulo: USAR DRAGÃO CC0 REAL.** O jogador escolhe usar o modelo Cethiel/Drummyfish (CC0), mantido no repositório em `assets/models/cethiel-dragon.glb`. O modelo original permanece padrão e pode ser restaurado a qualquer momento pelo botão **VOLTAR AO DRAGÃO ORIGINAL**.
+- **Arquivos reais:** convertido com Blender 4.0.2 do ZIP CC0 original em `https://opengameart.org/content/cethiels-dragon-3d`; 738 KB, cerca de 1.900 triângulos, 32 ossos, duas malhas, dois materiais e uma textura incorporada.
+- **Animações:** do autor: `Attack`, `Die`, `Idle`, `Walk`. Criadas neste projeto sobre os ossos originais das asas: `Flying`, `Glide`. As animações originais foram preservadas. O modelo e as duas animações adicionais foram gerados reproduzivelmente pelos scripts em `tools/fetch_cc0_dragon.py` e `tools/export_cc0_dragon_blender.py`.
+- **Qualidade e fallback:** o GLB é opcional, não substitui as quatro espécies procedurais, não altera controles de voo, colisões, missão, save ou cavaleiro. Uma falha no carregamento não impede jogar com o dragão original.
+- **Prova de QA:** GitHub Actions `39667376609`: exportação e importação no Chromium/WebGL aprovadas; malha skinned reconhecida, animações de voo/planagem, cavaleiro preservado e retorno ao original. Reexecução `39668422587` confirmou que a seleção **USAR DRAGÃO CC0 REAL** funciona por arquivo local servido no navegador. O repositório contém o GLB binário com blob SHA `4a96abde21e180b2d51df9355fc2ad517c3c6e67`, igual ao produzido no teste.
+- **Limites:** o teste de navegador acelera cenas e não mede FPS em GPU dedicada. O estilo CC0 externo é um protótipo alternativo e não um redesenho das espécies Nimbo, Brasa, Raio ou Fúria da Luz.
+
+---
+
 # Asas de Brumária v1.4.12 — Dragão GLB animado (integração opcional)
 
 ## Novidade jogável no estábulo
