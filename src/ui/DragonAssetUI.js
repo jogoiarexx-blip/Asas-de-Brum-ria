@@ -9,14 +9,15 @@ export class DragonAssetUI{
     this.dragon=dragon;this.busy=false;this.hasInteracted=false;
     this.status=document.getElementById('dragon-glb-status');
     this.input=document.getElementById('dragon-glb-file');
-    this.buttons=['dragon-glb-import','dragon-glb-demo','dragon-glb-reset'].map(id=>document.getElementById(id));
+    this.buttons=['dragon-glb-import','dragon-glb-demo','dragon-glb-cc0','dragon-glb-reset'].map(id=>document.getElementById(id));
     this.buttons[0].addEventListener('click',()=>this.input.click());
     this.input.addEventListener('change',()=>{
       const file=this.input.files?.[0];if(file)this.install(file);
       this.input.value='';
     });
     this.buttons[1].addEventListener('click',()=>this.install(new File([buildDragonDemoGLB()],'dragao-demo.glb',{type:'model/gltf-binary'}),{remember:false}));
-    this.buttons[2].addEventListener('click',()=>this.reset());
+    this.buttons[2].addEventListener('click',()=>this.installBundledCC0());
+    this.buttons[3].addEventListener('click',()=>this.reset());
     this.restoreSaved();
   }
   setStatus(message,mode='neutral'){
@@ -44,6 +45,23 @@ export class DragonAssetUI{
       console.warn('Dragão GLB opcional:',error);
       return false;
     }finally{this.lock(false);}
+  }
+  async installBundledCC0(){
+    if(this.busy)return false;
+    this.lock(true);
+    let file;
+    try{
+      this.setStatus('Carregando o dragão CC0 real e suas animações…');
+      const url=new URL('../../assets/models/cethiel-dragon.glb',import.meta.url);
+      const response=await fetch(url,{cache:'force-cache'});
+      if(!response.ok)throw Error('Arquivo CC0 ainda não publicado (HTTP '+response.status+').');
+      const bytes=await response.arrayBuffer();
+      file=new File([bytes],'cethiel-dragon.glb',{type:'model/gltf-binary'});
+    }catch(error){
+      this.setStatus('Não foi possível carregar o modelo CC0: '+error.message+'. O dragão original continua disponível.','error');
+      return false;
+    }finally{this.lock(false);}
+    return this.install(file,{remember:true});
   }
   async restoreSaved(){
     try{
