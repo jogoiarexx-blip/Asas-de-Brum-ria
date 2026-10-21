@@ -47,6 +47,19 @@ try{
   assert.ok(result.riderAttached,"The player's rider was detached");
   for(const required of ['idle','walk','attack','fly','glide'])
     assert.ok(result.clips.includes(required),'Missing '+required+' clip');
+  // Verify the same converted model is also offered directly in the stable,
+  // without asking the player to download and manually import a GLB.
+  await page.locator('#dragon-glb-reset').click();
+  await page.waitForFunction(()=>!window.__cc0QA.dragon.externalDragonModel,null,{timeout:10000});
+  await page.locator('#dragon-glb-cc0').click();
+  await page.waitForFunction(()=>{
+    const e=document.querySelector('#dragon-glb-status');
+    return e?.dataset.state==='ok'||e?.dataset.state==='error';
+  },null,{timeout:20000});
+  assert.equal(await page.locator('#dragon-glb-status').getAttribute('data-state'),'ok',
+    'The built-in CC0 selection failed');
+  assert.ok(await page.evaluate(()=>!!window.__cc0QA.dragon.externalDragonModel));
+  console.log('CC0_BUILTIN_BUTTON PASS');
   await page.locator('#stable-close').click();
   await page.waitForTimeout(500);
   await page.screenshot({path:'artifacts/cc0/cethiel-in-game.png'});
