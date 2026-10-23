@@ -18,7 +18,8 @@ export class DragonAssetUI{
     this.buttons[1].addEventListener('click',()=>this.install(new File([buildDragonDemoGLB()],'dragao-demo.glb',{type:'model/gltf-binary'}),{remember:false}));
     this.buttons[2].addEventListener('click',()=>this.installBundledCC0());
     this.buttons[3].addEventListener('click',()=>this.reset());
-    this.restoreSaved();
+    // A espécie escolhida é a aparência principal. GLBs personalizados são
+    // carregados somente quando o jogador opta explicitamente por importar.
   }
   setStatus(message,mode='neutral'){
     this.status.textContent=message;this.status.dataset.state=mode;
@@ -76,7 +77,8 @@ export class DragonAssetUI{
     try{
       clearDragonGLB(this.dragon);
       await clearSavedDragonGLB();
-      this.setStatus('Dragão original restaurado, com todas as suas animações.','ok');
+      if(this.onReset)await this.onReset();
+      this.setStatus('Aparência original da espécie selecionada restaurada.','ok');
     }catch(error){this.setStatus('Dragão original restaurado, mas o arquivo local pode continuar salvo: '+error.message,'warn');}
     finally{this.lock(false);}
   }
