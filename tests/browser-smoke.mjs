@@ -60,6 +60,16 @@ try{
 
   await page.keyboard.press('t');
   await page.locator('#stable').waitFor({state:'visible',timeout:10000});
+  // Previously opening the stable failed: StablePreview's fake World exposed
+  // heightAt while Dragon.constructor required groundHeightAt.
+  await page.waitForTimeout(450);
+  assert.doesNotMatch(await page.locator('#stable-preview-caption').innerText(),/indisponível/i);
+  assert.ok((await page.locator('#stable-preview-canvas').evaluate(el=>el.width))>20,
+    'Prévia 3D do estábulo não renderizou');
+  assert.ok(await page.locator('#night-fury-glb-import').isVisible());
+  assert.ok(await page.locator('#light-fury-glb-import').isVisible());
+  await page.screenshot({path:'artifacts/stable-preview-fixed.png'});
+  console.log('PASS: prévia do estábulo renderiza e botões das duas Fúrias estão disponíveis');
   const stableText=await page.locator('#species-list').innerText();
   assert.ok(stableText.includes('Fúria da Noite'),'Starter Night Fury missing from stable');
   assert.ok(stableText.includes('Fúria da Luz'),'Unlockable Light Fury missing from stable');
