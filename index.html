@@ -61,6 +61,17 @@
         <div class="hero-glb-buttons"><button id="dragon-glb-import" type="button">IMPORTAR DRAGÃO GLB</button><button id="dragon-glb-demo" type="button">TESTAR DRAGÃO DEMO ANIMADO</button><button id="dragon-glb-cc0" type="button">USAR DRAGÃO CC0 REAL</button><button id="dragon-glb-reset" type="button">VOLTAR AO DRAGÃO ORIGINAL</button></div>
         <p id="dragon-glb-status" role="status" aria-live="polite" data-state="neutral">O arquivo é opcional. Sem GLB, o jogo mantém todos os modelos e animações originais.</p>
       </section>
+      <section class="hero-glb-panel" aria-label="Carregar Fúrias da Noite e da Luz">
+        <strong>MODELOS DAS FÚRIAS · 49 OSSOS E 8 ANIMAÇÕES</strong>
+        <p>Carregue o GLB de cada Fúria uma vez neste navegador. A Fúria da Noite é sua montaria inicial; a Fúria da Luz continua desbloqueável com pontos. O jogo guarda os dois arquivos separadamente quando o navegador permite.</p>
+        <input id="night-fury-glb-file" type="file" accept=".glb,model/gltf-binary" hidden>
+        <input id="light-fury-glb-file" type="file" accept=".glb,model/gltf-binary" hidden>
+        <div class="hero-glb-buttons">
+          <button id="night-fury-glb-import" type="button">CARREGAR FÚRIA DA NOITE</button>
+          <button id="light-fury-glb-import" type="button">CARREGAR FÚRIA DA LUZ</button>
+        </div>
+        <p id="fury-glb-status" data-state="neutral" role="status" aria-live="polite">Se os modelos ainda não aparecem, escolha os arquivos .glb do pacote de animações enviado.</p>
+      </section>
       <div id="stable-village-note" class="stable-note"></div>
       <div class="stable-balance"><strong id="train-points">0</strong> PONTOS DE TREINAMENTO <span id="train-circuits">0 circuitos</span></div>
       <div id="discovery-list" class="discovery-list">Marcos encontrados: 0/5</div>
