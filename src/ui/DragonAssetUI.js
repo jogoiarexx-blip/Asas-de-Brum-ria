@@ -78,7 +78,7 @@ export class DragonAssetUI{
       clearDragonGLB(this.dragon);
       await clearSavedDragonGLB();
       if(this.onReset)await this.onReset();
-      this.setStatus('Aparência original da espécie selecionada restaurada.','ok');
+      this.setStatus('Modelo original restaurado: aparência da espécie selecionada.','ok');
     }catch(error){this.setStatus('Dragão original restaurado, mas o arquivo local pode continuar salvo: '+error.message,'warn');}
     finally{this.lock(false);}
   }
