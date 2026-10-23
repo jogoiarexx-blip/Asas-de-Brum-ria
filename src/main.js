@@ -1,8 +1,12 @@
 // A Three.js dependency can be cached locally on first run by start_game.py.
 // For static hosting without the local cache, test CDN mirrors before locking the import map.
 const THREE_VERSION='0.180.0';
+// GitHub Pages serves repository source without the optional runtime cache.
+// Do not probe a missing /vendor/three.module.js (404 in every clean deploy).
+// Local Python launcher still prefers its cached copy for offline use.
+const IS_STATIC_PAGES=location.hostname.endsWith('.github.io');
 const THREE_CANDIDATES=[
-  new URL('../vendor/three.module.js',import.meta.url).href,
+  ...(!IS_STATIC_PAGES?[new URL('../vendor/three.module.js',import.meta.url).href]:[]),
   `https://cdn.jsdelivr.net/npm/three@${THREE_VERSION}/build/three.module.js`,
   `https://unpkg.com/three@${THREE_VERSION}/build/three.module.js`,
 ];
@@ -18,7 +22,7 @@ async function resolveThree(){
       if(!response.ok)continue;
       // The r180 browser module imports ./three.core.js. A half-populated
       // offline cache must never mask fully working CDN mirrors.
-      if(url===THREE_CANDIDATES[0]){
+      if(!IS_STATIC_PAGES&&url===THREE_CANDIDATES[0]){
         const core=new URL('../vendor/three.core.js',import.meta.url).href;
         const companion=await fetch(core,{cache:'force-cache',signal:controller.signal});
         if(!companion.ok)continue;

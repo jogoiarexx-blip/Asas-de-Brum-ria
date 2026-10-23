@@ -8,7 +8,8 @@ const mirrors=[`https://cdn.jsdelivr.net/npm/three@${VERSION}/examples/jsm/loade
 let promise=null;
 async function getGLTFLoader(){
   if(!promise){
-    const urls=[new URL('../../vendor/addons/loaders/GLTFLoader.js',import.meta.url).href,...mirrors];
+    const isPages=location.hostname.endsWith('.github.io');
+    const urls=[...(!isPages?[new URL('../../vendor/addons/loaders/GLTFLoader.js',import.meta.url).href]:[]),...mirrors];
     promise=(async()=>{
       let error;
       for(const path of urls){try{
