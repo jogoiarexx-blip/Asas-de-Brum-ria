@@ -21,7 +21,9 @@ export class StablePreview {
     const rim=new THREE.DirectionalLight(0x6bd6ff,2);rim.position.set(7,8,10);this.scene.add(rim);
     const platform=new THREE.Mesh(new THREE.CylinderGeometry(5.7,6,.45,48),new THREE.MeshStandardMaterial({color:0x345b62,metalness:.23,roughness:.61}));
     platform.position.y=-.45;this.scene.add(platform);
-    const world={heightAt:()=>-2,obstacles:[],clearanceAt:()=>-Infinity};
+    // Dragon.constructor queries the same groundHeightAt API as the real World.
+    // heightAt was obsolete and crashed every time the stable preview opened.
+    const world={groundHeightAt:()=>-2,heightAt:()=>-2,obstacles:[],clearanceAt:()=>-Infinity};
     this.dragon=new Dragon(this.scene,world);
     this.dragon.group.position.set(0,2,0);
     this.dragon.visual.position.y=0;
