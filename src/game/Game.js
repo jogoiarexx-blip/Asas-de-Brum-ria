@@ -10,6 +10,7 @@ import { EnemySquad } from '../entities/EnemyDragon.js';
 import { Hero } from '../entities/Hero.js';
 import {HeroAssetUI} from '../ui/HeroAssetUI.js';
 import {DragonAssetUI} from '../ui/DragonAssetUI.js';
+import {SpeciesDragonModels} from '../entities/SpeciesDragonModels.js';
 import { Missions } from '../systems/Missions.js';
 import { AudioSystem } from '../systems/Audio.js';
 import { Effects } from '../systems/Effects.js';
@@ -80,6 +81,8 @@ export class Game {
     this.hero=new Hero(this.scene,this.world,this.dragon);
     this.heroAssetUI=new HeroAssetUI(this.hero);
     this.dragonAssetUI=new DragonAssetUI(this.dragon);
+    this.speciesModels=new SpeciesDragonModels(this.dragon);
+    this.dragonAssetUI.onReset=()=>this.speciesModels.select(this.progression.species);
     this.enemies=new EnemySquad(this.scene,this.world);
     this.effects=new Effects(this.scene);
     this.applySceneQuality();
@@ -99,6 +102,7 @@ export class Game {
     });
     this.dragon.setSpecies(this.progression.species,SPECIES[this.progression.species]);
     this.dragon.setStats(this.progression.stats);
+    void this.speciesModels.select(this.progression.species);
     this.ui.connectStable(this);
     this.stablePreview=null;
     if(this.savedData){document.getElementById('start-btn').firstChild.textContent='CONTINUAR AVENTURA ';document.getElementById('new-game-btn').classList.remove('hidden');}
@@ -270,7 +274,7 @@ export class Game {
   }
   start(){
     this.started=true;document.getElementById('start-screen').classList.add('hidden');
-    this.audio.unlock();this.ui.toast(this.savedData?'Progresso recuperado! Aperte T para acessar o estábulo.':'Encontre Nimbo, seu dragão. Pressione E para montar!',5);
+    this.audio.unlock();this.ui.toast(this.savedData?'Progresso recuperado! Aperte T para acessar o estábulo.':'Encontre sua Fúria da Noite. Pressione E para montar!',5);
     this.input.clearActions();
   }
   newGame(){
@@ -288,6 +292,7 @@ export class Game {
     if(open){this.ui.renderStable(this);
       try{this.stablePreview??=new StablePreview(document.getElementById('stable-preview-canvas'));
         this.stablePreview.showSpecies(this.progression.species);
+        void this.speciesModels.preview(this.stablePreview.dragon,this.progression.species);
       }catch(error){console.warn('Prévia 3D indisponível:',error);document.getElementById('stable-preview-caption').textContent='A prévia 3D não está disponível neste dispositivo.';}
       this.input.down.clear();this.input.clearActions();
       document.getElementById('stable-close')?.focus();}
@@ -307,7 +312,9 @@ export class Game {
       if(!result.ok){this.ui.toast(result.reason);return;}
     }
     this.progression.select(id);this.dragon.setSpecies(id,SPECIES[id]);this.dragon.setStats(this.progression.stats);
+    void this.speciesModels.select(id);
     this.stablePreview?.showSpecies(id);
+    if(this.stablePreview)void this.speciesModels.preview(this.stablePreview.dragon,id);
     this.saveGame();this.audio.play('mount');this.ui.toast(`${SPECIES[id].name} é agora seu companheiro!`,4);this.ui.renderStable(this);
   }
   startTraining(mode='basic'){
