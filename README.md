@@ -1,3 +1,21 @@
+# Asas de Brumária v1.4.15 — Correção da prévia 3D e dos GLBs das Fúrias
+
+## Problemas corrigidos
+- **Prévia no estábulo:** `StablePreview` agora fornece `groundHeightAt` como a classe `Dragon` exige, evitando o erro `TypeError: world.groundHeightAt is not a function` quando o jogador abre o estábulo.
+- **Erro 404 Three.js no GitHub Pages:** `src/main.js` não tenta mais baixar `/vendor/three.module.js` em páginas `*.github.io`. Usa os CDNs já configurados. O carregador GLB também evita requisitar o `vendor/addons/GLTFLoader.js` ausente, sem prejudicar a execução offline pelo launcher local.
+- **Fúria da Noite/Luz com GLB original:** o manifesto de publicação continua desativado até que os arquivos 3D sejam efetivamente enviados ao repositório. Como alternativa imediata, o estábulo agora tem botões **CARREGAR FÚRIA DA NOITE** e **CARREGAR FÚRIA DA LUZ**; basta escolher os dois arquivos `.glb` do pacote original.
+- **Persistência:** os GLBs são conferidos (glTF 2.0, 49 ossos, 8 animações) e guardados separadamente no IndexedDB quando permitido. A Fúria da Luz continua bloqueada até ser comprada por 4 pontos; carregar sua aparência não a desbloqueia.
+- **Compatibilidade:** o modelo procedural original continua como reserva para arquivos inválidos/ausentes, os saves da campanha não são substituídos e a prévia 3D também aceita o modelo importado quando disponível.
+- **Testes:** `tests/stable-preview-fury-import.test.js` cobre o contrato do World, a escolha de URL do Three.js e o importador por espécie. `tests/browser-smoke.mjs` agora abre o estábulo e **exige uma prévia 3D funcional**, evitando falsos positivos.
+
+### Como instalar os dois modelos originais nesta versão sem alterar GitHub
+
+No estábulo, pressione **CARREGAR FÚRIA DA NOITE** e escolha `furia-da-noite.glb` do pacote `Asas_de_Brumaria_Furias_Noite_e_Luz_Integracao.zip`. Depois pressione **CARREGAR FÚRIA DA LUZ** e selecione `furia-da-luz.glb`. A Fúria da Luz só poderá ser montada após desbloqueá-la com 4 pontos. Em navegadores com IndexedDB habilitado, os arquivos continuam disponíveis após recarregar a página.
+
+Para que todos os visitantes tenham os GLBs automaticamente, publique `assets/models/furia-da-noite.glb`, `assets/models/furia-da-luz.glb` e o `dragon-species.json` com `available:true` no repositório GitHub Pages. Um código publicado isoladamente não coloca os binários do pacote na hospedagem.
+
+---
+
 # Asas de Brumária v1.4.14 — Fúria da Noite principal, Fúria da Luz desbloqueável
 
 - **Dragão principal:** Fúria da Noite (`furia_noite`), desbloqueada automaticamente em partidas novas.
