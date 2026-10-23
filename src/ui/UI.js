@@ -30,9 +30,40 @@ export class UI {
     document.getElementById('stable-close').addEventListener('click',()=>game.toggleStable());
     document.getElementById('train-start').addEventListener('click',()=>game.startTraining());
     document.getElementById('train-advanced').addEventListener('click',()=>game.startTraining('advanced'));
+    const furyStatus=document.getElementById('fury-glb-status');
+    for(const [species,buttonId,inputId] of [
+      ['furia_noite','night-fury-glb-import','night-fury-glb-file'],
+      ['furia_luz','light-fury-glb-import','light-fury-glb-file']
+    ]){
+      const button=document.getElementById(buttonId),input=document.getElementById(inputId);
+      button.addEventListener('click',()=>input.click());
+      input.addEventListener('change',async()=>{
+        const file=input.files?.[0];input.value='';if(!file)return;
+        button.disabled=true;furyStatus.dataset.state='neutral';
+        furyStatus.textContent='Validando esqueleto e oito animações de '+SPECIES[species].name+'…';
+        try{
+          if(!file.name.toLowerCase().endsWith('.glb'))throw Error('Selecione o arquivo .glb, não o pacote .zip.');
+          const result=await game.speciesModels.installUploaded(species,await file.arrayBuffer());
+          if(game.stablePreview?.species===species)
+            await game.speciesModels.preview(game.stablePreview.dragon,species);
+          furyStatus.dataset.state='ok';
+          furyStatus.textContent=SPECIES[species].name+' carregada! '+result.info.animationCount+
+            ' animações · '+(result.saved?'salva neste navegador.':'ativa nesta sessão (armazenamento indisponível).')+
+            (species==='furia_luz'&&!game.progression.unlocked.includes(species)?
+              ' Desbloqueie a Fúria da Luz com 4 pontos para montá-la.':'');
+        }catch(error){
+          furyStatus.dataset.state='error';
+          furyStatus.textContent='Falha no GLB: '+String(error?.message??error);
+        }finally{button.disabled=false;}
+      });
+    }
     document.getElementById('species-list').addEventListener('click',event=>{
       const preview=event.target.closest('[data-preview]');
-      if(preview){game.stablePreview?.showSpecies(preview.dataset.preview);return;}
+      if(preview){
+        game.stablePreview?.showSpecies(preview.dataset.preview);
+        if(game.stablePreview)void game.speciesModels.preview(game.stablePreview.dragon,preview.dataset.preview);
+        return;
+      }
       const btn=event.target.closest('[data-species]');if(btn)game.chooseSpecies(btn.dataset.species);
     });
     document.getElementById('skill-list').addEventListener('click',event=>{
