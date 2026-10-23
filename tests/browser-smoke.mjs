@@ -60,7 +60,12 @@ try{
 
   await page.keyboard.press('t');
   await page.locator('#stable').waitFor({state:'visible',timeout:10000});
-  assert.ok((await page.locator('#species-list').innerText()).includes('Fúria da Luz'));
+  const stableText=await page.locator('#species-list').innerText();
+  assert.ok(stableText.includes('Fúria da Noite'),'Starter Night Fury missing from stable');
+  assert.ok(stableText.includes('Fúria da Luz'),'Unlockable Light Fury missing from stable');
+  assert.equal(await page.locator('[data-species="furia_noite"]').isDisabled(),true);
+  assert.equal(await page.locator('[data-species="furia_luz"]').isDisabled(),true);
+  console.log('PASS: Fúria da Noite inicial e Fúria da Luz ainda bloqueada');
   await page.locator('[data-preview="furia_luz"]').click();
   await page.waitForTimeout(500);
   await check('Estábulo e Fúria da Luz disponíveis na prévia');
