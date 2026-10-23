@@ -65,7 +65,9 @@ export class SpeciesDragonModels{
     this.pending.delete(id);
     let saved=true;
     try{await saveSpeciesModel(id,raw);}catch{saved=false;}
-    const loaded=this.lastSelected===id?await this.select(id):false;
+    const isSelected=this.lastSelected===id;
+    const loaded=isSelected?await this.select(id):false;
+    if(isSelected&&!loaded)throw this.error??Error('Não foi possível exibir o dragão 3D selecionado.');
     return {info,saved,loaded};
   }
   /** Safe with quick species changes: parsing/scene swaps are serialized. */
