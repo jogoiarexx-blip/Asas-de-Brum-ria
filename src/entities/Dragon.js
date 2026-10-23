@@ -46,7 +46,7 @@ export class Dragon {
     this.group=new THREE.Group();this.visual=new THREE.Group();this.group.add(this.visual);scene.add(this.group);
     this.group.position.set(8,world.groundHeightAt(8,7,1.65)+2.55,7);
     this.yaw=-.5;this.speed=0;this.airborne=false;this.riding=false;this.energy=100;this.fireCooldown=0;
-    this.wings=[];this.tail=[];this.legs=[];this.forelegs=[];this.windStrength=0;this.windDrift=0;this.speciesId='nimbo';this.stats=null;
+    this.wings=[];this.tail=[];this.legs=[];this.forelegs=[];this.windStrength=0;this.windDrift=0;this.speciesId='furia_noite';this.stats=null;
     this.takeoffTime=0;this.landingTimer=0;this.verticalVelocity=0;this.steerInput=0;this.turnAxis=0;this.bank=0;this.pose='ground';this.attackTime=0;this.hurtTime=0;this.dodgeRemaining=0;this.dodgeCooldown=0;this.dodgeSide=1;this.impactCooldown=0;this.impactPulse=0;this.impactKick=0;this.contactPulse=0;this.contactKind=null;this.contactSpeed=0;this.createModel();
   }
   createModel() {

@@ -1,3 +1,15 @@
+# Asas de Brumária v1.4.14 — Fúria da Noite principal, Fúria da Luz desbloqueável
+
+- **Dragão principal:** Fúria da Noite (`furia_noite`), desbloqueada automaticamente em partidas novas.
+- **Fúria da Luz:** `furia_luz` permanece bloqueada até pagar **4 pontos de treinamento** no estábulo; depois pode ser selecionada e salva.
+- **Modelos enviados pelo desenvolvedor:** `furia-da-noite.glb` e `furia-da-luz.glb` usam um rig de 49 ossos e oito clipes: Idle, Walk, Fly, Glide, Attack, Hurt, Takeoff e Landing, com `THREE.AnimationMixer` e transições. Os clipes de ataque, dano, decolagem e pouso não repetem em loop.
+- **Compatibilidade:** outros dragões, missões, colisões, cavaleiro, melhorias, combate e controles são mantidos. Saves antigos preservam pontos, circuitos, habilidades e espécies descobertas. A seleção inicial Nimbo de saves anteriores migra para Fúria da Noite.
+- **Prévia no estábulo:** o modelo GLB, quando disponível, pode girar e animar; outras espécies continuam tendo modelos procedurais.
+- **Publicação dos assets:** o repositório possui `assets/models/dragon-species.json` com `available:false` enquanto os grandes arquivos 3D fornecidos pelo usuário ainda não foram enviados. Para ativar os modelos 3D reais no Pages, envie **os dois GLBs** para `assets/models/` e substitua o manifesto por `{"available":true,"species":["furia_noite","furia_luz"]}`. Até lá, o jogo usa automaticamente o fallback procedural e mantém a progressão nova, sem quebrar o navegador.
+- **QA:** `npm run check` confere o sistema e, após ativar o manifesto, passa a exigir os dois arquivos reais, cada um com 49 ossos e oito animações. Os testes Chromium verificam o dragão inicial e o bloqueio da Fúria da Luz.
+
+---
+
 # Asas de Brumária v1.4.13 — Dragão CC0 real jogável no estábulo
 
 ## Modelo 3D real, com rig e seis animações

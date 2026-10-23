@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {Dragon} from '../entities/Dragon.js';
 import {wingPose} from '../entities/wingPose.js';
+import {updateDragonGLB,clearDragonGLB} from '../entities/dragonAssetLoader.js';
 import {SPECIES} from '../systems/Progression.js';
 
 /** Prévia real dos mesmos modelos procedurais usados no voo, não uma imagem estática. */
@@ -33,6 +34,7 @@ export class StablePreview {
   }
   showSpecies(id){
     if(!SPECIES[id])return false;
+    if(this.dragon.externalDragonModel)clearDragonGLB(this.dragon);
     this.species=id;this.dragon.setSpecies(id,SPECIES[id]);
     const name=document.getElementById('stable-preview-name');
     if(name)name.textContent=`${SPECIES[id].name} · ${SPECIES[id].kind}`;
@@ -57,6 +59,7 @@ export class StablePreview {
     }
     this.dragon.headPivot.rotation.y=Math.sin(this.elapsed*.85)*.085;
     this.dragon.visual.position.y=Math.sin(this.elapsed*1.65)*.14;
+    updateDragonGLB(this.dragon,dt);
     this.renderer.render(this.scene,this.camera);
   }
 }

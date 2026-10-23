@@ -99,6 +99,10 @@ export function updateDragonGLB(dragon,dt=0){
   const clip=selectDragonClip(data.slots,state);
   const next=clip?data.mixer.clipAction(clip):null;
   if(next&&next!==data.active){
+    const oneShot=['attack','hurt','takeoff','land'].includes(state);
+    next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
+    next.clampWhenFinished=oneShot;
+    // Actions authored as single animations must not repeat mid-hit or landing.
     next.reset().fadeIn(.18).play();
     if(data.active)data.active.fadeOut(.18);
     data.active=next;
