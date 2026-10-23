@@ -11,7 +11,8 @@ export class SpeciesDragonModels{
   constructor(dragon,{fetcher=fetch,load=installDragonGLB,clear=clearDragonGLB,base=import.meta.url}={}){
     this.dragon=dragon;this.fetcher=fetcher;this.load=load;this.clear=clear;this.base=base;
     this.generation=0;this.lastSelected=null;this.ready=false;
-    this.queue=Promise.resolve();this.pending=new Map();this.error=null;
+    this.queue=Promise.resolve();this.previewQueue=Promise.resolve();
+    this.previewEpoch=0;this.pending=new Map();this.error=null;
     this.manifestPromise=null;
   }
   async manifest(){
@@ -47,8 +48,7 @@ export class SpeciesDragonModels{
     const task=async()=>{
       if(gen!==this.generation)return false;
       const prev=this.dragon.externalDragonModel;
-      if(prev&&prev.source!=='species')this.clear(this.dragon);
-      else if(prev)this.clear(this.dragon);
+      if(prev)this.clear(this.dragon);
       const name=fileForSpecies(id);
       if(!name){this.error=null;return false;}
       let bytes;
@@ -70,14 +70,21 @@ export class SpeciesDragonModels{
     this.queue=this.queue.catch(()=>{}).then(task);
     return this.queue;
   }
-  async preview(previewDragon,id){
-    // Preview is only for species available to view, not an unlock shortcut.
-    const bytes=await this.read(id).catch(()=>null);
-    if(!bytes)return false;
-    try{
-      await this.load(previewDragon,bytes);
-      if(previewDragon.externalDragonModel)previewDragon.externalDragonModel.source='species';
-      return true;
-    }catch{return false;}
+  preview(previewDragon,id){
+    // Serializes imports so rapidly clicking species can't display the wrong GLB.
+    const generation=++this.previewEpoch;
+    const task=async()=>{
+      const bytes=await this.read(id).catch(()=>null);
+      if(generation!==this.previewEpoch)return false;
+      if(!bytes)return false; // procedural StablePreview remains the fallback
+      try{
+        await this.load(previewDragon,bytes);
+        if(generation!==this.previewEpoch){this.clear(previewDragon);return false;}
+        if(previewDragon.externalDragonModel)previewDragon.externalDragonModel.source='species';
+        return true;
+      }catch{return false;}
+    };
+    this.previewQueue=this.previewQueue.catch(()=>{}).then(task);
+    return this.previewQueue;
   }
 }
