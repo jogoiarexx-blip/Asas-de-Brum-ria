@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Progression,SPECIES,SKILLS,REWARDS} from '../src/systems/Progression.js';
 import {SaveSystem,normalizeSave} from '../src/systems/SaveSystem.js';
-test('quatro espécies, três habilidades e sete recompensas de missão',()=>{
-  assert.deepEqual(Object.keys(SPECIES),['nimbo','brasa','raio','furia_luz']);
+test('cinco espécies, Fúria da Noite inicial e sete recompensas de missão',()=>{
+  assert.deepEqual(Object.keys(SPECIES),['furia_noite','nimbo','brasa','raio','furia_luz']);
   assert.equal(Object.keys(SKILLS).length,3);
   assert.equal(REWARDS.length,7);
 });
@@ -34,7 +34,7 @@ test('dano e gasto de fogo evoluem com upgrades',()=>{
 });
 test('restauração de evolução ignora espécies ilegais, moedas negativas e atributos fora do limite',()=>{
   const p=new Progression({points:-99,earned:0,species:'raio',unlocked:['especieFalsa'],skills:{speed:900,stamina:-4,fire:1},circuits:6});
-  assert.deepEqual(p.unlocked,['nimbo']);assert.equal(p.species,'nimbo');
+  assert.deepEqual(p.unlocked,['furia_noite']);assert.equal(p.species,'furia_noite');
   assert.equal(p.points,0);assert.equal(p.skills.speed,3);assert.equal(p.skills.stamina,0);
   p.grant(9);p.unlock('brasa');p.select('brasa');
   const restored=new Progression(p.snapshot());assert.deepEqual(restored.snapshot(),p.snapshot());
