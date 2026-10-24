@@ -63,7 +63,8 @@ export const RIDER_CLIPS=Object.freeze({
 export function addMissingRiderClips(scene,clips=[]){
   const byName=new Set(clips.map(c=>c.name.toLowerCase()));
   const bones=Object.fromEntries(Object.entries(BONES)
-    .map(([alias,name])=>[alias,scene.getObjectByName(name)]).filter(([,bone])=>bone?.isBone));
+    .map(([alias,name])=>[alias,scene.getObjectByName(name)
+      ??scene.getObjectByName(name.replace(/[:./]/g,'_'))]).filter(([,bone])=>bone?.isBone));
   // Models with other skeletons retain their authored animation/fallback.
   if(!bones.hips||!bones.lthigh||!bones.rthigh||!bones.larm||!bones.rarm)return clips;
   const generated=[];
