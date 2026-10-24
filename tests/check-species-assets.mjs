@@ -23,6 +23,23 @@ if(!manifest.available){
     const clips=new Set(json.animations.map(x=>x.name));
     for(const name of ['Idle','Walk','Fly','Glide','Attack','Hurt','Takeoff','Landing'])
       assert.ok(clips.has(name),`O clip ${name} está ausente de ${species}`);
+    if(manifest.mobile===true){
+      const mobileName=name.replace(/\.glb$/,'-mobile.glb');
+      const mobileUrl=new URL(mobileName,base);
+      assert.ok(existsSync(mobileUrl),`Falta a versão para celular ${mobileName}`);
+      const light=readFileSync(mobileUrl),lightInfo=inspectGLB(light);
+      const lenLight=new DataView(light.buffer,light.byteOffset,light.byteLength).getUint32(12,true);
+      const lightJson=JSON.parse(new TextDecoder().decode(light.subarray(20,20+lenLight)));
+      assert.equal(lightInfo.animationCount,8);
+      assert.equal(lightJson.skins[0].joints.length,49);
+      assert.deepEqual(lightJson.meshes,json.meshes,`O GLB mobile mudou a geometria de ${species}`);
+      assert.deepEqual(lightJson.animations,json.animations,`O GLB mobile mudou animações de ${species}`);
+      assert.ok(light.length<bin.length,`O GLB mobile não ficou menor: ${mobileName}`);
+      for(const key of Object.keys(json.asset?.extras??{})){
+        if(key!=='brumariaMobile')assert.deepEqual(lightJson.asset?.extras?.[key],json.asset?.extras?.[key]);
+      }
+      console.log(`GLB MOBILE VALIDADO: ${mobileName} · ${(light.length/1024/1024).toFixed(2)} MB · mesma geometria/rig/clipes`);
+    }
     console.log(`GLB VALIDADO: ${species} · ${(bin.length/1024/1024).toFixed(2)} MB · 49 ossos · 8 animações`);
   }
 }
