@@ -83,7 +83,15 @@ export class Game {
     this.heroAssetUI=new HeroAssetUI(this.hero);
     this.dragonAssetUI=new DragonAssetUI(this.dragon);
     this.speciesModels=new SpeciesDragonModels(this.dragon,{
-      preferMobile:preferMobileDragonAssets(browserDragonBudget())
+      preferMobile:preferMobileDragonAssets(browserDragonBudget()),
+      onStatus:status=>{
+        const el=document.getElementById('dragon-model-status');
+        if(!el)return;
+        el.dataset.state=status.state;
+        el.textContent=status.message;
+        if(status.state==='error')console.warn('[Fúrias GLB]',status.message);
+        if(status.state==='error'&&this.started)this.ui.toast(status.message,8);
+      }
     });
     this.dragonAssetUI.onReset=()=>this.speciesModels.select(this.progression.species);
     this.enemies=new EnemySquad(this.scene,this.world);
