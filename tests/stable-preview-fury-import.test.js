@@ -20,7 +20,7 @@ test('carregamento manual por espécie persiste e nunca desbloqueia Fúria da Lu
   const models=read('../src/entities/SpeciesDragonModels.js');
   const ui=read('../src/ui/UI.js');
   const html=read('../index.html');
-  assert.match(models,/async installUploaded\(id,bytes\)/);
+  assert.match(models,/async installUploaded\(id,bytes,\{previewDragon=null\}=\{\}\)/);
   assert.match(models,/loadSpeciesModel\(id\)/);
   assert.match(models,/saveSpeciesModel\(id,raw\)/);
   assert.match(models,/info\.animationCount!==8/);
