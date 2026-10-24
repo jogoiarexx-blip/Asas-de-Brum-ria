@@ -113,7 +113,7 @@ export class Game {
     });
     this.dragon.setSpecies(this.progression.species,SPECIES[this.progression.species]);
     this.dragon.setStats(this.progression.stats);
-    void this.speciesModels.select(this.progression.species);
+    this.dragonModelReady=this.speciesModels.select(this.progression.species);
     this.ui.connectStable(this);
     this.stablePreview=null;
     if(this.savedData){document.getElementById('start-btn').firstChild.textContent='CONTINUAR AVENTURA ';document.getElementById('new-game-btn').classList.remove('hidden');}
