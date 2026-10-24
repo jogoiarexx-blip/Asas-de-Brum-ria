@@ -92,7 +92,11 @@ export class SpeciesDragonModels{
     }
     // Stage in RAM; IndexedDB is only written AFTER a successful render.
     const hadPrevious=this.local.has(id),previous=this.local.get(id);
+    const hadManualOverride=this.manualOverrides.has(id);
     this.local.set(id,raw);
+    // The player's explicit manual selection must override the official GLB
+    // before select(id) attempts its render, not only after successful parsing.
+    this.manualOverrides.add(id);
     this.pending.delete(id);
     const isSelected=this.lastSelected===id;
     let loaded=false,previewed=false;
@@ -115,9 +119,9 @@ export class SpeciesDragonModels{
     }catch(error){
       if(hadPrevious)this.local.set(id,previous);
       else this.local.delete(id);
+      if(!hadManualOverride)this.manualOverrides.delete(id);
       throw error;
     }
-    this.manualOverrides.add(id);
     let saved=true;
     try{await saveSpeciesModel(id,raw);}catch{saved=false;}
     return {info,saved,loaded,previewed};
