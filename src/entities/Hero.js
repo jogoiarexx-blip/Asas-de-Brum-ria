@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {moveWithCollisions,obstacleBlocks} from '../utils/collision.js';
 import {buildHero} from './heroVisual.js';
 import {walkIntent,poseForHero} from './heroMotion.js';
+import {cameraRelativeMove,shortestYawDelta} from '../game/cameraMovement.js';
 import {groundFollow,terrainLean} from '../utils/groundPhysics.js';
 import {HERO_GLB_URL,HERO_MODEL_FACING_YAW} from './heroAssetConfig.js';
 import {loadOptionalHeroGLB,updateOptionalHeroGLB} from './heroAssetLoader.js';
@@ -64,10 +65,13 @@ export class Hero {
     const x=input.axis?.('a','d')??((input.isDown('d','arrowright')?1:0)-(input.isDown('a','arrowleft')?1:0));
     const z=input.axis?.('w','s')??((input.isDown('s','arrowdown')?1:0)-(input.isDown('w','arrowup')?1:0));
     const intent=walkIntent(x,z),slow=input.isDown('shift');
+    // Always travel in the camera's horizontal plane, never along world axes.
+    // The camera pitch cannot make the hero climb or descend.
+    const direction=cameraRelativeMove(intent.x,intent.z,input.cameraYaw);
     let moving=intent.strength>.001;
     if(moving){
       const step=(slow?3.1:9)*intent.strength*dt;
-      const dx=intent.x/intent.strength*step,dz=intent.z/intent.strength*step;
+      const dx=direction.x/intent.strength*step,dz=direction.z/intent.strength*step;
       const result=moveWithCollisions(this.group.position,{x:dx,z:dz},.52,this.world.obstacles,
         (px,pz)=>this.world.walkable(px,pz),
         o=>obstacleBlocks(o,this.group.position.y+1.1,1.1),
@@ -76,9 +80,8 @@ export class Hero {
       this.moveSpeed=Math.hypot(vx,vz)/Math.max(dt,.001);
       moving=this.moveSpeed>.001;
       this.group.position.x=result.x;this.group.position.z=result.z;
-      const targetYaw=Math.atan2(-intent.x,-intent.z);
-      // Prevent instantaneous 180-degree snapping when reversing direction.
-      let change=Math.atan2(Math.sin(targetYaw-this.group.rotation.y),Math.cos(targetYaw-this.group.rotation.y));
+      // Turn the body toward its real movement direction, not the map's -Z.
+      const change=shortestYawDelta(this.group.rotation.y,direction.yaw);
       this.group.rotation.y+=change*Math.min(1,dt*13);
       this.walkTime+=dt*(slow?6.2:12.5)*intent.strength;
     } else this.moveSpeed=0;
