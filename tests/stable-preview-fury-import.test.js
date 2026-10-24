@@ -9,12 +9,17 @@ test('prévia 3D usa a mesma API groundHeightAt do World real',()=>{
   assert.match(preview,/groundHeightAt:.*=>-2/);
   assert.match(dragon,/world\.groundHeightAt\(8,7,1\.65\)/);
 });
-test('GitHub Pages usa CDN do Three sem requisitar vendor inexistente',()=>{
+test('GitHub Pages usa GLTFLoader r180 local com fallback de CDN',()=>{
   const main=read('../src/main.js');
   const gltf=read('../src/entities/dragonAssetLoader.js');
-  assert.match(main,/location\.hostname\.endsWith\('\.github\.io'\)/);
-  assert.match(main,/!IS_STATIC_PAGES\?\[new URL\('\.\.\/vendor\/three\.module\.js'/);
-  assert.match(gltf,/!isPages\?\[new URL\('\.\.\/\.\.\/vendor\/addons\/loaders\/GLTFLoader\.js'/);
+  const loader=read('../vendor/addons/loaders/GLTFLoader.js');
+  const utils=read('../vendor/addons/utils/BufferGeometryUtils.js');
+  assert.match(main,/location\\.hostname\\.endsWith/);
+  assert.match(gltf,/const localLoader=new URL\\('\.\.\/\.\.\/vendor\/addons\/loaders\/GLTFLoader\\.js'/);
+  assert.match(gltf,/const urls=\\[localLoader,\\.\\.\\.mirrors\\]/);
+  assert.match(loader,/export \\{ GLTFLoader \\}/);
+  assert.match(loader,/BufferGeometryUtils\\.js/);
+  assert.match(utils,/toTrianglesDrawMode/);
 });
 test('carregamento manual por espécie persiste e nunca desbloqueia Fúria da Luz sozinho',()=>{
   const models=read('../src/entities/SpeciesDragonModels.js');
