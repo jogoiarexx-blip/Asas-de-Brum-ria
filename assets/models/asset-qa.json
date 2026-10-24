@@ -1,0 +1,14 @@
+{
+  "furia_noite": {
+    "masterBytes": 10397384,
+    "mobileBytes": 5864912,
+    "reductionPercent": 43.59,
+    "sha256": "c11a0b9608c825814ccd5338bb1aacaa0922b133dbcaac434954a2300c371c53"
+  },
+  "furia_luz": {
+    "masterBytes": 11929256,
+    "mobileBytes": 6974976,
+    "reductionPercent": 41.53,
+    "sha256": "82086b7e38833fdb184bbf1b8f4a45561ccdb73e2f4309b2659c64cbcfb658a8"
+  }
+}
