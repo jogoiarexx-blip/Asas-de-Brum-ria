@@ -42,6 +42,19 @@ try{
     const state=document.querySelector('#dragon-model-status')?.dataset.state;
     return state==='ok'||state==='error'||state==='missing';
   },null,{timeout:90000});
+  const manifestDebug=await page.evaluate(async()=>{
+    const mod=window.__dragonOfficialQA?.speciesModels;
+    const url=new URL('../../assets/models/dragon-species.json',mod?.base);
+    let response;let body;
+    try{
+      const fetchResponse=await fetch(url,{cache:'reload'});
+      response={status:fetchResponse.status,url:fetchResponse.url,ok:fetchResponse.ok};
+      body=(await fetchResponse.text()).slice(0,500);
+    }catch(error){body=String(error);}
+    return {base:mod?.base,url:url.href,loadedManifest:await mod?.manifest(),
+      response,body,pending:[...mod?.pending?.keys()??[]],readCache:[...mod?.local?.keys()??[]]};
+  });
+  console.log('OFFICIAL_FURY_MANIFEST_DEBUG',JSON.stringify(manifestDebug));
   const first=await snapshot();
   console.log('OFFICIAL_FURY_AUTO',JSON.stringify(first));
   console.log('OFFICIAL_FURY_NET_ERRORS',JSON.stringify(failedRequests));
