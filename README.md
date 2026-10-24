@@ -1,3 +1,23 @@
+## Novo protagonista animado — 44 ossos, 16 animações (24/10/2026)
+
+O jogo aceita `personagem_animado_montaria.glb`, construído a partir do GLB animado enviado pelo jogador.
+O arquivo conserva os cinco clipes originais (`Running`, `Walking`, `Arise`, `Boom_Dance`, `Dead`)
+e acrescenta `Idle`, `Mount`, `Riding_Idle`, `Riding_Walk`, `Riding_Takeoff`,
+`Riding_Fly`, `Riding_Glide`, `Riding_Landing`, `Riding_Attack`, `Riding_Hurt` e `Dismount`.
+A adaptação em `heroRiderAnimation.js` também gera os movimentos quando o usuário importa
+o GLB original de cinco animações; o esqueleto não é recriado e os personagens antigos
+são ocultados somente após a importação válida.
+
+**Usar agora:** inicie a partida, pressione `T`, vá a **NOVO HERÓI ANIMADO**, clique
+**IMPORTAR GLB** e escolha `personagem_animado_montaria.glb`.
+O IndexedDB guarda o arquivo nesse navegador, sem alterar a campanha.
+
+**Instalar para todos no GitHub Pages:** carregue o binário proprietário
+`assets/models/personagem_animado_montaria.glb` no repositório e só depois mude
+`HERO_ASSET_PUBLISHED` para `true` em `src/entities/heroAssetConfig.js`.
+Até lá o código intencionalmente evita um 404 e mantém a importação manual/fallback.
+O código-fonte sozinho não contém o modelo binário enviado no chat.
+
 # Asas de Brumária v1.4.18 — Corrigida a substituição automática das Fúrias 3D
 
 ## Problema que fazia o dragão antigo continuar aparecendo
