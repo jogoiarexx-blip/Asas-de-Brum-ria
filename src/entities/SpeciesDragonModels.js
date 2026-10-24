@@ -14,18 +14,18 @@ export function mobileFileForSpecies(id){
     id==='furia_luz'?'../../assets/models/furia-da-luz-mobile.glb':null;
 }
 export class SpeciesDragonModels{
-  constructor(dragon,{fetcher=fetch,load=installDragonGLB,clear=clearDragonGLB,base=import.meta.url,preferMobile=false}={}){
+  constructor(dragon,{fetcher=fetch,load=installDragonGLB,clear=clearDragonGLB,base=import.meta.url,preferMobile=false,onStatus=()=>{}}={}){
     this.dragon=dragon;this.fetcher=fetcher;this.load=load;this.clear=clear;this.base=base;
-    this.preferMobile=preferMobile;
+    this.preferMobile=preferMobile;this.onStatus=onStatus;
     this.generation=0;this.lastSelected=null;this.ready=false;
     this.queue=Promise.resolve();this.previewQueue=Promise.resolve();
-    this.previewEpoch=0;this.pending=new Map();this.local=new Map();this.error=null;
+    this.previewEpoch=0;this.pending=new Map();this.local=new Map();this.manualOverrides=new Set();this.error=null;
     this.manifestPromise=null;
   }
   async manifest(){
     if(!this.manifestPromise){
       const url=new URL('../../assets/models/dragon-species.json',this.base);
-      this.manifestPromise=this.fetcher(url,{cache:'no-cache'}).then(async response=>{
+      this.manifestPromise=this.fetcher(url,{cache:'reload'}).then(async response=>{
         if(!response.ok)return {};
         const obj=await response.json();
         return obj&&typeof obj==='object'&&obj.available===true?obj:{};
@@ -36,31 +36,40 @@ export class SpeciesDragonModels{
   async read(id){
     const name=fileForSpecies(id);
     if(!name)return null;
+    // A manual import overrides the official model only when explicitly chosen
+    // during this session. Stale IndexedDB uploads may NEVER shadow the new
+    // GLBs published with the game.
+    if(this.manualOverrides.has(id)&&this.local.has(id))return this.local.get(id);
+    const manifest=await this.manifest();
+    if(manifest.available&&Array.isArray(manifest.species)&&manifest.species.includes(id)){
+      if(!this.pending.has(id)){
+        const get=async(file)=>{
+          const url=new URL(file,this.base);
+          const response=await this.fetcher(url,{cache:'reload'});
+          if(!response.ok)throw Error(`Modelo oficial ${id} não encontrado (HTTP ${response.status}): ${url.pathname}`);
+          const data=await response.arrayBuffer();
+          if(data.byteLength<1024)throw Error('GLB oficial incompleto: '+file);
+          return data;
+        };
+        const promise=(async()=>{
+          const mobile=this.preferMobile&&manifest.mobile===true?mobileFileForSpecies(id):null;
+          if(mobile){
+            try{return await get(mobile);}
+            catch(error){console.warn('GLB mobile indisponível, tentando versão completa:',id,error);}
+          }
+          return get(name);
+        })().catch(error=>{this.pending.delete(id);throw error;});
+        this.pending.set(id,promise);
+      }
+      return this.pending.get(id);
+    }
+    // Offline builds and old deployments can still use a locally imported GLB.
     if(this.local.has(id))return this.local.get(id);
     try{
       const cached=await loadSpeciesModel(id);
       if(cached){this.local.set(id,cached);return cached;}
-    }catch{/* IndexedDB may be disabled, use bundled GLB or procedural fallback. */}
-    const manifest=await this.manifest();
-    if(!manifest.available||!Array.isArray(manifest.species)||!manifest.species.includes(id))return null;
-    if(!this.pending.has(id)){
-      const get=async(file)=>{
-        const url=new URL(file,this.base);
-        const response=await this.fetcher(url,{cache:'force-cache'});
-        if(!response.ok)throw Error(`Modelo ${id} indisponível (HTTP ${response.status})`);
-        return response.arrayBuffer();
-      };
-      const promise=(async()=>{
-        const mobile=this.preferMobile&&manifest.mobile===true?mobileFileForSpecies(id):null;
-        if(mobile){
-          try{return await get(mobile);}
-          catch(error){console.warn('GLB mobile indisponível, usando versão completa:',id,error);}
-        }
-        return get(name);
-      })().catch(error=>{this.pending.delete(id);throw error;});
-      this.pending.set(id,promise);
-    }
-    return this.pending.get(id);
+    }catch{/* IndexedDB not supported; keep the procedural fallback. */}
+    return null;
   }
   async installUploaded(id,bytes,{previewDragon=null}={}){
     if(!fileForSpecies(id))throw Error('Modelo destinado a uma espécie desconhecida.');
@@ -102,6 +111,7 @@ export class SpeciesDragonModels{
       else this.local.delete(id);
       throw error;
     }
+    this.manualOverrides.add(id);
     let saved=true;
     try{await saveSpeciesModel(id,raw);}catch{saved=false;}
     return {info,saved,loaded,previewed};
@@ -110,6 +120,7 @@ export class SpeciesDragonModels{
   select(id){
     const gen=++this.generation;
     this.lastSelected=id;
+    this.onStatus({id,state:'loading',message:'Carregando '+(id==='furia_noite'?'Fúria da Noite':id==='furia_luz'?'Fúria da Luz':'dragão')+' em 3D…'});
     const task=async()=>{
       if(gen!==this.generation)return false;
       const name=fileForSpecies(id);
@@ -121,12 +132,14 @@ export class SpeciesDragonModels{
       try{bytes=await this.read(id);}catch(error){
         if(gen!==this.generation)return false;
         this.error=error;
+        this.onStatus({id,state:'error',message:'Não foi possível baixar o dragão 3D: '+error.message});
         if(this.dragon.externalDragonModel?.species!==id)this.clear(this.dragon);
         return false;
       }
       if(gen!==this.generation)return false;
       if(!bytes){
         if(this.dragon.externalDragonModel)this.clear(this.dragon);
+        this.onStatus({id,state:'missing',message:'GLB não disponível; usando dragão reserva.'});
         this.error=null;return false;
       }
       try{
@@ -138,10 +151,12 @@ export class SpeciesDragonModels{
           this.dragon.externalDragonModel.source='species';
           this.dragon.externalDragonModel.species=id;
         }
+        this.onStatus({id,state:'ok',message:(id==='furia_noite'?'Fúria da Noite':'Fúria da Luz')+' 3D carregada · 49 ossos · 8 animações'});
         this.error=null;return true;
       }catch(error){
         if(gen!==this.generation)return false;
         this.error=error;
+        this.onStatus({id,state:'error',message:'Falha ao renderizar o dragão 3D: '+error.message});
         // Do not display a model from another species after a failed load.
         const current=this.dragon.externalDragonModel;
         if(current&&current.species!==id)this.clear(this.dragon);
