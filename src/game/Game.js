@@ -794,20 +794,30 @@ export class Game {
   updateCamera(dt){
     const riding=this.dragon.riding;
     const focus=riding?this.dragon.group.position:this.hero.group.position;
-    const forward=riding?this.dragon.forward():new THREE.Vector3(0,0,-1);
-    const back=(riding?16+this.dragon.speed*.095:12)*this.cameraOrbit.zoom;
-    const offset=cameraOffset({forwardX:forward.x,forwardZ:forward.z,distance:back,yaw:this.cameraOrbit.yaw,pitch:this.cameraOrbit.pitch});
-    const camPos=new THREE.Vector3(focus.x+offset.x,focus.y+(riding?7.6:7.1)+offset.y,focus.z+offset.z);
+    // Orbit yaw is a WORLD heading, independent of the dragon's steering.
+    // Rotating the view changes where W moves without dragging the camera
+    // back toward the old movement direction every frame.
+    const yaw=this.cameraOrbit.yaw;
+    const forwardX=-Math.sin(yaw),forwardZ=-Math.cos(yaw);
+    const airborne=riding&&this.dragon.airborne;
+    const back=(riding?15+this.dragon.speed*.085:11.5)*this.cameraOrbit.zoom;
+    const offset=cameraOffset({forwardX:0,forwardZ:-1,distance:back,yaw,pitch:this.cameraOrbit.pitch});
+    const baseHeight=riding?(airborne?7.4:5.9):6.15;
+    const camPos=new THREE.Vector3(focus.x+offset.x,focus.y+baseHeight+offset.y,focus.z+offset.z);
     camPos.y=Math.max(camPos.y,this.world.groundHeightAt(camPos.x,camPos.z)+3.5);
-    // Resolve from the actor toward the smoothed camera: endpoint-only terrain
-    // checks used to let the viewpoint fly through monuments and houses.
-    const followTarget=this.camera.position.clone().lerp(camPos,smoothFollow(riding?3.1:5,dt));
+    // Collisions and landscape keep their full sweep checks even on tight turns.
+    const followTarget=this.camera.position.clone().lerp(camPos,smoothFollow(airborne?3.8:riding?5.3:6.3,dt));
     const cameraAnchor={x:focus.x,y:focus.y+(riding?3.6:2.7),z:focus.z};
     const safeCamera=resolveCameraPosition(cameraAnchor,followTarget,this.world.obstacles,
       (x,z)=>this.world.heightAt(x,z),{radius:.45,groundClearance:1.1});
     this.camera.position.set(safeCamera.x,safeCamera.y,safeCamera.z);
-    const lookAt=new THREE.Vector3(focus.x+forward.x*(riding?9:0),focus.y+(riding?2.3:2),focus.z+forward.z*(riding?9:0));
-    this._camTarget??=lookAt.clone();this._camTarget.lerp(lookAt,smoothFollow(4,dt));
+    // Look a few meters ahead along the VIEW, not the actor's previous yaw.
+    // Maintain independent pitch, avoid head bob and drifting off-screen.
+    const lookAhead=riding?(airborne?6.5:4.3):1.45;
+    const lookAt=new THREE.Vector3(focus.x+forwardX*lookAhead,
+      focus.y+(riding?2.15:2),focus.z+forwardZ*lookAhead);
+    this._camTarget??=lookAt.clone();
+    this._camTarget.lerp(lookAt,smoothFollow(airborne?4.0:6.2,dt));
     this.camera.lookAt(this._camTarget);
     const fov=riding?67+Math.min(this.dragon.speed*.24,11):67;
     this.camera.fov=THREE.MathUtils.damp(this.camera.fov,fov,3,dt);this.camera.updateProjectionMatrix();
@@ -912,6 +922,8 @@ export class Game {
       if(this.input.consume('m')){this.audio.muted=!this.audio.muted;this.ui.toast(this.audio.muted?'Áudio desativado':'Áudio ativado');}
       }
       if(this.ui.dialogueOpen)this.input.down.clear();
+      // Both movement controllers read the exact same horizontal camera yaw.
+      this.input.cameraYaw=this.cameraOrbit.yaw;
       this.dragon.setWind(this.weather.mode.wind);
       this.dragon.update(dt,this.input,this.elapsed);
       if(this.dragon.contactPulse>0){
