@@ -48,7 +48,7 @@ export class SpeciesDragonModels{
           const response=await this.fetcher(url,{cache:'reload'});
           if(!response.ok)throw Error(`Modelo oficial ${id} não encontrado (HTTP ${response.status}): ${url.pathname}`);
           const data=await response.arrayBuffer();
-          if(data.byteLength<1024)throw Error('GLB oficial incompleto: '+file);
+          if(!data.byteLength)throw Error('GLB oficial vazio: '+file);
           return data;
         };
         const promise=(async()=>{
