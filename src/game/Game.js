@@ -894,7 +894,7 @@ export class Game {
       if(this.input.consume('c')){this.weather.cycle();this.saveGame();this.ui.toast(`Clima: ${this.weather.mode.label}`,3);}
       if(this.input.consume('g'))this.cycleGraphics();
       if(this.input.consume('f3'))this.toggleDiagnostics();
-      if(this.input.consume('v')){this.cameraOrbit.reset();this.ui.toast('Câmera centralizada.');}
+      if(this.input.consume('v')){this.cameraOrbit.reset();this.cameraOrbit.yaw=this.dragon.riding?this.dragon.yaw:this.hero.group.rotation.y;this.ui.toast('Câmera atrás do personagem.');}
       if(this.input.consume('n')){this.dayNight.jumpHours(3);if(this.contracts.syncDay(this.dayNight.state.day))this.villagers.refresh(this.contracts);this.saveGame();this.ui.toast(`Dia ${this.dayNight.state.day} · Hora ${this.dayNight.clock}`,3);}
       if(!this.ui.stable.classList.contains('hidden')){
         if(this.input.consume('menuup')||this.input.consume('menuleft'))this.navigateStable(-1);
