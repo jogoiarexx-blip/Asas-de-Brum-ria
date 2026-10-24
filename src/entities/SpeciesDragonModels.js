@@ -46,7 +46,12 @@ export class SpeciesDragonModels{
     if(!this.pending.has(id)){
       const get=async(file)=>{
         const url=new URL(file,this.base);
-        const response=await this.fetcher(url,{cache:'force-cache'});
+        // Revalidate previously missing GLBs: a cached GitHub Pages 404
+        // must not survive after the real Fury assets have been published.
+        // Preserve the browser's offline cache when network access fails.
+        let response;
+        try{response=await this.fetcher(url,{cache:'no-cache'});}
+        catch{response=await this.fetcher(url,{cache:'force-cache'});}
         if(!response.ok)throw Error(`Modelo ${id} indisponível (HTTP ${response.status})`);
         return response.arrayBuffer();
       };
