@@ -1,3 +1,19 @@
+# Asas de Brumária v1.4.18 — Corrigida a substituição automática das Fúrias 3D
+
+## Problema que fazia o dragão antigo continuar aparecendo
+No navegador, a versão anterior armazenava a função nativa `fetch` em uma propriedade e depois a chamava como método, perdendo o contexto correto. O erro de leitura de `dragon-species.json` era silenciado e o controlador considerava que os dois GLBs **não existiam**, mesmo quando a URL do manifesto retornava HTTP 200 com `available:true`. O jogo então exibia o dragão procedural antigo.
+
+**Correções v1.4.18:**
+- Chamada de `fetch` com contexto seguro. Erros no manifesto não são mais silenciados permanentemente; podem ser investigados e repetidos.
+- Prioridade para os arquivos oficiais `assets/models/furia-da-noite.glb` e `furia-da-luz.glb`, ou versões mobile; versões antigas gravadas no IndexedDB não impedem que os GLBs publicados sejam escolhidos.
+- Importação manual continua permitida, mas somente após escolha explícita do usuário na sessão atual. Falhas revertem a seleção.
+- Indicador de estado no HUD, distinguindo *carregando*, *GLB exibido*, *indisponível* e *falha de renderização*; erros do importador são exibidos, em vez de apenas manter o visual antigo sem explicação.
+- **Novo teste obrigatório no Chromium:** `tests/browser-fury-auto.mjs`, que abre o jogo sem importar arquivos, exige skin de 49 ossos e oito animações, verifica que **nenhuma malha do dragão procedural antigo permaneça visível**, fotografa a Fúria da Noite e testa a prévia da Fúria da Luz sem desbloqueá-la.
+
+Os quatro GLBs reais (completos e mobile) e `dragon-species.json` permanecem no GitHub Pages, sem modificação de seus ossos, texturas, malhas ou clipes. Missões, progressão, controles e saves são preservados.
+
+---
+
 # Asas de Brumária v1.4.17 — Fúrias originais com opção móvel
 
 ## Evolução desta revisão
