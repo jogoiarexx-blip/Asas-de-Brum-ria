@@ -33,10 +33,25 @@ try{
   await page.waitForFunction(()=>Boolean(window.__furyQAGame),null,{timeout:30000});
   // The published dragon must replace the procedural original automatically.
   // Manual import must not be required for the initial Fury.
-  await page.waitForFunction(()=>{
-    const dragon=window.__furyQAGame?.dragon;
-    return dragon?.externalDragonModel?.species==='furia_noite';
-  },null,{timeout:45000});
+  try{
+    await page.waitForFunction(()=>{
+      const dragon=window.__furyQAGame?.dragon;
+      return dragon?.externalDragonModel?.species==='furia_noite';
+    },null,{timeout:45000});
+  }catch(error){
+    const detail=await page.evaluate(()=>{
+      const game=window.__furyQAGame,models=game?.speciesModels,dragon=game?.dragon;
+      return {selected:game?.progression?.species,modelSpecies:dragon?.externalDragonModel?.species,
+        loadingId:models?.lastSelected,ready:models?.ready,
+        error:String(models?.error?.stack??models?.error??'none'),
+        pending:[...(models?.pending?.keys?.()??[])],
+        visualChildren:dragon?.visual?.children?.map(x=>({name:x.name,visible:x.visible})),
+        url:location.href,hasVendorLoader:!!document.querySelector('script[type="importmap"]')};
+    });
+    console.error('FURY_AUTOLOAD_DIAGNOSTICS',JSON.stringify(detail));
+    console.error('FURY_BROWSER_ERRORS',JSON.stringify(errors));
+    throw error;
+  }
   const automatic=await page.evaluate(()=>{
     const dragon=window.__furyQAGame.dragon,model=dragon.externalDragonModel;
     return {species:model?.species,source:model?.source,
