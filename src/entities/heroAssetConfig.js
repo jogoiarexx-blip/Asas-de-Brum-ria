@@ -4,6 +4,6 @@
  */
 export const HERO_GLB_URL = './assets/models/personagem_animado_montaria.glb';
 // Enable after the binary model has actually been committed to this repo.
-export const HERO_ASSET_PUBLISHED = false;
+export const HERO_ASSET_PUBLISHED = true;
 // The uploaded rig's face is +Z. The game's forward direction is -Z.
 export const HERO_MODEL_FACING_YAW = Math.PI;
