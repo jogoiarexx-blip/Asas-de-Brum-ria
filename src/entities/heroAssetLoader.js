@@ -143,7 +143,15 @@ export function updateOptionalHeroGLB(hero,dt=0){
  // The mounted body follows the same real dragon state as its 8-clip GLB.
  const rideState=hero.mounted&&hero.mountAnimationRemaining>0?'mount':mountedMotionState(hero.dragon);
  const rideSpeed=rideState==='rideWalk'?Math.max(.75,hero.dragon.speed/7.5):1;
- transition(foot,footState,{oneShot:footState==='dismount',rate:footRate}).update(Math.min(dt,.12));
- transition(mounted,rideState,{oneShot:['mount','rideTakeoff','rideLand','rideAttack','rideHurt'].includes(rideState),
-   rate:rideSpeed}).update(Math.min(dt,.12));
+ // Two full skinned 100k-vertex meshes are retained for seamless swapping,
+ // but ONLY the visible rig receives expensive mixer updates each frame.
+ if(hero.mounted){
+   transition(mounted,rideState,{
+     oneShot:['mount','rideTakeoff','rideLand','rideAttack','rideHurt'].includes(rideState),
+     rate:rideSpeed
+   }).update(Math.min(dt,.12));
+ }else{
+   transition(foot,footState,{oneShot:footState==='dismount',rate:footRate})
+     .update(Math.min(dt,.12));
+ }
 }
