@@ -80,6 +80,8 @@ try{
   await page.waitForTimeout(500);
   await check('Estábulo e Fúria da Luz disponíveis na prévia');
 
+  // Browser click catches pointer-events:none overlays that selectOption alone misses.
+  await page.locator('#stable-preview-motion').click({timeout:5000});
   for(const motion of ['idle','walk','fly','glide','attack','hurt','takeoff','land']){
     await page.locator('#stable-preview-motion').selectOption(motion);
     await page.waitForTimeout(70);
