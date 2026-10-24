@@ -48,6 +48,20 @@ try{
         visualChildren:dragon?.visual?.children?.map(x=>({name:x.name,visible:x.visible})),
         url:location.href,hasVendorLoader:!!document.querySelector('script[type="importmap"]')};
     });
+    const network=await page.evaluate(async ()=>{
+      const m=window.__furyQAGame?.speciesModels;
+      const settled=async promise=>Promise.race([
+        Promise.resolve(promise).then(value=>({settled:true,value})).catch(error=>({error:String(error)})),
+        new Promise(resolve=>setTimeout(()=>resolve({timeout:true}),1600))
+      ]);
+      const official=new URL('../../assets/models/dragon-species.json',m.base).href;
+      const manifest=await settled(m.manifest());
+      const queue=await settled(m.queue);
+      const direct=await settled(fetch(official,{cache:'no-store'}).then(async r=>({status:r.status,body:await r.text()})));
+      return {official,manifest,queue,direct,generation:m.generation,
+        manualOverrides:[...m.manualOverrides??[]]};
+    });
+    console.error('FURY_AUTOLOAD_NETWORK',JSON.stringify(network));
     console.error('FURY_AUTOLOAD_DIAGNOSTICS',JSON.stringify(detail));
     console.error('FURY_BROWSER_ERRORS',JSON.stringify(errors));
     throw error;
