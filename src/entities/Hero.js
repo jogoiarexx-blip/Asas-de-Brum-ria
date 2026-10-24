@@ -15,9 +15,21 @@ export class Hero {
     this.rider.scale.setScalar(.78);dragon.visual.add(this.rider);this.rider.visible=false;
     dragon.rider=this.rider; // Preserve the player when swapping dragon visuals.
     this.mounted=false;this.walkTime=0;this.moveSpeed=0;this.fallVelocity=0;this.slopeClock=0;this.slope={pitch:0,roll:0};
-    if(HERO_GLB_URL)loadOptionalHeroGLB(this,HERO_GLB_URL,{yaw:HERO_MODEL_FACING_YAW});
+    // HeroAssetUI owns auto-loading (bundled GLB or remembered import) so
+    // concurrent loader calls never swap the meshes and skinned rigs twice.
+    this.mountAnimationRemaining=0;this.dismountAnimationRemaining=0;
   }
-  setMounted(value){this.mounted=value;this.group.visible=!value;this.rider.visible=value;this.fallVelocity=0;}
+  setMounted(value){
+    if(this.mounted!==value){
+      this.mountAnimationRemaining=value?.86:0;
+      this.dismountAnimationRemaining=value?0:.77;
+      if(value&&this.riderVisualReady){
+        this.rider.rotation.x=0;this.rider.rotation.z=0;
+      }
+    }
+    this.mounted=value;
+    this.group.visible=!value;this.rider.visible=value;this.fallVelocity=0;
+  }
   animate(model,pose,dt,now,mounted=false){
     const {legs,arms,cape,body,head}=model.userData;
     legs.forEach((leg,i)=>{
@@ -58,9 +70,18 @@ export class Hero {
     cape.rotation.x=THREE.MathUtils.damp(cape.rotation.x,pose.cape+Math.sin(now*(mounted?6:9))*.04,5,dt);
   }
   update(dt,input,time){
-    updateOptionalHeroGLB(this,dt);
     if(this.mounted){
-      this.moveSpeed=0;this.animate(this.rider,poseForHero(time,1,true,false),dt,time,true);return;
+      this.moveSpeed=0;
+      this.animate(this.rider,poseForHero(time,1,true,false),dt,time,true);
+      // The GLB rider follows the mount's bank/pitch without changing hitboxes,
+      // clipping through the saddle or accumulating transforms each frame.
+      if(this.riderVisualReady){
+        this.rider.rotation.z=THREE.MathUtils.damp(this.rider.rotation.z,-this.dragon.bank*.075,7,dt);
+        this.rider.rotation.x=THREE.MathUtils.damp(this.rider.rotation.x,
+          THREE.MathUtils.clamp(-this.dragon.verticalVelocity*.0025,-.065,.065),6,dt);
+      }
+      updateOptionalHeroGLB(this,dt);
+      return;
     }
     const x=input.axis?.('a','d')??((input.isDown('d','arrowright')?1:0)-(input.isDown('a','arrowleft')?1:0));
     const z=input.axis?.('w','s')??((input.isDown('s','arrowdown')?1:0)-(input.isDown('w','arrowup')?1:0));
@@ -101,5 +122,8 @@ export class Hero {
     const root=this.group.userData.body;
     root.rotation.x=THREE.MathUtils.damp(root.rotation.x,pose.bodyLean+this.slope.pitch,5,dt);
     root.rotation.z=THREE.MathUtils.damp(root.rotation.z,pose.sway+this.slope.roll,5,dt);
+    this.rider.rotation.x=THREE.MathUtils.damp(this.rider.rotation.x,0,8,dt);
+    this.rider.rotation.z=THREE.MathUtils.damp(this.rider.rotation.z,0,8,dt);
+    updateOptionalHeroGLB(this,dt);
   }
 }
