@@ -1,0 +1,97 @@
+name: Reconstruir e validar GLBs originais das Fúrias
+
+on:
+  push:
+    branches:
+      - assets/fury-segments-20261024
+    paths:
+      - '.fury-transfer/**'
+      - '.github/workflows/assemble-fury-chunks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Reconstruir GLBs e verificar SHA-256 original
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/models
+          cat .fury-transfer/night/*.part > assets/models/furia-da-noite.glb
+          cat .fury-transfer/light/*.part > assets/models/furia-da-luz.glb
+          echo "d3fbe8c1f9fa33f34cb5cb1b6361807c23ea8614e2edff730af8c4d747f3a898  assets/models/furia-da-noite.glb" | sha256sum -c -
+          echo "15ec0c1a836d20778ddbc2ace2a8a0e9fac8c0b08cf5432bd269dd4620d4652c  assets/models/furia-da-luz.glb" | sha256sum -c -
+          ls -lh assets/models/furia-da-{noite,luz}.glb
+
+      - name: Converter texturas para versões móveis mantendo rig e animações
+        run: |
+          python -m pip install 'Pillow>=11,<13'
+          python tools/prepare_fury_models.py \
+            --night assets/models/furia-da-noite.glb \
+            --light assets/models/furia-da-luz.glb \
+            --out assets/models --texture-size 1024
+
+      - name: Certificar modelo original e mobile com testes Node
+        run: |
+          npm run check
+
+      - name: Preparar teste real Chromium/Three.js
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1 three@0.180.0
+          npx playwright install --with-deps chromium
+          mkdir -p vendor/addons/loaders vendor/addons/utils
+          cp node_modules/three/build/three.module.js vendor/three.module.js
+          cp node_modules/three/build/three.core.js vendor/three.core.js
+          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js vendor/addons/loaders/GLTFLoader.js
+          cp node_modules/three/examples/jsm/utils/BufferGeometryUtils.js vendor/addons/utils/BufferGeometryUtils.js
+      - name: Abrir os dois GLBs na engine e verificar animação e cavaleiro
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/fury-qa-http.log 2>&1 &
+          node tests/browser-fury-assets.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: QA-original-light-night-fury
+          if-no-files-found: ignore
+          path: |
+            artifacts/furias-*.png
+            assets/models/asset-qa.json
+
+      - name: Preparar branch final SEM os 40 blocos temporários
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/fury-certified
+          cp assets/models/furia-da-noite.glb /tmp/fury-certified/
+          cp assets/models/furia-da-luz.glb /tmp/fury-certified/
+          cp assets/models/furia-da-noite-mobile.glb /tmp/fury-certified/
+          cp assets/models/furia-da-luz-mobile.glb /tmp/fury-certified/
+          cp assets/models/dragon-species.json /tmp/fury-certified/
+          cp assets/models/asset-qa.json /tmp/fury-certified/
+          git fetch origin main
+          git checkout -B assets/fury-ready-20261024 origin/main
+          mkdir -p assets/models
+          cp /tmp/fury-certified/* assets/models/
+          echo "d3fbe8c1f9fa33f34cb5cb1b6361807c23ea8614e2edff730af8c4d747f3a898  assets/models/furia-da-noite.glb" | sha256sum -c -
+          echo "15ec0c1a836d20778ddbc2ace2a8a0e9fac8c0b08cf5432bd269dd4620d4652c  assets/models/furia-da-luz.glb" | sha256sum -c -
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/models/furia-da-noite.glb assets/models/furia-da-luz.glb \
+            assets/models/furia-da-noite-mobile.glb assets/models/furia-da-luz-mobile.glb \
+            assets/models/dragon-species.json assets/models/asset-qa.json
+          git commit -m 'Publicar Fúrias reais + mobile, 49 ossos e 8 animações validadas'
+          git push origin HEAD:refs/heads/assets/fury-ready-20261024
