@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {inspectGLB} from './glbValidation.js';
+import {addMissingRiderClips,mountedMotionState} from './heroRiderAnimation.js';
 
 const VERSION='0.180.0';
 const CDN=[`https://cdn.jsdelivr.net/npm/three@${VERSION}/examples/jsm/`,`https://unpkg.com/three@${VERSION}/examples/jsm/`];
@@ -36,6 +37,7 @@ function disposeModels(hero){
  }
  for(const g of geometries)g.dispose();for(const t of textures)t.dispose();for(const m of materials)m.dispose();
  hero.glbRoots=[];hero.glbClips=[];hero.externalModel=null;hero.externalMixer=null;hero.externalClips=null;
+ hero.riderVisualReady=false;
 }
 function makeVariant(scene,yaw){
  const box=new THREE.Box3().setFromObject(scene),size=box.getSize(new THREE.Vector3());
@@ -48,19 +50,33 @@ function makeVariant(scene,yaw){
  return root;
 }
 const clipName=(name='')=>{
- const n=name.toLowerCase();
- if(/ride|mount|sit/.test(n))return 'ride';
+ const n=name.toLowerCase().replace(/[._-]+/g,' ');
+ if(/riding hurt/.test(n))return 'rideHurt';
+ if(/riding attack/.test(n))return 'rideAttack';
+ if(/riding takeoff/.test(n))return 'rideTakeoff';
+ if(/riding landing/.test(n))return 'rideLand';
+ if(/riding glide/.test(n))return 'rideGlide';
+ if(/riding fly/.test(n))return 'rideFly';
+ if(/riding walk/.test(n))return 'rideWalk';
+ if(/riding idle|riding sit|ride idle/.test(n))return 'rideIdle';
+ if(n==='mount')return 'mount';
+ if(n==='dismount')return 'dismount';
+ if(/ride|sit/.test(n))return 'rideIdle';
  if(/run|sprint/.test(n))return 'run';
  if(/walk/.test(n))return 'walk';
  if(/idle|rest|breath/.test(n))return 'idle';
+ if(/dead|death/.test(n))return 'dead';
+ if(/arise|get up/.test(n))return 'arise';
+ if(/dance/.test(n))return 'dance';
  return null;
 };
-function mixAnimations(scene,clips){
+function mixAnimations(scene,sourceClips){
+ const clips=addMissingRiderClips(scene,sourceClips);
  const mixer=new THREE.AnimationMixer(scene),actions={};
  for(const clip of clips){const slot=clipName(clip.name);if(slot&&!actions[slot])actions[slot]=mixer.clipAction(clip);}
- if(!Object.keys(actions).length&&clips.length)actions.idle=mixer.clipAction(clips[0]);
- const active=actions.idle??Object.values(actions)[0]??null;active?.play();
- return {mixer,actions,active};
+ const active=actions.idle??actions.walk??Object.values(actions)[0]??null;
+ active?.play();
+ return {mixer,actions,active,state:'idle'};
 }
 
 /** Load a self-contained user GLB. Does not replace existing model on failure. */
@@ -82,6 +98,10 @@ export async function installHeroGLB(hero,bytes,{yaw=0,onStatus=()=>{}}={}){
  hero.group.add(foot);hero.rider.add(rider);
  hero.group.userData.body.visible=false;hero.rider.userData.body.visible=false;
  hero.glbRoots=[foot,rider];hero.glbClips=[footAnim,rideAnim];hero.glbMixers=[footAnim.mixer,rideAnim.mixer];
+ hero.riderVisualReady=true;
+ hero.mountAnimationRemaining=hero.mounted?.83:0;hero.dismountAnimationRemaining=0;
+ hero.externalHeroInfo={...info,animations:(gltf.animations??[]).map(a=>a.name),
+   mappedRiding:Object.keys(rideAnim.actions).filter(name=>name.startsWith('ride')||name==='mount'||name==='dismount')};
  hero.externalModel=foot;hero.externalMixer=footAnim.mixer;hero.externalClips=footAnim.actions;
  return info;
 }
@@ -98,15 +118,32 @@ export async function loadOptionalHeroGLB(hero,url,{yaw=0,onError=console.warn}=
    await installHeroGLB(hero,await response.arrayBuffer(),{yaw});return true;
  }catch(error){onError('Modelo GLB opcional indisponível; personagem original preservado:',error);return false;}
 }
-function transition(data,name){
+function transition(data,name,{oneShot=false,rate=1}={}){
  const {mixer,actions}=data;
- const next=actions[name]??actions.idle??Object.values(actions)[0];
- if(next&&next!==data.active){next.reset().fadeIn(.2).play();data.active?.fadeOut(.2);data.active=next;}
+ const next=actions[name]??actions.rideIdle??actions.idle??actions.walk??Object.values(actions)[0];
+ if(!next)return mixer;
+ if(next!==data.active){
+   next.reset().setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
+   next.clampWhenFinished=oneShot;
+   next.fadeIn(.17).play();
+   data.active?.fadeOut(.17);
+   data.active=next;data.state=name;
+ }
+ next.setEffectiveTimeScale(THREE.MathUtils.clamp(rate,.6,2.2));
  return mixer;
 }
-export function updateOptionalHeroGLB(hero,dt){
- if(!hero.glbClips?.length)return;
+export function updateOptionalHeroGLB(hero,dt=0){
+ if(!hero.glbClips?.length||!Number.isFinite(dt)||dt<0)return;
  const foot=hero.glbClips[0],mounted=hero.glbClips[1];
- transition(foot,hero.moveSpeed>.12?(hero.moveSpeed>5.5?'run':'walk'):'idle').update(dt);
- transition(mounted,'ride').update(dt);
+ hero.mountAnimationRemaining=Math.max(0,(hero.mountAnimationRemaining??0)-dt);
+ hero.dismountAnimationRemaining=Math.max(0,(hero.dismountAnimationRemaining??0)-dt);
+ let footState=hero.moveSpeed>.12?(hero.moveSpeed>5.5?'run':'walk'):'idle';
+ if(!hero.mounted&&hero.dismountAnimationRemaining>0)footState='dismount';
+ const footRate=footState==='run'?Math.max(.8,hero.moveSpeed/8.3):footState==='walk'?Math.max(.8,hero.moveSpeed/3.2):1;
+ // The mounted body follows the same real dragon state as its 8-clip GLB.
+ const rideState=hero.mounted&&hero.mountAnimationRemaining>0?'mount':mountedMotionState(hero.dragon);
+ const rideSpeed=rideState==='rideWalk'?Math.max(.75,hero.dragon.speed/7.5):1;
+ transition(foot,footState,{oneShot:footState==='dismount',rate:footRate}).update(Math.min(dt,.12));
+ transition(mounted,rideState,{oneShot:['mount','rideTakeoff','rideLand','rideAttack','rideHurt'].includes(rideState),
+   rate:rideSpeed}).update(Math.min(dt,.12));
 }
