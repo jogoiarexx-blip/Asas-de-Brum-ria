@@ -176,7 +176,10 @@ export class SpeciesDragonModels{
       try{
         await this.load(previewDragon,bytes);
         if(generation!==this.previewEpoch){this.clear(previewDragon);return false;}
-        if(previewDragon.externalDragonModel)previewDragon.externalDragonModel.source='species';
+        if(previewDragon.externalDragonModel){
+          previewDragon.externalDragonModel.source='species';
+          previewDragon.externalDragonModel.species=id;
+        }
         return true;
       }catch{return false;}
     };
