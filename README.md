@@ -1,3 +1,15 @@
+# Asas de Brumária v1.4.17 — Fúrias originais com opção móvel
+
+## Evolução desta revisão
+- **Variantes móveis testadas estruturalmente:** Fúria da Noite: **10,40 → 5,86 MB (−43,59%)**; Fúria da Luz: **11,93 → 6,98 MB (−41,53%)**. As três imagens JPEG por arquivo foram reduzidas de 2048 para 1024 pixels. Foram preservados 49 ossos, as 8 animações, os índices, as UVs e os 270 buffers não destinados a imagens.
+- **Escolha automática no navegador:** aparelhos com tela de toque, até 4 GB de RAM reportados ou economia de dados preferem os GLBs mobile quando publicados. Desktops usam o original 2K. Um erro 404 na variante móvel aciona fallback para o modelo completo.
+- **Importação manual também mais leve:** modelos GLB escolhidos no estábulo usam no máximo texturas 1024 px em aparelhos móveis comuns e até 512 px nos dispositivos de baixa memória. O redimensionamento acontece na memória antes do upload das texturas para WebGL, sem modificar o arquivo de origem do usuário.
+- **Publicação em GitHub Pages:** depois de disponibilizar `assets/models/furia-da-noite.glb` e `assets/models/furia-da-luz.glb` no repositório, o workflow `.github/workflows/publish-furies.yml` gera os modelos mobile com `tools/prepare_fury_models.py`, valida os arquivos e executa um teste Chromium importando os **dois modelos reais**. O manifesto só é ativado depois do sucesso.
+- **Importante:** o código está preparado, mas o GitHub não recebe os GLBs de 10–12 MB por este conector. Eles só aparecerão automaticamente para todos depois do upload pelo proprietário do repositório. Sem os binários, o fallback procedural e a opção de importar pelo estábulo continuam disponíveis.
+- **Referência:** [Publicar Fúrias no GitHub e otimizar mobile](docs/PUBLICAR-FURIAS-MOBILE.md).
+
+---
+
 # Asas de Brumária v1.4.16 — Recuperação segura de GLB e prévia animada
 
 - **Importação segura:** novos GLBs da Fúria da Noite e da Luz só são gravados em IndexedDB após serem aceitos pelo `GLTFLoader` e renderizados. A Fúria da Luz pode ser pré-visualizada sem ser desbloqueada.

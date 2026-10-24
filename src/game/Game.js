@@ -11,6 +11,7 @@ import { Hero } from '../entities/Hero.js';
 import {HeroAssetUI} from '../ui/HeroAssetUI.js';
 import {DragonAssetUI} from '../ui/DragonAssetUI.js';
 import {SpeciesDragonModels} from '../entities/SpeciesDragonModels.js';
+import {browserDragonBudget,preferMobileDragonAssets} from '../entities/dragonTextureBudget.js';
 import { Missions } from '../systems/Missions.js';
 import { AudioSystem } from '../systems/Audio.js';
 import { Effects } from '../systems/Effects.js';
@@ -81,7 +82,9 @@ export class Game {
     this.hero=new Hero(this.scene,this.world,this.dragon);
     this.heroAssetUI=new HeroAssetUI(this.hero);
     this.dragonAssetUI=new DragonAssetUI(this.dragon);
-    this.speciesModels=new SpeciesDragonModels(this.dragon);
+    this.speciesModels=new SpeciesDragonModels(this.dragon,{
+      preferMobile:preferMobileDragonAssets(browserDragonBudget())
+    });
     this.dragonAssetUI.onReset=()=>this.speciesModels.select(this.progression.species);
     this.enemies=new EnemySquad(this.scene,this.world);
     this.effects=new Effects(this.scene);

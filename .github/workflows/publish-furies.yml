@@ -1,0 +1,78 @@
+name: Publicar Furias GLB (modelos e versoes mobile)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - assets/models/furia-da-noite.glb
+      - assets/models/furia-da-luz.glb
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fury-assets-publish
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Pillow para textura JPEG 1K
+        run: python -m pip install 'Pillow>=11,<13'
+      - name: Validar modelos principais e gerar versoes mobile
+        run: |
+          test -f assets/models/furia-da-noite.glb
+          test -f assets/models/furia-da-luz.glb
+          python tools/prepare_fury_models.py \
+            --night assets/models/furia-da-noite.glb \
+            --light assets/models/furia-da-luz.glb \
+            --out assets/models --texture-size 1024
+          npm run check
+      - name: Preparar Chromium e Three.js para testar os dois GLBs reais
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1 three@0.180.0
+          npx playwright install --with-deps chromium
+          mkdir -p vendor/addons/loaders vendor/addons/utils
+          cp node_modules/three/build/three.module.js vendor/three.module.js
+          cp node_modules/three/build/three.core.js vendor/three.core.js
+          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js vendor/addons/loaders/GLTFLoader.js
+          cp node_modules/three/examples/jsm/utils/BufferGeometryUtils.js vendor/addons/utils/BufferGeometryUtils.js
+      - name: Abrir as Furias reais no jogo e validar no WebGL
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/furias-http.log 2>&1 &
+          node tests/browser-fury-assets.mjs
+      - name: Arquivar provas de importacao
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: furias-modelos-reais-qa
+          path: |
+            artifacts/furias-*.png
+            assets/models/asset-qa.json
+          if-no-files-found: ignore
+      - name: Registrar os modelos mobile e ativar a publicacao
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/models/furia-da-noite-mobile.glb \
+            assets/models/furia-da-luz-mobile.glb \
+            assets/models/dragon-species.json \
+            assets/models/asset-qa.json
+          if git diff --cached --quiet; then
+            echo 'GLBs ja publicados; nenhuma mudanca.'
+          else
+            git commit -m 'Assets: ativar duas Furias e variantes moveis validadas'
+            git push origin HEAD:main
+          fi

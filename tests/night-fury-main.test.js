@@ -41,7 +41,7 @@ test('Só dois modelos GLB por espécie; não libera espécie ao carregar aparê
   assert.match(models,/furia_luz:'\.\.\/\.\.\/assets\/models\/furia-da-luz\.glb'/);
   assert.match(models,/manifest\.available/);
   assert.match(models,/this\.queue=this\.queue\.catch/);
-  assert.match(game,/new SpeciesDragonModels\(this\.dragon\)/);
+  assert.match(game,/new SpeciesDragonModels\(this\.dragon,\{/);
   assert.match(game,/this\.progression\.unlock\(id\)/);
   assert.match(game,/void this\.speciesModels\.select\(id\)/);
   assert.match(game,/void this\.speciesModels\.select\(this\.progression\.species\)/);

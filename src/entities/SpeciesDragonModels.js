@@ -9,9 +9,14 @@ export const SPECIES_MODEL_FILES=Object.freeze({
   furia_luz:'../../assets/models/furia-da-luz.glb'
 });
 export function fileForSpecies(id){return SPECIES_MODEL_FILES[id]??null;}
+export function mobileFileForSpecies(id){
+  return id==='furia_noite'?'../../assets/models/furia-da-noite-mobile.glb':
+    id==='furia_luz'?'../../assets/models/furia-da-luz-mobile.glb':null;
+}
 export class SpeciesDragonModels{
-  constructor(dragon,{fetcher=fetch,load=installDragonGLB,clear=clearDragonGLB,base=import.meta.url}={}){
+  constructor(dragon,{fetcher=fetch,load=installDragonGLB,clear=clearDragonGLB,base=import.meta.url,preferMobile=false}={}){
     this.dragon=dragon;this.fetcher=fetcher;this.load=load;this.clear=clear;this.base=base;
+    this.preferMobile=preferMobile;
     this.generation=0;this.lastSelected=null;this.ready=false;
     this.queue=Promise.resolve();this.previewQueue=Promise.resolve();
     this.previewEpoch=0;this.pending=new Map();this.local=new Map();this.error=null;
@@ -39,11 +44,20 @@ export class SpeciesDragonModels{
     const manifest=await this.manifest();
     if(!manifest.available||!Array.isArray(manifest.species)||!manifest.species.includes(id))return null;
     if(!this.pending.has(id)){
-      const url=new URL(name,this.base);
-      const promise=this.fetcher(url,{cache:'force-cache'}).then(async response=>{
+      const get=async(file)=>{
+        const url=new URL(file,this.base);
+        const response=await this.fetcher(url,{cache:'force-cache'});
         if(!response.ok)throw Error(`Modelo ${id} indisponível (HTTP ${response.status})`);
         return response.arrayBuffer();
-      }).catch(err=>{this.pending.delete(id);throw err;});
+      };
+      const promise=(async()=>{
+        const mobile=this.preferMobile&&manifest.mobile===true?mobileFileForSpecies(id):null;
+        if(mobile){
+          try{return await get(mobile);}
+          catch(error){console.warn('GLB mobile indisponível, usando versão completa:',id,error);}
+        }
+        return get(name);
+      })().catch(error=>{this.pending.delete(id);throw error;});
       this.pending.set(id,promise);
     }
     return this.pending.get(id);
