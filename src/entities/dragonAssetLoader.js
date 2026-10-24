@@ -92,7 +92,8 @@ export async function installDragonGLB(dragon,bytes,{gameplaySpecies=null}={}){
       for(const name of ['Bone_038','Bone_039','Bone_042','Bone_043',
         'Bone_029','Bone_034','Bone_006','Bone_011']){
         const bone=gltf.scene.getObjectByName(name);
-        if(bone)nextModel.restRotations.set(name,{bone,rotation:bone.quaternion.clone()});
+        if(bone)nextModel.restRotations.set(name,{bone,rotation:bone.quaternion.clone(),
+          animated:new THREE.Quaternion()});
       }
     }
     // Transactional swap: keep the previous model alive if setting up the
@@ -136,6 +137,18 @@ export function clearDragonGLB(dragon){
   disposeRoot(data.root);
   if(dragon.speciesPreset)dragon.setSpecies(dragon.speciesId,dragon.speciesPreset);
 }
+/** Map the authored 8 clips to actual gameplay phase durations.
+ * One-shot attacks/takeoffs used to be cut off halfway through. */
+export function furyClipTimeScale(state,clipDuration,speed=0){
+  if(!Number.isFinite(clipDuration)||clipDuration<=0)return 1;
+  const walkPeriod=THREE.MathUtils.lerp(1.48,.67,THREE.MathUtils.clamp(speed/12,0,1));
+  const target={
+    idle:3.2,walk:walkPeriod,fly:THREE.MathUtils.lerp(1.05,.74,THREE.MathUtils.clamp(speed/50,0,1)),
+    glide:2.4,takeoff:.74,land:.50,attack:.36,hurt:.45
+  }[state]??clipDuration;
+  return THREE.MathUtils.clamp(clipDuration/target,.5,4.5);
+}
+
 export function updateDragonGLB(dragon,dt=0){
   const data=dragon.externalDragonModel;
   if(!data)return;
@@ -146,10 +159,28 @@ export function updateDragonGLB(dragon,dt=0){
     const oneShot=['attack','hurt','takeoff','land'].includes(state);
     next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
     next.clampWhenFinished=oneShot;
-    // Actions authored as single animations must not repeat mid-hit or landing.
-    next.reset().fadeIn(.18).play();
-    if(data.active)data.active.fadeOut(.18);
+    next.reset().fadeIn(.13).play();
+    if(data.active)data.active.fadeOut(.13);
     data.active=next;
   }
+  if(next){
+    // Speed scales the animation; physics is the sole owner of displacement.
+    next.setEffectiveTimeScale(data.officialFury
+      ?furyClipTimeScale(state,clip?.duration??1,dragon.speed)
+      :1);
+  }
   if(Number.isFinite(dt)&&dt>0)data.mixer.update(Math.min(dt,.12));
+  if(data.officialFury&&data.restRotations?.size){
+    const airborne=state==='fly'||state==='takeoff'||state==='glide';
+    // Exaggerate the actual, exported bone keyframes, not the procedural
+    // wing meshes (which stay hidden). Keep left/right authoring symmetry.
+    const wingGain=state==='fly'?1.75:state==='takeoff'?1.55:state==='glide'?1.12:1.12;
+    const legGain=state==='walk'?1.42:state==='land'?1.25:1.06;
+    for(const [name,part] of data.restRotations){
+      const wing=name==='Bone_038'||name==='Bone_039'||name==='Bone_042'||name==='Bone_043';
+      const gain=wing?(airborne?wingGain:1.04):legGain;
+      part.animated.copy(part.bone.quaternion);
+      part.bone.quaternion.copy(part.rotation).slerp(part.animated,gain);
+    }
+  }
 }
