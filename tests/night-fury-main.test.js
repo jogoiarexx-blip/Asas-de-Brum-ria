@@ -44,7 +44,7 @@ test('Só dois modelos GLB por espécie; não libera espécie ao carregar aparê
   assert.match(game,/new SpeciesDragonModels\(this\.dragon,\{/);
   assert.match(game,/this\.progression\.unlock\(id\)/);
   assert.match(game,/void this\.speciesModels\.select\(id\)/);
-  assert.match(game,/void this\.speciesModels\.select\(this\.progression\.species\)/);
+  assert.match(game,/this\.dragonModelReady=this\.speciesModels\.select\(this\.progression\.species\)/);
   assert.match(preview,/updateDragonGLB\(this\.dragon,frameDt\)/);
   assert.match(page,/id="species-list"/);
 });

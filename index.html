@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#071a25">
   <meta name="description" content="Asas de Brumária: explore ilhas, monte em seu dragão e complete missões.">
-  <title>Asas de Brumária v1.4.17 — Aventura de Dragões</title>
+  <title>Asas de Brumária v1.4.18 — Aventura de Dragões</title>
   <link rel="stylesheet" href="./src/ui/style.css">
 </head>
 <body>
@@ -23,9 +23,10 @@
     <div id="mountain-status" class="mountain-status">🏔 MAPA DE MONTANHAS A LESTE</div>
     <div id="contract-status" class="contract-status hidden" aria-live="polite"></div>
     <div id="training-status" class="training-status hidden" aria-live="polite"></div>
+    <div id="dragon-model-status" class="dragon-model-status" data-state="loading" role="status" aria-live="polite">Carregando Fúria da Noite 3D…</div>
     <div id="interaction" class="hidden">E · MONTAR NO DRAGÃO</div>
     <div id="target-lock" class="target-lock hidden">◆ SENTINELA NA MIRA</div><div class="crosshair">+</div><div id="hurt-overlay" class="hurt-overlay"></div>
-    <div class="bottom-hud"><div class="status-card"><div class="stat-head"><span>ENERGIA DO DRAGÃO</span><span id="energy-number">100%</span></div><div class="energy-track"><div id="energy-bar"></div></div><div class="stat-head health-head"><span id="health-label">RESISTÊNCIA DE NIMBO</span><span id="health-number">100%</span></div><div class="energy-track health-track"><div id="health-bar"></div></div><div class="stat-row"><span id="speed-text">NO SOLO</span><span id="altitude-text">ALT 0 m</span><span id="dodge-status">ESQUIVA · EM VOO</span></div></div><div id="keyboard-help"><b>W A S D</b> MOVER / GUIAR <span>•</span> <b>ESPAÇO</b> SUBIR <span>•</span> <b>CTRL</b> DESCER <span>•</span> <b>E</b> INTERAGIR <span>•</span> <b>F</b> FOGO <span>•</span> <b>Q</b> ESQUIVAR (VOANDO) <span>•</span> <b>SHIFT</b> TURBO / ANDAR DEVAGAR <span>•</span> <b>T</b> ESTÁBULO <span>•</span> <b>P</b> SALVAR <span>•</span> <b>C</b> CLIMA <span>•</span> <b>N</b> HORÁRIO <span>•</span> <b>G</b> GRÁFICOS <span>•</span> <b>⚙ GPU</b> VÍDEO <span>•</span> <b>V</b> CÂMERA · ARRASTE / RODA</div></div>
+    <div class="bottom-hud"><div class="status-card"><div class="stat-head"><span>ENERGIA DO DRAGÃO</span><span id="energy-number">100%</span></div><div class="energy-track"><div id="energy-bar"></div></div><div class="stat-head health-head"><span id="health-label">RESISTÊNCIA DA FÚRIA DA NOITE</span><span id="health-number">100%</span></div><div class="energy-track health-track"><div id="health-bar"></div></div><div class="stat-row"><span id="speed-text">NO SOLO</span><span id="altitude-text">ALT 0 m</span><span id="dodge-status">ESQUIVA · EM VOO</span></div></div><div id="keyboard-help"><b>W A S D</b> MOVER / GUIAR <span>•</span> <b>ESPAÇO</b> SUBIR <span>•</span> <b>CTRL</b> DESCER <span>•</span> <b>E</b> INTERAGIR <span>•</span> <b>F</b> FOGO <span>•</span> <b>Q</b> ESQUIVAR (VOANDO) <span>•</span> <b>SHIFT</b> TURBO / ANDAR DEVAGAR <span>•</span> <b>T</b> ESTÁBULO <span>•</span> <b>P</b> SALVAR <span>•</span> <b>C</b> CLIMA <span>•</span> <b>N</b> HORÁRIO <span>•</span> <b>G</b> GRÁFICOS <span>•</span> <b>⚙ GPU</b> VÍDEO <span>•</span> <b>V</b> CÂMERA · ARRASTE / RODA</div></div>
     <div id="gamepad-help" class="gamepad-help">🎮 ANALÓGICO E: MOVER · ANALÓGICO D: CÂMERA · A: INTERAGIR · X: FOGO · Y/START: ESTÁBULO · LB/RB: DESCER/SUBIR · LT/RT: FREAR/ACELERAR · L3: TURBO · R3: ESQUIVA · B: VOLTAR</div>
     <div class="mobile-controls" id="mobile-controls">
       <div class="touch-dpad"><button data-hold="w" class="pad-up" aria-label="Avançar">▲</button><button data-hold="a" class="pad-left" aria-label="Virar à esquerda">◀</button><button data-hold="s" class="pad-down" aria-label="Recuar">▼</button><button data-hold="d" class="pad-right" aria-label="Virar à direita">▶</button></div>

@@ -149,3 +149,12 @@ body:has(#controller-status.connected) .gamepad-help{opacity:.92}
 @media(pointer:coarse),(max-width:850px){#quest-guide{margin-top:7px;padding:5px 6px;font-size:8px;line-height:1.24}
  #waypoint{font-size:7px;min-height:29px}.mission-card::after{left:8px;right:8px}}
 @media(max-height:560px) and (orientation:landscape){#quest-guide{font-size:8px;margin-top:4px;padding:4px 6px}}
+
+/* Estado real do GLB principal: evita que o fallback procedural pareça uma importação concluída. */
+.dragon-model-status{position:absolute;left:50%;top:73%;transform:translateX(-50%);max-width:min(420px,84vw);padding:7px 13px;border-radius:9px;
+  border:1px solid #c3dec1a8;background:#102d36e8;color:#e4f2df;font-size:11px;font-weight:700;text-align:center;line-height:1.35;
+  box-shadow:0 4px 16px #00151f65;pointer-events:none;z-index:2}
+.dragon-model-status[data-state="error"]{border-color:#f3ae8c;color:#ffe1d2}
+.dragon-model-status[data-state="ok"]{border-color:#8dd1b2;color:#c7ffdc}
+.dragon-model-status[data-state="missing"]{border-color:#edc67c;color:#ffe4b8}
+@media(pointer:coarse),(max-width:850px){.dragon-model-status{top:64%;font-size:9px;padding:5px 9px}}

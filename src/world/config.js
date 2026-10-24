@@ -6,7 +6,7 @@ export const ISLANDS = [
   { name:'Atol Esquecido',x:195,z:-162,r:42,h:15,seed:3.6 }
 ];
 export const QUEST_DEFS = [
-  {id:'bond',title:'A PRIMEIRA CONEXÃO',desc:'Encontre o dragão Nimbo, aproxime-se e pressione E para montar.',total:1},
+  {id:'bond',title:'A PRIMEIRA CONEXÃO',desc:'Encontre sua Fúria da Noite, aproxime-se e pressione E para montar.',total:1},
   {id:'rings',title:'O BATISMO DO VENTO',desc:'Atravesse os cinco aros luminosos para dominar os céus.',total:5},
   {id:'crystals',title:'AS RUNAS PERDIDAS',desc:'Recolha três cristais de energia espalhados entre as ilhas.',total:3},
   {id:'targets',title:'DEFENSORES DE BRUMÁRIA',desc:'Use F para lançar fogo e destruir os três orbes sombrios.',total:3},
