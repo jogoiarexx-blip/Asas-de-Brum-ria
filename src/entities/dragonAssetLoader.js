@@ -44,7 +44,7 @@ function disposeRoot(root){
 
 /** Called only after parse and validation complete so bad uploads never
  * erase the current appearance or interfere with rider and flight physics. */
-export async function installDragonGLB(dragon,bytes){
+export async function installDragonGLB(dragon,bytes,{gameplaySpecies=null}={}){
   const info=inspectGLB(bytes);
   const raw=bytes instanceof ArrayBuffer?bytes:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
   const GLTFLoader=await getGLTFLoader();
@@ -65,7 +65,13 @@ export async function installDragonGLB(dragon,bytes){
     if(!Number.isFinite(scale)||scale<=0)throw new Error('Escala GLB inválida.');
     root=new THREE.Group();root.name='ExternalDragonGLB';
     const alignment=new THREE.Group();alignment.scale.setScalar(scale);
-    alignment.position.copy(center).multiplyScalar(-scale);
+    // The 49-bone Fury source faces +Z; Brumaria gameplay faces -Z.
+    // Align only official species models, leaving optional user GLBs alone.
+    const officialFury=gameplaySpecies==='furia_noite'||gameplaySpecies==='furia_luz';
+    if(officialFury){
+      alignment.rotation.y=Math.PI;
+      alignment.position.set(center.x*scale,-2.48-box.min.y*scale,center.z*scale);
+    }else alignment.position.copy(center).multiplyScalar(-scale);
     root.add(alignment);alignment.add(gltf.scene);
     const mixer=new THREE.AnimationMixer(gltf.scene);
     const slots=mapDragonClips(gltf.animations??[]);
@@ -77,16 +83,35 @@ export async function installDragonGLB(dragon,bytes){
       .filter(obj=>obj!==dragon.rider)
       .map(obj=>({obj,visible:obj.visible}));
     root.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=false;}});
-    const nextModel={root,mixer,slots,animations,active:null,original,scale};
+    // Preserve the original saddle position through every swap and reset.
+    const riderOriginal=current?.riderOriginal??(dragon.rider?.position.clone()??null);
+    const riderPrevious=dragon.rider?.position.clone()??null;
+    const nextModel={root,mixer,slots,animations,active:null,original,scale,
+      officialFury,riderOriginal,restRotations:new Map(),rig:gltf.scene};
+    if(officialFury){
+      for(const name of ['Bone_038','Bone_039','Bone_042','Bone_043',
+        'Bone_029','Bone_034','Bone_006','Bone_011']){
+        const bone=gltf.scene.getObjectByName(name);
+        if(bone)nextModel.restRotations.set(name,{bone,rotation:bone.quaternion.clone()});
+      }
+    }
     // Transactional swap: keep the previous model alive if setting up the
     // new AnimationMixer, action or scene fails on some browsers.
     try{
       dragon.visual.add(root);
       dragon.externalDragonModel=nextModel;
+      if(dragon.rider){
+        if(officialFury){
+          // The new model's back is lower than the procedural saddle.
+          // Move only the rider's visual slot; collision/mount remain intact.
+          dragon.rider.position.set(0,-2.48+1.08*scale-box.min.y*scale+.08,-.06);
+        }else if(riderOriginal)dragon.rider.position.copy(riderOriginal);
+      }
       for(const {obj} of original)obj.visible=false;
       updateDragonGLB(dragon,0);
     }catch(error){
       dragon.externalDragonModel=current??null;
+      if(dragon.rider&&riderPrevious)dragon.rider.position.copy(riderPrevious);
       if(!current)for(const {obj,visible} of original)obj.visible=visible;
       throw error;
     }
@@ -106,6 +131,7 @@ export function clearDragonGLB(dragon){
   if(!data)return;
   dragon.externalDragonModel=null;
   data.mixer.stopAllAction();
+  if(dragon.rider&&data.riderOriginal)dragon.rider.position.copy(data.riderOriginal);
   for(const {obj,visible} of data.original)obj.visible=visible;
   disposeRoot(data.root);
   if(dragon.speciesPreset)dragon.setSpecies(dragon.speciesId,dragon.speciesPreset);
