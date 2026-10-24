@@ -1,3 +1,14 @@
+# Asas de Brumária v1.4.16 — Recuperação segura de GLB e prévia animada
+
+- **Importação segura:** novos GLBs da Fúria da Noite e da Luz só são gravados em IndexedDB após serem aceitos pelo `GLTFLoader` e renderizados. A Fúria da Luz pode ser pré-visualizada sem ser desbloqueada.
+- **Troca sem perda visual:** modelo atual fica disponível durante a busca e decodificação do próximo; erros preservam o visual válido quando apropriado ou retornam ao modelo procedural da espécie escolhida.
+- **Oito movimentos na prévia:** agora o estábulo permite escolher Idle, Walk, Fly, Glide, Attack, Hurt, Takeoff e Landing. As opções mudam apenas a prévia; não influenciam física ou missões.
+- **Desempenho:** limite de aproximadamente 24 desenhos/s na prévia WebGL, sem limitar a renderização durante a partida.
+- **Testes:** regressões para rollback, Fúria da Luz bloqueada, carregamento inválido e trocas de espécie, mais verificação dos oito movimentos no Chromium. O runner de GitHub Actions foi fixado em Ubuntu 24.04 para compatibilidade com Playwright.
+- **Detalhes e próximas prioridades:** [Auditoria técnica das Fúrias](docs/AUDITORIA-FURIAS-V1.4.16.md). Os GLBs reais dos dois dragões ainda precisam ser publicados na hospedagem para aparecerem automaticamente em qualquer navegador; caso contrário podem ser carregados manualmente no estábulo.
+
+---
+
 # Asas de Brumária v1.4.15 — Correção da prévia 3D e dos GLBs das Fúrias
 
 ## Problemas corrigidos

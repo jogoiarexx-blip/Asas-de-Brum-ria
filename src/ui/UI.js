@@ -30,6 +30,9 @@ export class UI {
     document.getElementById('stable-close').addEventListener('click',()=>game.toggleStable());
     document.getElementById('train-start').addEventListener('click',()=>game.startTraining());
     document.getElementById('train-advanced').addEventListener('click',()=>game.startTraining('advanced'));
+    document.getElementById('stable-preview-motion').addEventListener('change',event=>{
+      game.stablePreview?.setMotion(event.target.value);
+    });
     const furyStatus=document.getElementById('fury-glb-status');
     for(const [species,buttonId,inputId] of [
       ['furia_noite','night-fury-glb-import','night-fury-glb-file'],
@@ -43,8 +46,12 @@ export class UI {
         furyStatus.textContent='Validando esqueleto e oito animações de '+SPECIES[species].name+'…';
         try{
           if(!file.name.toLowerCase().endsWith('.glb'))throw Error('Selecione o arquivo .glb, não o pacote .zip.');
-          const result=await game.speciesModels.installUploaded(species,await file.arrayBuffer());
-          if(game.stablePreview?.species===species)
+          // Previewing the locked Fúria da Luz does not unlock or mount it.
+          // It does, however, prove the GLB can render before caching it.
+          if(game.stablePreview?.species!==species)game.stablePreview?.showSpecies(species);
+          const result=await game.speciesModels.installUploaded(species,await file.arrayBuffer(),
+            {previewDragon:game.stablePreview?.dragon});
+          if(game.stablePreview?.species===species&&!result.previewed)
             await game.speciesModels.preview(game.stablePreview.dragon,species);
           furyStatus.dataset.state='ok';
           furyStatus.textContent=SPECIES[species].name+' carregada! '+result.info.animationCount+

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#071a25">
   <meta name="description" content="Asas de Brumária: explore ilhas, monte em seu dragão e complete missões.">
-  <title>Asas de Brumária v1.4.15 — Aventura de Dragões</title>
+  <title>Asas de Brumária v1.4.16 — Aventura de Dragões</title>
   <link rel="stylesheet" href="./src/ui/style.css">
 </head>
 <body>
@@ -79,7 +79,7 @@
       <p class="daily-board-note">Fale com Iara, Lume, Borin ou Nara para aceitar tarefas. A cada novo dia surgem novas rotas e recompensas.</p>
       <div id="daily-board" class="daily-board" aria-label="Missões diárias disponíveis"></div>
       <div id="wild-list" class="wild-list" aria-label="Dragões selvagens para amansar"></div>
-      <div class="preview-panel"><canvas id="stable-preview-canvas" aria-label="Modelo 3D giratório do dragão selecionado"></canvas><div class="preview-info"><strong id="stable-preview-name">Fúria da Noite · Dragão Inicial</strong><small id="stable-preview-caption">Arraste para girar · Visualização 3D dos dragões</small></div></div>
+      <div class="preview-panel"><canvas id="stable-preview-canvas" aria-label="Modelo 3D giratório do dragão selecionado"></canvas><div class="preview-info"><strong id="stable-preview-name">Fúria da Noite · Dragão Inicial</strong><small id="stable-preview-caption">Arraste para girar · Visualização 3D dos dragões</small><label for="stable-preview-motion">Testar animação:</label><select id="stable-preview-motion" aria-label="Animação do dragão na prévia"><option value="fly">Voar (Fly)</option><option value="glide">Planar (Glide)</option><option value="idle">Parado (Idle)</option><option value="walk">Andar (Walk)</option><option value="attack">Atacar (Attack)</option><option value="hurt">Reagir (Hurt)</option><option value="takeoff">Decolar (Takeoff)</option><option value="land">Pousar (Landing)</option></select></div></div>
       <h3>SEUS DRAGÕES</h3><div id="species-list" class="species-list"></div>
       <h3>EVOLUÇÃO DAS HABILIDADES</h3><div id="skill-list" class="skill-list"></div>
       <div class="training-footer"><div><strong>DESAFIO DOS VENTOS</strong><small>Três aros dourados em 95 segundos. Ganhe +1 ponto ao completar.</small></div><button id="train-start" type="button">INICIAR CIRCUITO</button></div>

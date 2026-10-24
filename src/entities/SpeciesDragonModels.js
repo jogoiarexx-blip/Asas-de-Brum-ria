@@ -48,7 +48,7 @@ export class SpeciesDragonModels{
     }
     return this.pending.get(id);
   }
-  async installUploaded(id,bytes){
+  async installUploaded(id,bytes,{previewDragon=null}={}){
     if(!fileForSpecies(id))throw Error('Modelo destinado a uma espécie desconhecida.');
     const raw=bytes instanceof ArrayBuffer?bytes:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
     const info=inspectGLB(raw);
@@ -61,14 +61,36 @@ export class SpeciesDragonModels{
     for(const clip of ['Idle','Walk','Fly','Glide','Attack','Hurt','Takeoff','Landing']){
       if(!names.has(clip))throw Error('Animação ausente no GLB: '+clip);
     }
+    // Stage in RAM; IndexedDB is only written AFTER a successful render.
+    const hadPrevious=this.local.has(id),previous=this.local.get(id);
     this.local.set(id,raw);
     this.pending.delete(id);
+    const isSelected=this.lastSelected===id;
+    let loaded=false,previewed=false;
+    try{
+      if(isSelected){
+        loaded=await this.select(id);
+        if(!loaded&&this.lastSelected===id)
+          throw this.error??Error('O dragão foi validado, mas não pôde ser renderizado.');
+      }else{
+        // A locked species must never be mounted just to validate its asset.
+        // Parse it on the separate preview rig BEFORE persisting to IndexedDB.
+        if(!previewDragon)throw Error('Abra a prévia 3D para testar este modelo antes de salvá-lo.');
+        await this.load(previewDragon,raw);
+        if(previewDragon.externalDragonModel){
+          previewDragon.externalDragonModel.source='species';
+          previewDragon.externalDragonModel.species=id;
+        }
+        previewed=true;
+      }
+    }catch(error){
+      if(hadPrevious)this.local.set(id,previous);
+      else this.local.delete(id);
+      throw error;
+    }
     let saved=true;
     try{await saveSpeciesModel(id,raw);}catch{saved=false;}
-    const isSelected=this.lastSelected===id;
-    const loaded=isSelected?await this.select(id):false;
-    if(isSelected&&!loaded)throw this.error??Error('Não foi possível exibir o dragão 3D selecionado.');
-    return {info,saved,loaded};
+    return {info,saved,loaded,previewed};
   }
   /** Safe with quick species changes: parsing/scene swaps are serialized. */
   select(id){
@@ -76,23 +98,39 @@ export class SpeciesDragonModels{
     this.lastSelected=id;
     const task=async()=>{
       if(gen!==this.generation)return false;
-      const prev=this.dragon.externalDragonModel;
-      if(prev)this.clear(this.dragon);
       const name=fileForSpecies(id);
-      if(!name){this.error=null;return false;}
+      if(!name){
+        if(this.dragon.externalDragonModel)this.clear(this.dragon);
+        this.error=null;return false;
+      }
       let bytes;
-      try{bytes=await this.read(id);}catch(error){this.error=error;return false;}
-      if(gen!==this.generation||!bytes)return false;
+      try{bytes=await this.read(id);}catch(error){
+        if(gen!==this.generation)return false;
+        this.error=error;
+        if(this.dragon.externalDragonModel?.species!==id)this.clear(this.dragon);
+        return false;
+      }
+      if(gen!==this.generation)return false;
+      if(!bytes){
+        if(this.dragon.externalDragonModel)this.clear(this.dragon);
+        this.error=null;return false;
+      }
       try{
+        // Keep the previous GLB alive throughout fetching and parsing. The
+        // loader commits the swap only after the new scene is ready.
         await this.load(this.dragon,bytes);
-        if(gen!==this.generation){
-          this.clear(this.dragon);
-          return false;
+        if(gen!==this.generation)return false;
+        if(this.dragon.externalDragonModel){
+          this.dragon.externalDragonModel.source='species';
+          this.dragon.externalDragonModel.species=id;
         }
-        if(this.dragon.externalDragonModel)this.dragon.externalDragonModel.source='species';
         this.error=null;return true;
       }catch(error){
+        if(gen!==this.generation)return false;
         this.error=error;
+        // Do not display a model from another species after a failed load.
+        const current=this.dragon.externalDragonModel;
+        if(current&&current.species!==id)this.clear(this.dragon);
         return false;
       }
     };

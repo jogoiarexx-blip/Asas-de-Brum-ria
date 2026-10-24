@@ -69,14 +69,23 @@ export async function installDragonGLB(dragon,bytes){
       .filter(obj=>obj!==dragon.rider)
       .map(obj=>({obj,visible:obj.visible}));
     root.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=false;}});
-    dragon.visual.add(root);
+    const nextModel={root,mixer,slots,animations,active:null,original,scale};
+    // Transactional swap: keep the previous model alive if setting up the
+    // new AnimationMixer, action or scene fails on some browsers.
+    try{
+      dragon.visual.add(root);
+      dragon.externalDragonModel=nextModel;
+      for(const {obj} of original)obj.visible=false;
+      updateDragonGLB(dragon,0);
+    }catch(error){
+      dragon.externalDragonModel=current??null;
+      if(!current)for(const {obj,visible} of original)obj.visible=visible;
+      throw error;
+    }
     if(current){
       current.mixer.stopAllAction();
       disposeRoot(current.root);
     }
-    dragon.externalDragonModel={root,mixer,slots,animations,active:null,original,scale};
-    for(const {obj} of original)obj.visible=false;
-    updateDragonGLB(dragon,0);
     return {...info,clips:(gltf.animations??[]).map(x=>x.name),mapped:Object.keys(slots),scale};
   }catch(error){
     if(root)disposeRoot(root);

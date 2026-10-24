@@ -80,6 +80,15 @@ try{
   await page.waitForTimeout(500);
   await check('Estábulo e Fúria da Luz disponíveis na prévia');
 
+  // Browser click catches pointer-events:none overlays that selectOption alone misses.
+  await page.locator('#stable-preview-motion').click({timeout:5000});
+  for(const motion of ['idle','walk','fly','glide','attack','hurt','takeoff','land']){
+    await page.locator('#stable-preview-motion').selectOption(motion);
+    await page.waitForTimeout(70);
+    assert.equal(await page.locator('#stable-preview-motion').inputValue(),motion);
+    await check('Prévia 3D: animação '+motion);
+  }
+
   // Exercise the actual GLTFLoader, scene replacement and fallback using
   // an original animated dragon GLB with clips for flight, attack and landing.
   const demoBytes=await page.evaluate(async()=>{

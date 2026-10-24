@@ -41,6 +41,9 @@
 #stable-preview-canvas:active{cursor:grabbing}
 .preview-info{position:absolute;bottom:0;left:0;right:0;pointer-events:none;background:linear-gradient(transparent,#061f2be8);padding:30px 14px 11px;color:#f9e4b1;display:flex;flex-direction:column;gap:2px}
 .preview-info strong{font-size:13px;letter-spacing:.8px}.preview-info small{color:#c7dcd5;font-size:10px}
+.preview-info label{font-size:10px;color:#d6e5e0;margin-top:4px;pointer-events:auto}
+#stable-preview-motion{pointer-events:auto;align-self:flex-start;max-width:100%;border:1px solid #a4d6d0a0;border-radius:6px;background:#103540;color:#f4dfb0;font-size:12px;padding:6px 9px;cursor:pointer}
+#stable-preview-motion:focus-visible{outline:2px solid #f0d49c;outline-offset:2px}
 .species-card .preview-button{background:#255c67;color:#def8f3;border:1px solid #89c9bd77}
 @media(pointer:coarse),(max-width:850px){.preview-panel{height:170px}.species-card{grid-template-columns:18px 1fr 70px 105px}.species-card .preview-button{padding:8px 4px;font-size:8px}#clock-pill{padding:6px;max-width:46px}}
 @media(max-width:405px){.species-card{grid-template-columns:15px 1fr 58px 82px}.species-card button{font-size:8px;padding:7px 3px}.preview-info small{font-size:8px}}
