@@ -292,6 +292,7 @@ export class Game {
     if(open){this.ui.renderStable(this);
       try{this.stablePreview??=new StablePreview(document.getElementById('stable-preview-canvas'));
         this.stablePreview.showSpecies(this.progression.species);
+        this.stablePreview.setMotion(document.getElementById('stable-preview-motion').value);
         void this.speciesModels.preview(this.stablePreview.dragon,this.progression.species);
       }catch(error){console.warn('Prévia 3D indisponível:',error);document.getElementById('stable-preview-caption').textContent='A prévia 3D não está disponível neste dispositivo.';}
       this.input.down.clear();this.input.clearActions();
