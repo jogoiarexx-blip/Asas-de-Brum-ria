@@ -42,40 +42,53 @@ export class SpeciesDragonModels{
   async read(id){
     const name=fileForSpecies(id);
     if(!name)return null;
-    // A manual import overrides the official model only when explicitly chosen
-    // during this session. Stale IndexedDB uploads may NEVER shadow the new
-    // GLBs published with the game.
+    // A user-selected replacement takes priority, never a stale IndexedDB
+    // version from a previous deployment.
     if(this.manualOverrides.has(id)&&this.local.has(id))return this.local.get(id);
-    const manifest=await this.manifest();
-    if(manifest.available&&Array.isArray(manifest.species)&&manifest.species.includes(id)){
-      if(!this.pending.has(id)){
-        const get=async(file)=>{
-          const url=new URL(file,this.base);
-          const response=await this.fetcher(url,{cache:'reload'});
-          if(!response.ok)throw Error(`Modelo oficial ${id} não encontrado (HTTP ${response.status}): ${url.pathname}`);
-          const data=await response.arrayBuffer();
-          if(!data.byteLength)throw Error('GLB oficial vazio: '+file);
-          return data;
-        };
-        const promise=(async()=>{
-          const mobile=this.preferMobile&&manifest.mobile===true?mobileFileForSpecies(id):null;
-          if(mobile){
-            try{return await get(mobile);}
-            catch(error){console.warn('GLB mobile indisponível, tentando versão completa:',id,error);}
-          }
-          return get(name);
-        })().catch(error=>{this.pending.delete(id);throw error;});
-        this.pending.set(id,promise);
-      }
-      return this.pending.get(id);
-    }
-    // Offline builds and old deployments can still use a locally imported GLB.
-    if(this.local.has(id))return this.local.get(id);
+
+    // A missing/stale catalogue cannot suppress known official models.
+    // Once the GLBs exist in /assets/models, load them directly and verify
+    // the response. The manifest only guides mobile preference.
+    let manifest={};
     try{
-      const cached=await loadSpeciesModel(id);
-      if(cached){this.local.set(id,cached);return cached;}
-    }catch{/* IndexedDB not supported; keep the procedural fallback. */}
-    return null;
+      manifest=await this.manifest();
+    }catch(error){
+      console.warn('Catálogo de dragões indisponível; tentando o GLB oficial diretamente',error);
+    }
+    if(!manifest.available)console.info('Catálogo ausente; buscando GLB oficial diretamente:',id);
+    if(!this.pending.has(id)){
+      const get=async(file)=>{
+        const url=new URL(file,this.base);
+        const response=await this.fetcher(url,{cache:'reload'});
+        if(!response.ok)throw Error(`GLB oficial ${id} indisponível (HTTP ${response.status}): ${url.pathname}`);
+        const data=await response.arrayBuffer();
+        if(!data?.byteLength)throw Error('GLB oficial vazio: '+file);
+        return data;
+      };
+      const promise=(async()=>{
+        // A mobile build is a performance optimization; either version of
+        // the published dragon is valid even if the manifest is stale.
+        const mobile=this.preferMobile&&manifest.mobile!==false?mobileFileForSpecies(id):null;
+        if(mobile){
+          try{return await get(mobile);}
+          catch(error){console.warn('GLB mobile indisponível; usando original:',id,error);}
+        }
+        return get(name);
+      })().catch(error=>{this.pending.delete(id);throw error;});
+      this.pending.set(id,promise);
+    }
+    try{
+      return await this.pending.get(id);
+    }catch(error){
+      // Offline recovery only. Never let a cached older model override a
+      // working official Fury asset from the current deployment.
+      if(this.local.has(id))return this.local.get(id);
+      try{
+        const cached=await loadSpeciesModel(id);
+        if(cached){this.local.set(id,cached);return cached;}
+      }catch{/* Safari private mode and restricted IndexedDB are supported. */}
+      throw error;
+    }
   }
   async installUploaded(id,bytes,{previewDragon=null}={}){
     if(!fileForSpecies(id))throw Error('Modelo destinado a uma espécie desconhecida.');
