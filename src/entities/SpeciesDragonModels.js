@@ -122,7 +122,7 @@ export class SpeciesDragonModels{
         // A locked species must never be mounted just to validate its asset.
         // Parse it on the separate preview rig BEFORE persisting to IndexedDB.
         if(!previewDragon)throw Error('Abra a prévia 3D para testar este modelo antes de salvá-lo.');
-        await this.load(previewDragon,raw);
+        await this.load(previewDragon,raw,{gameplaySpecies:id});
         if(previewDragon.externalDragonModel){
           previewDragon.externalDragonModel.source='species';
           previewDragon.externalDragonModel.species=id;
@@ -168,7 +168,7 @@ export class SpeciesDragonModels{
       try{
         // Keep the previous GLB alive throughout fetching and parsing. The
         // loader commits the swap only after the new scene is ready.
-        await this.load(this.dragon,bytes);
+        await this.load(this.dragon,bytes,{gameplaySpecies:id});
         if(gen!==this.generation)return false;
         if(this.dragon.externalDragonModel){
           this.dragon.externalDragonModel.source='species';
@@ -197,7 +197,7 @@ export class SpeciesDragonModels{
       if(generation!==this.previewEpoch)return false;
       if(!bytes)return false; // procedural StablePreview remains the fallback
       try{
-        await this.load(previewDragon,bytes);
+        await this.load(previewDragon,bytes,{gameplaySpecies:id});
         if(generation!==this.previewEpoch){this.clear(previewDragon);return false;}
         if(previewDragon.externalDragonModel){
           previewDragon.externalDragonModel.source='species';
