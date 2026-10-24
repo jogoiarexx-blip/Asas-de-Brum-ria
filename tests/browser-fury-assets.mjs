@@ -31,6 +31,25 @@ async function upload(id,path){
 try{
   await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded',timeout:60000});
   await page.waitForFunction(()=>Boolean(window.__furyQAGame),null,{timeout:30000});
+  // The published dragon must replace the procedural original automatically.
+  // Manual import must not be required for the initial Fury.
+  await page.waitForFunction(()=>{
+    const dragon=window.__furyQAGame?.dragon;
+    return dragon?.externalDragonModel?.species==='furia_noite';
+  },null,{timeout:45000});
+  const automatic=await page.evaluate(()=>{
+    const dragon=window.__furyQAGame.dragon,model=dragon.externalDragonModel;
+    return {species:model?.species,source:model?.source,
+      visibleOriginals:model?.original?.filter(item=>item.obj.visible).length,
+      modelRoots:dragon.visual.children.filter(obj=>obj.name==='ExternalDragonGLB').length,
+      rigBones:model?.root?.getObjectByProperty('type','SkinnedMesh')?.skeleton?.bones?.length};
+  });
+  assert.equal(automatic.species,'furia_noite','initial 3D Fury was not installed');
+  assert.equal(automatic.source,'species');
+  assert.equal(automatic.visibleOriginals,0,'procedural dragon remains visible behind new Fury');
+  assert.equal(automatic.modelRoots,1,'duplicate dragon GLB roots in the scene');
+  assert.equal(automatic.rigBones,49,'wrong startup dragon model');
+  console.log('FURY_AUTO_STARTUP_PASS',JSON.stringify(automatic));
   await page.locator('#start-btn').click();
   await page.keyboard.press('t');
   await page.locator('#stable').waitFor({state:'visible',timeout:10000});
