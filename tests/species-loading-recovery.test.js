@@ -117,3 +117,30 @@ test('oito estados da prévia correspondem às animações de gameplay',()=>{
   }
   assert.equal(applyDragonPreviewMotion({},'unknown'),false);
 });
+
+test('Fúria da Luz bloqueada só é gravada após renderizar na prévia',async()=>{
+  const x=mockController();
+  x.m.lastSelected='furia_noite';
+  const preview={externalDragonModel:null};
+  const original=glbFixture('light-ok');
+  const installed=await x.m.installUploaded('furia_luz',original,{previewDragon:preview});
+  assert.equal(installed.loaded,false,'a Fúria da Luz ainda não foi selecionada');
+  assert.equal(installed.previewed,true);
+  assert.equal(installed.saved,true);
+  assert.equal(x.dragon.externalDragonModel,null,'o dragão do jogador não deve mudar');
+  assert.equal(preview.externalDragonModel.species,'furia_luz');
+  assert.equal(x.saved.get('furia_luz'),original);
+  const previousPreview=preview.externalDragonModel;
+  await assert.rejects(()=>x.m.installUploaded('furia_luz',glbFixture('invalid-render'),
+    {previewDragon:preview}),/WebGL/);
+  assert.equal(x.saved.get('furia_luz'),original,'modelo incompatível não pode sobrescrever o modelo salvo');
+  assert.equal(x.m.local.get('furia_luz'),original,'cache da espécie bloqueada deve ser revertido');
+  assert.equal(preview.externalDragonModel,previousPreview);
+});
+test('modelo não selecionado não é armazenado sem prévia WebGL',async()=>{
+  const x=mockController();
+  x.m.lastSelected='furia_noite';
+  await assert.rejects(()=>x.m.installUploaded('furia_luz',glbFixture('good')),
+    /prévia 3D/);
+  assert.equal(x.saved.size,0);
+});
