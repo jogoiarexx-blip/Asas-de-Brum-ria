@@ -8,6 +8,7 @@ import {terrainAttitude,terrainTraction,visualContactHeight} from './TerrainResp
 import {flightPhase, liftBlend} from './flightMath.js';
 import {airflowTarget,airflowSpeed} from './Airflow.js';
 import {wingPose} from './wingPose.js';
+import {cameraRelativeMove,shortestYawDelta,steeringTraction} from '../game/cameraMovement.js';
 import {updateDragonGLB} from './dragonAssetLoader.js';
 import {batchRigidMeshes} from '../utils/rigBatch.js';
 import {windDisplacement} from '../systems/dayCycleMath.js';
@@ -378,15 +379,29 @@ export class Dragon {
     this.attackTime=Math.max(0,this.attackTime-dt);this.hurtTime=Math.max(0,this.hurtTime-dt);
     if(this.riding) {
       const travel=input.axis?.('w','s')??((input.isDown('s','arrowdown')?1:0)-(input.isDown('w','arrowup')?1:0));
-      const go=travel<-.12,brake=travel>.12;
-      const turn=-(input.axis?.('a','d')??((input.isDown('d','arrowright')?1:0)-(input.isDown('a','arrowleft')?1:0)));
-      const boost=input.isDown('shift') && this.energy>4 && (this.airborne||go);
+      const horizontalAxis=input.axis?.('a','d')??((input.isDown('d','arrowright')?1:0)-(input.isDown('a','arrowleft')?1:0));
+      const relative=Number.isFinite(input.cameraYaw);
+      const direction=relative?cameraRelativeMove(horizontalAxis,travel,input.cameraYaw):null;
+      // On foot/ground: every WASD direction moves relative to the camera.
+      // In the air S still brakes, preserving deliberate slow landings.
+      const go=relative
+        ?direction.strength>.12&&!(this.airborne&&travel>.12)
+        :travel<-.12;
+      const brake=relative?(this.airborne&&travel>.12):travel>.12;
+      const targetYaw=direction?.yaw??this.yaw;
+      const turn=relative
+        ?(go?THREE.MathUtils.clamp(shortestYawDelta(this.yaw,targetYaw)/.65,-1,1):0)
+        :-horizontalAxis;
+      const boost=input.isDown('shift')&&this.energy>4&&(this.airborne||go);
       const maxSpeed=this.airborne?(boost?(this.stats?.boostSpeed??49):(this.stats?.flightSpeed??31)):(boost?17:(this.stats?.groundSpeed??11));
-      const targetSpeed=go?maxSpeed*Math.min(1,Math.max(.15,-travel)):(brake?0:(this.airborne?9:0));
+      const facing=relative&&go?steeringTraction(shortestYawDelta(this.yaw,targetYaw)):1;
+      const effort=relative?Math.min(1,Math.max(.18,direction.strength)):Math.min(1,Math.max(.15,-travel));
+      const targetSpeed=go?maxSpeed*effort*facing:(brake?0:(this.airborne?9:0));
       this.speed=approach(this.speed,targetSpeed,dt*(brake?39:go?24:13));
       const turnSpeed=steeringRate(this.speed,this.airborne);
       this.turnAxis=smoothedTurn(this.turnAxis,turn,dt);this.steerInput=this.turnAxis;
       this.yaw+=this.turnAxis*turnSpeed*dt;
+      this.yaw=Math.atan2(Math.sin(this.yaw),Math.cos(this.yaw));
       const forward=this.forward();
       const up=input.isDown('space'),down=input.isDown('ctrl');
       if(up&&!this.airborne){
