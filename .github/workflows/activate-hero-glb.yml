@@ -1,0 +1,64 @@
+name: Ativar novo personagem GLB
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/models/personagem_animado_montaria.glb'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar-heroi-principal
+  cancel-in-progress: false
+
+jobs:
+  activate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Verificar arquivo GLB e integridade do cabecalho
+        run: |
+          python3 - <<'PY'
+          import struct, pathlib
+          p = pathlib.Path('assets/models/personagem_animado_montaria.glb')
+          if not p.is_file():
+              raise SystemExit('Falta assets/models/personagem_animado_montaria.glb')
+          with p.open('rb') as file:
+              header = file.read(12)
+          if len(header)!=12:
+              raise SystemExit('GLB vazio ou truncado')
+          magic, version, length = struct.unpack('<4sII', header)
+          if magic != b'glTF' or version != 2 or length != p.stat().st_size:
+              raise SystemExit('Cabecalho GLB invalido, versao diferente de 2 ou tamanho incorreto')
+          print('GLB validado:', p.stat().st_size, 'bytes')
+          PY
+      - name: Ativar carregamento automatico do protagonista
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/entities/heroAssetConfig.js')
+          s=p.read_text(encoding='utf-8')
+          if 'export const HERO_ASSET_PUBLISHED = false;' in s:
+              s=s.replace('export const HERO_ASSET_PUBLISHED = false;', 'export const HERO_ASSET_PUBLISHED = true;')
+              p.write_text(s, encoding='utf-8')
+          elif 'export const HERO_ASSET_PUBLISHED = true;' not in s:
+              raise SystemExit('Configuracao HERO_ASSET_PUBLISHED nao encontrada')
+          print('Publicacao automatica ativada')
+          PY
+      - name: Salvar ativacao
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/entities/heroAssetConfig.js
+          if git diff --cached --quiet; then
+            echo 'Ja ativo.'
+          else
+            git commit -m 'Assets: ativar protagonista GLB apos upload validado'
+            git push origin HEAD:main
+          fi
