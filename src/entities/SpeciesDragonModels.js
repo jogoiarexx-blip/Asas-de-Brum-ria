@@ -14,7 +14,7 @@ export function mobileFileForSpecies(id){
     id==='furia_luz'?'../../assets/models/furia-da-luz-mobile.glb':null;
 }
 export class SpeciesDragonModels{
-  constructor(dragon,{fetcher=fetch,load=installDragonGLB,clear=clearDragonGLB,base=import.meta.url,preferMobile=false,onStatus=()=>{}}={}){
+  constructor(dragon,{fetcher=(...args)=>fetch(...args),load=installDragonGLB,clear=clearDragonGLB,base=import.meta.url,preferMobile=false,onStatus=()=>{}}={}){
     this.dragon=dragon;this.fetcher=fetcher;this.load=load;this.clear=clear;this.base=base;
     this.preferMobile=preferMobile;this.onStatus=onStatus;
     this.generation=0;this.lastSelected=null;this.ready=false;
@@ -29,7 +29,13 @@ export class SpeciesDragonModels{
         if(!response.ok)return {};
         const obj=await response.json();
         return obj&&typeof obj==='object'&&obj.available===true?obj:{};
-      }).catch(()=>({}));
+      }).catch(error=>{
+        // A failed fetch must be observable and retryable; otherwise an empty
+        // manifest is cached for the entire session even when the GLBs exist.
+        console.warn('Falha ao buscar catálogo oficial de dragões:',url.href,error);
+        this.manifestPromise=null;
+        return {};
+      });
     }
     return this.manifestPromise;
   }
