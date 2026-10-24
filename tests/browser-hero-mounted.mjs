@@ -8,6 +8,11 @@ const browser=await chromium.launch({headless:true,args:[
 const page=await browser.newPage({viewport:{width:1100,height:720}});
 const errors=[];
 page.on('pageerror',e=>errors.push(String(e)));
+await page.route('**/src/main.js',async route=>{
+ const response=await route.fetch(),source=await response.text();
+ if(!source.includes('new Game();'))throw Error('QA Game hook missing');
+ await route.fulfill({response,body:source.replace('new Game();','window.__heroRigQAGame=new Game();')});
+});
 try{
  await page.goto('http://127.0.0.1:8765/',{waitUntil:'domcontentloaded',timeout:60000});
  await page.waitForFunction(()=>!!document.querySelector('#game canvas'),null,{timeout:40000});
@@ -57,5 +62,36 @@ try{
  assert.deepEqual(rig.states,['rideIdle','rideWalk','rideTakeoff','rideFly','rideGlide','rideLand','rideAttack','rideHurt']);
  assert.deepEqual(errors,[]);
  console.log('HERO_RIDER_44_BONES_ANIMATION_PASS',JSON.stringify(rig));
+ await page.locator('#start-btn').click();
+ await page.keyboard.press('t');
+ await page.locator('#stable').waitFor({state:'visible',timeout:16000});
+ const data=await page.evaluate(async()=>{
+  const {buildDemoGLB}=await import('./src/entities/demoGlb.js');
+  return Array.from(buildDemoGLB());
+ });
+ await page.locator('#hero-glb-file').setInputFiles({
+  name:'protagonista-teste.glb',mimeType:'model/gltf-binary',buffer:Buffer.from(data)
+ });
+ await page.waitForFunction(()=>
+  document.querySelector('#hero-glb-status')?.dataset.state==='ok',null,{timeout:40000});
+ const installed=await page.evaluate(()=>{
+  const game=window.__heroRigQAGame,hero=game.hero,dragon=game.dragon;
+  const before={roots:hero.glbRoots?.length,bodyHidden:!hero.group.userData.body.visible,
+   riderHidden:!hero.rider.userData.body.visible,
+   heroMounted:hero.mounted,dragonRig:hero.rider.parent===dragon.visual};
+  dragon.mount();hero.setMounted(true);
+  hero.update(.016,{axis:()=>0,isDown:()=>false},1);
+  return {...before,heroMountedNow:hero.mounted,characterOnDragon:hero.rider.visible,
+   sceneRootHidden:!hero.group.visible,mountRemaining:hero.mountAnimationRemaining};
+ });
+ assert.equal(installed.roots,2);
+ assert.equal(installed.bodyHidden,true,'old walking character was not hidden');
+ assert.equal(installed.riderHidden,true,'old procedural rider was not hidden');
+ assert.equal(installed.dragonRig,true,'new rider should inherit dragon visual position');
+ assert.equal(installed.heroMountedNow,true);
+ assert.equal(installed.characterOnDragon,true);
+ assert.equal(installed.sceneRootHidden,true);
+ assert.ok(installed.mountRemaining>0);
+ console.log('HERO_REPLACEMENT_AND_MOUNT_IN_GAME_PASS',JSON.stringify(installed));
 }catch(error){console.error('HERO_RIDER_QA_ERROR',error);throw error;}
 finally{await browser.close();}
