@@ -79,6 +79,52 @@ try{
   assert.equal(automatic.modelRoots,1,'duplicate dragon GLB roots in the scene');
   assert.equal(automatic.rigBones,49,'wrong startup dragon model');
   console.log('FURY_AUTO_STARTUP_PASS',JSON.stringify(automatic));
+  // Gameplay regression: real skinned bones must face the direction of
+  // physical forward motion, while the feet stay near the terrain.
+  const mechanics=await page.evaluate(async()=>{
+    const THREE=await import('three');
+    const game=window.__furyQAGame,d=game.dragon,m=d.externalDragonModel;
+    const ground=game.world.groundHeightAt(d.group.position.x,d.group.position.z,1.65);
+    const box=new THREE.Box3().setFromObject(m.root);
+    const head=m.rig.getObjectByName('Bone_045').getWorldPosition(new THREE.Vector3());
+    const tail=m.rig.getObjectByName('Bone_014').getWorldPosition(new THREE.Vector3());
+    const heading=head.clone().sub(tail).normalize().dot(d.forward());
+    const riderY=d.rider.position.y;
+    const origin=d.group.position.clone();
+    const controls=(forward=false,fly=false)=>({
+      axis:(a,b)=>a==='w'?(forward?-1:0):0,
+      isDown:key=>key==='space'&&fly
+    });
+    d.mount();game.hero.setMounted(true);
+    for(let i=0;i<70;i++)d.update(1/60,controls(true),i/60);
+    const advance=d.group.position.clone().sub(origin).dot(d.forward());
+    const walkClip=d.externalDragonModel.active?.getClip()?.name;
+    const walkRate=d.externalDragonModel.active?.getEffectiveTimeScale?.();
+    for(let i=0;i<8;i++)d.update(1/60,controls(true,true),2+i/60);
+    const takeoffClip=d.externalDragonModel.active?.getClip()?.name;
+    const takeoffRate=d.externalDragonModel.active?.getEffectiveTimeScale?.();
+    for(let i=0;i<85;i++)d.update(1/60,controls(true,true),3+i/60);
+    const flyingClip=d.externalDragonModel.active?.getClip()?.name;
+    d.airborne=false;d.takeoffTime=0;d.landingTimer=.4;
+    d.update(1/60,controls(false),5);
+    const landingClip=d.externalDragonModel.active?.getClip()?.name;
+    d.dismount();game.hero.setMounted(false);d.group.position.copy(origin);
+    d.verticalVelocity=0;d.pose='ground';d.landingTimer=0;d.update(1/60,controls(false),5.1);
+    return {clearance:box.min.y-ground,heading,advance,riderY,walkClip,
+      walkRate,takeoffClip,takeoffRate,flyingClip,landingClip};
+  });
+  assert.ok(mechanics.clearance>=-.25&&mechanics.clearance<.8,
+    'Patas não encostam no terreno: '+JSON.stringify(mechanics));
+  assert.ok(mechanics.heading>.8,'O focinho continua apontando para trás: '+JSON.stringify(mechanics));
+  assert.ok(mechanics.advance>1,'Pressionar W não avançou na direção do focinho: '+JSON.stringify(mechanics));
+  assert.ok(mechanics.riderY<0,'O cavaleiro continua suspenso acima da sela');
+  assert.equal(mechanics.walkClip,'Walk');
+  assert.equal(mechanics.takeoffClip,'Takeoff');
+  assert.equal(mechanics.flyingClip,'Fly');
+  assert.equal(mechanics.landingClip,'Landing');
+  assert.ok(mechanics.walkRate>.65&&mechanics.takeoffRate>2,
+    'Velocidades das animações não acompanham os estados de gameplay');
+  console.log('FURY_GAMEPLAY_GROUND_DIRECTION_ANIMATION_PASS',JSON.stringify(mechanics));
   await page.locator('#start-btn').click();
   await page.keyboard.press('t');
   await page.locator('#stable').waitFor({state:'visible',timeout:10000});
