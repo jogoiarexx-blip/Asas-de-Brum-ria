@@ -1,5 +1,9 @@
 {
-  "available": false,
-  "species": [],
-  "note": "Upload furia-da-noite.glb and furia-da-luz.glb and replace this manifest with the ready version from the integration bundle."
+  "available": true,
+  "species": [
+    "furia_noite",
+    "furia_luz"
+  ],
+  "mobile": true,
+  "mobileTextureMax": 1024
 }
