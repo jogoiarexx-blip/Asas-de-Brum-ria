@@ -48,7 +48,7 @@ export class SpeciesDragonModels{
     }
     return this.pending.get(id);
   }
-  async installUploaded(id,bytes){
+  async installUploaded(id,bytes,{previewDragon=null}={}){
     if(!fileForSpecies(id))throw Error('Modelo destinado a uma espécie desconhecida.');
     const raw=bytes instanceof ArrayBuffer?bytes:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
     const info=inspectGLB(raw);
@@ -66,15 +66,31 @@ export class SpeciesDragonModels{
     this.local.set(id,raw);
     this.pending.delete(id);
     const isSelected=this.lastSelected===id;
-    const loaded=isSelected?await this.select(id):false;
-    if(isSelected&&!loaded&&this.lastSelected===id){
+    let loaded=false,previewed=false;
+    try{
+      if(isSelected){
+        loaded=await this.select(id);
+        if(!loaded&&this.lastSelected===id)
+          throw this.error??Error('O dragão foi validado, mas não pôde ser renderizado.');
+      }else{
+        // A locked species must never be mounted just to validate its asset.
+        // Parse it on the separate preview rig BEFORE persisting to IndexedDB.
+        if(!previewDragon)throw Error('Abra a prévia 3D para testar este modelo antes de salvá-lo.');
+        await this.load(previewDragon,raw);
+        if(previewDragon.externalDragonModel){
+          previewDragon.externalDragonModel.source='species';
+          previewDragon.externalDragonModel.species=id;
+        }
+        previewed=true;
+      }
+    }catch(error){
       if(hadPrevious)this.local.set(id,previous);
       else this.local.delete(id);
-      throw this.error??Error('O dragão foi validado, mas não pôde ser renderizado.');
+      throw error;
     }
     let saved=true;
     try{await saveSpeciesModel(id,raw);}catch{saved=false;}
-    return {info,saved,loaded,previewOnly:!isSelected};
+    return {info,saved,loaded,previewed};
   }
   /** Safe with quick species changes: parsing/scene swaps are serialized. */
   select(id){
