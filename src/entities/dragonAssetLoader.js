@@ -9,8 +9,11 @@ const mirrors=[`https://cdn.jsdelivr.net/npm/three@${VERSION}/examples/jsm/loade
 let promise=null;
 async function getGLTFLoader(){
   if(!promise){
-    const isPages=location.hostname.endsWith('.github.io');
-    const urls=[...(!isPages?[new URL('../../vendor/addons/loaders/GLTFLoader.js',import.meta.url).href]:[]),...mirrors];
+    // The original Fury GLBs must work on GitHub Pages without relying on
+    // a second external CDN request after the main Three.js runtime loads.
+    // Bundle the matching r180 loader and its geometry utility in /vendor.
+    const localLoader=new URL('../../vendor/addons/loaders/GLTFLoader.js',import.meta.url).href;
+    const urls=[localLoader,...mirrors];
     promise=(async()=>{
       let error;
       for(const path of urls){try{
