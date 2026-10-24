@@ -30,6 +30,9 @@ export class UI {
     document.getElementById('stable-close').addEventListener('click',()=>game.toggleStable());
     document.getElementById('train-start').addEventListener('click',()=>game.startTraining());
     document.getElementById('train-advanced').addEventListener('click',()=>game.startTraining('advanced'));
+    document.getElementById('stable-preview-motion').addEventListener('change',event=>{
+      game.stablePreview?.setMotion(event.target.value);
+    });
     const furyStatus=document.getElementById('fury-glb-status');
     for(const [species,buttonId,inputId] of [
       ['furia_noite','night-fury-glb-import','night-fury-glb-file'],
