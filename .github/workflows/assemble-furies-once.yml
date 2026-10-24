@@ -1,0 +1,105 @@
+name: Montar e certificar GLBs das Furias
+
+on:
+  push:
+    branches: [assets/fury-transport-20261024]
+    paths:
+      - .github/workflows/assemble-furies-once.yml
+      - fury-parts/**
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Montar arquivos binarios originais com verificacao SHA-256
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,struct
+          items=[
+            ('night','furia-da-noite.glb',20,10397384,'d3fbe8c1f9fa33f34cb5cb1b6361807c23ea8614e2edff730af8c4d747f3a898'),
+            ('light','furia-da-luz.glb',20,11929256,'15ec0c1a836d20778ddbc2ace2a8a0e9fac8c0b08cf5432bd269dd4620d4652c')
+          ]
+          output=Path('assets/models')
+          output.mkdir(parents=True,exist_ok=True)
+          for tag,name,count,length,digest in items:
+              parts=sorted(Path('fury-parts',tag).glob('*.bin'))
+              if len(parts)!=count:raise ValueError(f'{tag}: expected {count} parts; got {len(parts)}')
+              buf=b''.join(p.read_bytes() for p in parts)
+              if len(buf)!=length or hashlib.sha256(buf).hexdigest()!=digest:
+                  raise ValueError(f'{tag}: reconstructed bytes do not match original GLB!')
+              if struct.unpack_from('<III',buf)[:2]!=(0x46546c67,2):
+                  raise ValueError(f'{tag}: invalid glTF binary header')
+              (output/name).write_bytes(buf)
+              print(f'RECONSTRUCTED {name} {len(buf)} SHA256={digest}',flush=True)
+          PY
+      - name: Gerar variantes mobile mantendo o rig e oito animacoes
+        run: |
+          python -m pip install 'Pillow>=11,<13'
+          python tools/prepare_fury_models.py \
+            --night assets/models/furia-da-noite.glb \
+            --light assets/models/furia-da-luz.glb \
+            --out assets/models --texture-size 1024
+      - name: Validar quatro GLBs e sistema do jogo
+        run: npm run check
+      - name: Preparar Chromium e Three.js para testar importacao real
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1 three@0.180.0
+          npx playwright install --with-deps chromium
+          mkdir -p vendor/addons/loaders vendor/addons/utils
+          cp node_modules/three/build/three.module.js vendor/three.module.js
+          cp node_modules/three/build/three.core.js vendor/three.core.js
+          cp node_modules/three/examples/jsm/loaders/GLTFLoader.js vendor/addons/loaders/GLTFLoader.js
+          cp node_modules/three/examples/jsm/utils/BufferGeometryUtils.js vendor/addons/utils/BufferGeometryUtils.js
+      - name: Abrir os dois GLBs no game e testar o estavulo
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/furias-real-http.log 2>&1 &
+          node tests/browser-fury-assets.mjs
+      - name: Arquivar provas e hashes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: furias-reais-testadas
+          path: |
+            artifacts/furias-*.png
+            assets/models/asset-qa.json
+          if-no-files-found: ignore
+      - name: Publicar na branch de entrega sem incluir os fragmentos
+        shell: bash
+        run: |
+          mkdir -p /tmp/brumaria-furias-release
+          cp assets/models/furia-da-noite.glb \
+             assets/models/furia-da-luz.glb \
+             assets/models/furia-da-noite-mobile.glb \
+             assets/models/furia-da-luz-mobile.glb \
+             assets/models/dragon-species.json \
+             assets/models/asset-qa.json \
+             /tmp/brumaria-furias-release/
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git checkout -B assets/furies-ready-20261024 origin/main
+          mkdir -p assets/models
+          cp /tmp/brumaria-furias-release/* assets/models/
+          git add assets/models/furia-da-noite.glb \
+            assets/models/furia-da-luz.glb \
+            assets/models/furia-da-noite-mobile.glb \
+            assets/models/furia-da-luz-mobile.glb \
+            assets/models/dragon-species.json \
+            assets/models/asset-qa.json
+          git commit -m 'Furias da Noite e Luz: GLBs originais e mobile testados'
+          git push origin HEAD:refs/heads/assets/furies-ready-20261024
