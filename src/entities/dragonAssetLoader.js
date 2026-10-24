@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {inspectGLB} from './glbValidation.js';
 import {mapDragonClips,dragonAnimationState,selectDragonClip} from './dragonClipMap.js';
+import {browserDragonBudget,maxDragonTextureSize,downsizeDragonTextures} from './dragonTextureBudget.js';
 
 const VERSION='0.180.0';
 const mirrors=[`https://cdn.jsdelivr.net/npm/three@${VERSION}/examples/jsm/loaders/GLTFLoader.js`,
@@ -48,6 +49,10 @@ export async function installDragonGLB(dragon,bytes){
   if(!gltf?.scene)throw new Error('O GLB não possui uma cena 3D.');
   let root=null;
   try{
+    // Reduce WebGL texture memory for mobile/low-RAM devices. Color space,
+    // UVs, skeletons, meshes, clips and game collision never change.
+    const textureBudget=maxDragonTextureSize(browserDragonBudget());
+    downsizeDragonTextures(gltf.scene,textureBudget);
     gltf.scene.updateMatrixWorld(true);
     const box=new THREE.Box3().setFromObject(gltf.scene);
     const size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
