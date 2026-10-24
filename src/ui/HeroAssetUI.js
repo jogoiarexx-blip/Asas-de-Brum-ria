@@ -1,4 +1,4 @@
-import {HERO_GLB_URL,HERO_MODEL_FACING_YAW} from '../entities/heroAssetConfig.js';
+import {HERO_GLB_URL,HERO_ASSET_PUBLISHED,HERO_MODEL_FACING_YAW} from '../entities/heroAssetConfig.js';
 import {installHeroGLB,clearHeroGLB} from '../entities/heroAssetLoader.js';
 import {loadSavedHeroGLB,saveHeroGLB,clearSavedHeroGLB} from '../entities/heroAssetStore.js';
 import {inspectGLB} from '../entities/glbValidation.js';
@@ -58,7 +58,7 @@ export class HeroAssetUI {
  async loadSavedHeroGLB(){
    // The official new hero wins over demo/legacy cached characters. If its
    // binary is absent on a Pages deployment, retain browser-import fallback.
-   if(HERO_GLB_URL){
+   if(HERO_ASSET_PUBLISHED&&HERO_GLB_URL){
      try{
        const url=new URL(HERO_GLB_URL,document.baseURI);
        const response=await fetch(url,{cache:'no-cache'});
