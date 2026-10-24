@@ -29,6 +29,9 @@ export class StablePreview {
     this.dragon.group.position.set(0,2,0);
     this.dragon.visual.position.y=0;
     this.elapsed=0;this.rotation=0;this.species=null;this.motion='fly';
+    // A separate WebGL context is expensive with 120k/147k triangle GLBs.
+    // Limit stable previews to ~24 render passes/s without limiting gameplay.
+    this.renderDebt=0;this.needsRefresh=true;this.renderInterval=1/24;
     this.dragging=false;this.lastX=0;
     canvas.addEventListener('pointerdown',ev=>{this.dragging=true;this.lastX=ev.clientX;canvas.setPointerCapture(ev.pointerId);});
     canvas.addEventListener('pointermove',ev=>{if(this.dragging){this.rotation+=(ev.clientX-this.lastX)*.013;this.lastX=ev.clientX;}});
@@ -37,12 +40,13 @@ export class StablePreview {
   }
   setMotion(id){
     if(!applyDragonPreviewMotion(this.dragon,id))return false;
+    if(this.motion!==id)this.needsRefresh=true;
     this.motion=id;return true;
   }
   showSpecies(id){
     if(!SPECIES[id])return false;
     if(this.dragon.externalDragonModel)clearDragonGLB(this.dragon);
-    this.species=id;this.dragon.setSpecies(id,SPECIES[id]);
+    this.species=id;this.needsRefresh=true;this.dragon.setSpecies(id,SPECIES[id]);
     const name=document.getElementById('stable-preview-name');
     if(name)name.textContent=`${SPECIES[id].name} · ${SPECIES[id].kind}`;
     const caption=document.getElementById('stable-preview-caption');
@@ -50,14 +54,18 @@ export class StablePreview {
     return true;
   }
   render(dt){
+    this.renderDebt+=Math.max(0,Math.min(dt,.12));
+    if(this.renderDebt<this.renderInterval&&!this.needsRefresh&&!this.dragging)return;
+    const frameDt=this.renderDebt;
+    this.renderDebt=0;this.needsRefresh=false;
     const width=Math.max(1,Math.floor(this.canvas.clientWidth)),height=Math.max(1,Math.floor(this.canvas.clientHeight));
     if(width<10||height<10)return;
     const scale=this.renderer.getPixelRatio();
     if(this.canvas.width!==Math.round(width*scale)||this.canvas.height!==Math.round(height*scale)){
       this.renderer.setSize(width,height,false);this.camera.aspect=width/height;this.camera.updateProjectionMatrix();
     }
-    this.elapsed+=Math.min(dt,.05);
-    if(!this.dragging)this.rotation+=Math.min(dt,.05)*.13;
+    this.elapsed+=Math.min(frameDt,.12);
+    if(!this.dragging)this.rotation+=Math.min(frameDt,.12)*.13;
     this.dragon.group.rotation.y=this.rotation;
     this.setMotion(this.motion);
     const phase=this.dragon.pose, speed=this.dragon.speed;
@@ -68,7 +76,7 @@ export class StablePreview {
     }
     this.dragon.headPivot.rotation.y=Math.sin(this.elapsed*.85)*.085;
     this.dragon.visual.position.y=Math.sin(this.elapsed*1.65)*.14;
-    updateDragonGLB(this.dragon,dt);
+    updateDragonGLB(this.dragon,frameDt);
     this.renderer.render(this.scene,this.camera);
   }
 }
