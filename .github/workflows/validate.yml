@@ -25,7 +25,7 @@ jobs:
 
   browser-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - name: Obter codigo
         uses: actions/checkout@v4
@@ -44,6 +44,7 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/brumaria-server.log 2>&1 &
           node tests/browser-smoke.mjs
+          node tests/browser-fury-auto.mjs
           node tests/browser-missions.mjs
           node tests/browser-mountain.mjs
           node tests/browser-performance.mjs
