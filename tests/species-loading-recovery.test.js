@@ -45,7 +45,7 @@ function mockController(options={}){
       fetches.push(String(url));
       return {ok:true,json:async()=>({available:false,species:[]})};
     });
-  return {m:new ctor(dragon),saved,loads,clears,dragon,fetches};
+  return {m:new ctor(dragon,options.fetcher?{fetcher:options.fetcher}:{}),saved,loads,clears,dragon,fetches};
 }
 
 test('modelo importado é gravado somente após confirmar renderização',async()=>{
@@ -143,4 +143,25 @@ test('modelo não selecionado não é armazenado sem prévia WebGL',async()=>{
   await assert.rejects(()=>x.m.installUploaded('furia_luz',glbFixture('good')),
     /prévia 3D/);
   assert.equal(x.saved.size,0);
+});
+
+test('GLB oficial do GitHub prevalece sobre antigo IndexedDB e modelo manual somente quando solicitado',async()=>{
+  const official=glbFixture('official-night');
+  const old=glbFixture('stale-manual-cache');
+  const requested=[];
+  const x=mockController({fetcher:async url=>{
+    requested.push(String(url));
+    if(String(url).endsWith('dragon-species.json'))
+      return {ok:true,json:async()=>({available:true,mobile:false,species:['furia_noite','furia_luz']})};
+    return {ok:true,arrayBuffer:async()=>official};
+  }});
+  x.saved.set('furia_noite',old);
+  assert.equal(await x.m.select('furia_noite'),true);
+  assert.equal(x.dragon.externalDragonModel.tag,'official-night');
+  assert.equal(x.loads[0],'official-night');
+  assert.ok(requested.some(url=>url.endsWith('furia-da-noite.glb')));
+  await x.m.installUploaded('furia_noite',glbFixture('manual-now'));
+  assert.equal(x.dragon.externalDragonModel.tag,'manual-now');
+  assert.equal(await x.m.select('furia_noite'),true);
+  assert.equal(x.dragon.externalDragonModel.tag,'manual-now');
 });
