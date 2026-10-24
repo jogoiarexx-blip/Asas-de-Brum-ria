@@ -3,6 +3,7 @@ import {Dragon} from '../entities/Dragon.js';
 import {wingPose} from '../entities/wingPose.js';
 import {updateDragonGLB,clearDragonGLB} from '../entities/dragonAssetLoader.js';
 import {SPECIES} from '../systems/Progression.js';
+import {applyDragonPreviewMotion} from '../entities/dragonPreviewMotion.js';
 
 /** Prévia real dos mesmos modelos procedurais usados no voo, não uma imagem estática. */
 export class StablePreview {
@@ -27,12 +28,16 @@ export class StablePreview {
     this.dragon=new Dragon(this.scene,world);
     this.dragon.group.position.set(0,2,0);
     this.dragon.visual.position.y=0;
-    this.elapsed=0;this.rotation=0;this.species=null;
+    this.elapsed=0;this.rotation=0;this.species=null;this.motion='fly';
     this.dragging=false;this.lastX=0;
     canvas.addEventListener('pointerdown',ev=>{this.dragging=true;this.lastX=ev.clientX;canvas.setPointerCapture(ev.pointerId);});
     canvas.addEventListener('pointermove',ev=>{if(this.dragging){this.rotation+=(ev.clientX-this.lastX)*.013;this.lastX=ev.clientX;}});
     const release=()=>{this.dragging=false;};
     canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);canvas.addEventListener('lostpointercapture',release);
+  }
+  setMotion(id){
+    if(!applyDragonPreviewMotion(this.dragon,id))return false;
+    this.motion=id;return true;
   }
   showSpecies(id){
     if(!SPECIES[id])return false;
@@ -54,8 +59,10 @@ export class StablePreview {
     this.elapsed+=Math.min(dt,.05);
     if(!this.dragging)this.rotation+=Math.min(dt,.05)*.13;
     this.dragon.group.rotation.y=this.rotation;
+    this.setMotion(this.motion);
+    const phase=this.dragon.pose, speed=this.dragon.speed;
     for(const {wing,elbow,tip,side} of this.dragon.wings){
-      const pose=wingPose({time:this.elapsed,side,phase:'cruise',speed:18,wingLift:1,bank:0,climbing:0});
+      const pose=wingPose({time:this.elapsed,side,phase,speed,wingLift:this.dragon.airborne?1:0,bank:0,climbing:0});
       wing.rotation.z=pose.shoulder;elbow.rotation.z=pose.elbow;tip.rotation.z=pose.wrist;
       wing.rotation.x=pose.twist;
     }
